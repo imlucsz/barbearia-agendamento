@@ -1,6 +1,6 @@
 # 💈 Sistema de Agendamento Online - Barbearia
 
-> Projeto acadêmico desenvolvido por estudantes do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Itaquera**.
+> Projeto acadêmico desenvolvido por estudantes do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Itaquera**.git 
 
 O sistema é uma solução web para agendamento online de barbearias e estabelecimentos de estética. A aplicação permite que clientes visualizem o catálogo de serviços, consultem disponibilidade de horários e realizem agendamentos. Além disso, conta com um painel administrativo restrito para gestão de horários, equipe e relatórios operacionais.
 
