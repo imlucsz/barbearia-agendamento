@@ -92,7 +92,8 @@ barbearia-agendamento/
     │   │   ├── api.js              # Configuração base do fetch (Thiago)
     │   │   ├── auth.js             # Lógica de Login/Token (Thiago)
     │   │   └── schedule.js         # Lógica de Agendamento (Thiago)
-    │   └── images/                 # Logos, banners e fotos
+    │   └── images/                 # Colocar aqui Logos, banners e fotos
+    │       └── icon-user.webp
     ├── pages/
     │   ├── index.html              # Home Institucional + Mapa (Kevin)
     │   ├── catalog.html            # Catálogo de Serviços (Varischi)
