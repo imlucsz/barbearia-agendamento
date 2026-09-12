@@ -1,0 +1,154 @@
+:root {
+    --fonte-principal: 'inter', system-ui, sans-serif;
+    --branco: white;
+    --preto: #0e0d0c;
+    --dourado: #c9a84c;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height:100%;
+    box-sizing: border-box;
+    font-family: var(--fonte-principal);
+    background-color: var(--branco);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--preto);
+    padding: 20px 40px;
+    text-align: center;
+}
+
+.nome-usuario {
+    color: var(--dourado);
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.nav-link {
+    display: flex;
+    gap: 34px;
+}
+
+.nav-link a {
+    color: var(--dourado);
+    text-decoration: none;
+    font-size: 18px;
+    transition: color 0.3s ease;
+}
+
+.nav-link a:hover {
+    color: var(--branco);
+}
+
+.header-user {
+    display: inline-flex;
+    width: fit-content;
+    height: fit-content;
+    position: relative;
+}
+
+/* Esconde o checkbox visualmente da tela */
+.user-toggle-checkbox {
+    display: none;
+}
+
+/* Estilo do label/botão com transição */
+.profile-trigger {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 101; /* Garante que o ícone fique acima do menu */
+}
+
+.icon-user {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    transition: transform 0.3s ease; /* Transição para o deslizamento */
+}
+
+/* ========================================================= */
+/*  A MÁGICA CSS: QUANDO O CHECKBOX ESTIVER MARCADO (:checked) */
+/* ========================================================= */
+
+/* 1. Desliza a imagem para a esquerda ao clicar */
+.user-toggle-checkbox:checked ~ .profile-trigger .icon-user {
+    transform: translateX(-180px);
+}
+
+/* 2. Revela a caixinha dropdown ao clicar */
+.user-toggle-checkbox:checked ~ .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* ========================================================= */
+/* ESTILOS DA CAIXINHA DROPDOWN                              */
+/* ========================================================= */
+
+.dropdown-menu {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: #1a1816;
+    border: 1px solid var(--dourado);
+    border-radius: 8px;
+    padding: 12px 16px;
+    width: 160px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    
+    /* Estado inicial: escondido */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    z-index: 100;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    color: var(--branco);
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.user-role {
+    color: var(--dourado);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.divider {
+    border: 0;
+    height: 1px;
+    background: #333;
+    margin: 8px 0;
+}
+
+.btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff5555;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.btn-logout:hover {
+    color: #ff2222;
+}
+
