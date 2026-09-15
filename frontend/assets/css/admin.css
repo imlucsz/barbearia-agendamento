@@ -1,0 +1,278 @@
+:root {
+    --admin-bg: #120f0d;
+    --admin-panel: #1b1714;
+    --admin-card: #201d1b;
+    --admin-border: rgba(201, 168, 76, 0.25);
+    --admin-text: #f5f1eb;
+    --admin-muted: #c3b49b;
+    --admin-dourado: #c9a84c;
+    --admin-dourado-escuro: #8f7422;
+    --admin-success: #67d7a6;
+    --admin-warning: #ffcb69;
+    --admin-danger: #ff7a7a;
+    --admin-info: #8ab4ff;
+}
+
+body {
+    background: var(--admin-bg);
+}
+
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+
+.Agenda {
+    max-width: 760px;
+    margin: 10px auto 0;
+}
+
+.date-roll {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    flex: 1;
+    min-height: 92px;
+}
+
+.date-item {
+    min-width: 84px;
+    border: 1px solid var(--admin-border);
+    border-radius: 14px;
+    background: var(--admin-card);
+    color: var(--admin-text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 10px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.date-item:hover {
+    border-color: var(--admin-dourado);
+    transform: translateY(-2px);
+}
+
+.date-item.selected {
+    background: linear-gradient(180deg, #d8b867 0%, #c9a84c 100%);
+    border-color: var(--admin-dourado);
+    color: #1a150f;
+    box-shadow: 0 10px 20px rgba(201, 168, 76, 0.25);
+}
+
+.date-item.today {
+    outline: 2px solid rgba(255, 255, 255, 0.38);
+    outline-offset: 1px;
+}
+
+.date-item.selected .date-weekday,
+.date-item.selected .date-number {
+    color: #1a150f;
+}
+
+.date-weekday {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--admin-muted);
+    font-weight: 700;
+}
+
+.date-number {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--admin-text);
+}
+
+.date-nav-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(201, 168, 76, 0.6);
+    background: transparent;
+    color: var(--admin-dourado);
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.date-nav-btn:hover:not(:disabled) {
+    background: var(--admin-dourado);
+    color: var(--admin-bg);
+}
+
+.date-nav-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.agenda-panel {
+    max-width: 1100px;
+    margin: 38px auto 0;
+    background: rgba(27, 23, 20, 0.96);
+    border: 1px solid var(--admin-border);
+    border-radius: 22px;
+    padding: 24px 24px 18px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+}
+
+.agenda-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+.agenda-header h2 {
+    margin: 0;
+    color: var(--admin-text);
+    font-size: clamp(1.2rem, 2vw, 1.8rem);
+}
+
+.agenda-day-label {
+    color: var(--admin-dourado);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: capitalize;
+}
+
+.agenda-list {
+    min-height: 150px;
+}
+
+.agenda-table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid rgba(201, 168, 76, 0.18);
+}
+
+.agenda-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+    background: #171311;
+    color: var(--admin-text);
+}
+
+.agenda-table thead {
+    background: rgba(201, 168, 76, 0.08);
+}
+
+.agenda-table th,
+.agenda-table td {
+    text-align: left;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: middle;
+}
+
+.agenda-table th {
+    color: var(--admin-dourado);
+    font-size: 0.76rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.agenda-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.time-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(201, 168, 76, 0.12);
+    border: 1px solid rgba(201, 168, 76, 0.22);
+    color: var(--admin-dourado);
+    font-weight: 700;
+    min-width: 70px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 6px 12px;
+    min-width: 110px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.status-confirmado,
+.status-concluido,
+.status-finalizado {
+    background: rgba(103, 215, 166, 0.13);
+    border: 1px solid rgba(103, 215, 166, 0.5);
+    color: var(--admin-success);
+}
+
+.status-pendente {
+    background: rgba(255, 203, 105, 0.12);
+    border: 1px solid rgba(255, 203, 105, 0.45);
+    color: var(--admin-warning);
+}
+
+.status-cancelado,
+.status-cancelada {
+    background: rgba(255, 122, 122, 0.12);
+    border: 1px solid rgba(255, 122, 122, 0.45);
+    color: var(--admin-danger);
+}
+
+.agenda-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 130px;
+    text-align: center;
+    border: 1px dashed rgba(201, 168, 76, 0.45);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--admin-text);
+    padding: 20px;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.agenda-empty.error {
+    color: #ffd7d7;
+    border-color: rgba(255, 122, 122, 0.38);
+    background: rgba(255, 122, 122, 0.05);
+}
+
+@media (max-width: 720px) {
+    .Agenda {
+        gap: 8px;
+    }
+
+    .date-item {
+        min-width: 68px;
+        padding: 10px 8px;
+    }
+
+    .date-number {
+        font-size: 1.15rem;
+    }
+
+    .agenda-panel {
+        padding: 18px 14px 12px;
+    }
+
+    .agenda-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

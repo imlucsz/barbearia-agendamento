@@ -7,7 +7,6 @@
         <title>Admin</title>
         <link rel="stylesheet" href="../assets/css/style.css">
         <link rel="stylesheet" href="../assets/css/admin.css">
-        <link rel="stylesheet" href="../assets/images"> 
         <script type="module" src="../assets/js/agenda_admin.js"></script>
     </head>
     <body>
@@ -15,45 +14,48 @@
             <span class="nome-usuario">Nome-barbeiro</span>
             <nav class="nav-link">
                 <a href="#agenda" class="botao-rolar-header">Agenda</a>
-                <a href="#financeiro" class="botao-rolar-header">Financeiro</a> 
+                <a href="#financeiro" class="botao-rolar-header">Financeiro</a>
             </nav>
             <div class="header-user">
-            <!-- aqui le se o usuario cliclou ou nao -->
-                <input type="checkbox" id="user-menu-toggle" class="user-toggle-checkbox"> 
+                <input type="checkbox" id="user-menu-toggle" class="user-toggle-checkbox">
 
-                <!-- aqui é o icone em si -->
                 <label for="user-menu-toggle" class="profile-trigger" aria-label="Abrir menu do usuário">
                     <img src="../assets/images/icon-user.webp" alt="foto do usuário" class="icon-user">
                 </label>
 
-                <!-- caixa que abre quando clica -->
                 <div class="dropdown-menu">
                     <div class="user-info">
-                        <span class="user-name" id="userName">Carregando</span> <!--aqui é a variavel do nome-->
-                        <span class="user-role">Administrador</span> <!--indica oq o usuario é-->
+                        <span class="user-name" id="userName">Carregando</span>
+                        <span class="user-role">Administrador</span>
                     </div>
                     <hr class="divider">
                     <a href="index.html" class="btn-logout">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                         Sair da conta
-                    </a> 
+                    </a>
                 </div>
             </div>
         </header>
+
         <main>
             <p class="titulo-agenda">Agenda</p>
-            <div class="Agenda">
-               <!-- Botão para voltar dias -->
-                <button class="date-nav-btn" id="prevDates" aria-label="Dias anteriores">&lt;</button>
 
-            <!-- Carrossel de datas -->
-                <div class="date-roll" id="dateRoll">
-                <!-- O JS vai gerar os dias aqui dinamicamente -->
+            <div class="Agenda" aria-label="Seletor de calendário da agenda">
+                <button class="date-nav-btn" id="prevDates" aria-label="Dias anteriores" type="button">&lt;</button>
+
+                <div class="date-roll" id="dateRoll" aria-live="polite"></div>
+
+                <button class="date-nav-btn" id="nextDates" aria-label="Próximos dias" type="button">&gt;</button>
+            </div>
+
+            <section class="agenda-panel" aria-labelledby="agenda-title">
+                <div class="agenda-header">
+                    <h2 id="agenda-title">Agendamentos</h2>
+                    <span id="agendaDayLabel" class="agenda-day-label">Carregando...</span>
                 </div>
 
-        <!-- Botão para avançar dias -->
-                <button class="date-nav-btn" id="nextDates" aria-label="Próximos dias">&gt;</button>
-            </div>
+                <div id="agendaList" class="agenda-list" aria-live="polite"></div>
+            </section>
         </main>
     </body>
 </html>

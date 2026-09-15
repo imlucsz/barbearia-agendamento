@@ -1,12 +1,14 @@
-
 import enum
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean
+from sqlalchemy import Boolean, Column, DateTime, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
+
 from app.database import Base
+
 
 class RoleEnum(str, enum.Enum):
     CLIENTE = "cliente"
     ADMIN = "admin"
+
 
 class User(Base):
     __tablename__ = "users"
@@ -19,6 +21,7 @@ class User(Base):
 
     appointments = relationship("Appointment", back_populates="user")
 
+
 class Service(Base):
     __tablename__ = "services"
 
@@ -29,14 +32,17 @@ class Service(Base):
 
     appointments = relationship("Appointment", back_populates="service")
 
+
 class Appointment(Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    service_id = Column(Integer, ForeignKey("services.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
     data_hora = Column(DateTime, nullable=False)
-    status = Column(String, default="agendado")
+    profissional_nome = Column(String, nullable=True, default="Barbeiro")
+    status = Column(String, default="pendente")
+    cancelado = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="appointments")
     service = relationship("Service", back_populates="appointments")
