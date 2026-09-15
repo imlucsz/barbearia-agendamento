@@ -5,11 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description" content="painel do administrador">
         <title>Admin</title>
-        <link rel="stylesheet" href="estilo.css">
         <link rel="stylesheet" href="../assets/css/style.css">
         <link rel="stylesheet" href="../assets/css/admin.css">
         <link rel="stylesheet" href="../assets/images"> 
-        <script src="../assets/js/schedule.jss"></script>
+        <script type="module" src="../assets/js/agenda_admin.js"></script>
     </head>
     <body>
         <header id='cabecalho-adm'>
@@ -41,5 +40,20 @@
                 </div>
             </div>
         </header>
+        <main>
+            <p class="titulo-agenda">Agenda</p>
+            <div class="Agenda">
+               <!-- Botão para voltar dias -->
+                <button class="date-nav-btn" id="prevDates" aria-label="Dias anteriores">&lt;</button>
+
+            <!-- Carrossel de datas -->
+                <div class="date-roll" id="dateRoll">
+                <!-- O JS vai gerar os dias aqui dinamicamente -->
+                </div>
+
+        <!-- Botão para avançar dias -->
+                <button class="date-nav-btn" id="nextDates" aria-label="Próximos dias">&gt;</button>
+            </div>
+        </main>
     </body>
 </html>
