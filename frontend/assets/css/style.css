@@ -3,6 +3,8 @@
     --branco: white;
     --preto: #0e0d0c;
     --dourado: #c9a84c;
+    --marrom-escuro: #161410;
+    --marrom-acizentado: #3d2a22;
 }
 
 body {
@@ -152,3 +154,136 @@ header {
     color: #ff2222;
 }
 
+main {
+    background-color: var(--marrom-escuro);
+    min-height: calc(100vh - 70px); /* Ajusta a altura para ocupar o restante da tela */ 
+    padding: 40px 30px;
+    box-sizing: border-box;
+}
+
+.titulo-agenda {
+    color:var(--branco);
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* Container centralizado */
+.Agenda {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 30px auto;
+    max-width: 600px;
+}
+
+.Agenda p {
+    color: var(--branco);
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* Trilho dos dias */
+.date-roll {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    padding: 10px 5px;
+    /* Esconde a barra de rolagem */
+    /*para rolar em celular */
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+
+    /* Impede seleção de texto ao clicar e arrastar com o mouse */
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: grab;
+}
+/* Quando estiver arrastando com o mouse */
+.date-roll.active-drag {
+    cursor: grabbing;
+    scroll-behavior: auto; /* Desativa a suavidade momentaneamente para responder ao mouse em tempo real */
+}
+
+
+.date-roll::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+}
+
+/* Card de cada dia */
+.date-card {
+    min-width: 65px;
+    height: 75px;
+    background-color: #1e1b18;
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+
+    /*responsivo para celular*/
+    scroll-snap-align: center; /* Garante que o card se alinhe ao iniciar a rolagem */
+    flex-shrink: 0; /* Impede que o card encolha em telas menores */
+}
+
+.date-card .day-name {
+    font-size: 11px;
+    color: #a1a1a1;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.date-card .day-number {
+    font-size: 18px;
+    color: var(--branco);
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* Efeito ao passar o mouse */
+.date-card:hover {
+    border-color: var(--dourado);
+    transform: translateY(-2px);
+}
+
+/* Dia Selecionado / Hoje */
+.date-card.active {
+    background-color: var(--dourado);
+    border-color: var(--dourado);
+    box-shadow: 0 4px 12px rgba(201, 168, 76, 0.3);
+}
+
+.date-card.active .day-name,
+.date-card.active .day-number {
+    color: var(--preto);
+}
+
+/* Botões de navegação lateral (< e >) */
+.date-nav-btn {
+    background: transparent;
+    border: 1px solid var(--dourado);
+    color: var(--dourado);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.date-nav-btn:hover {
+    background-color: var(--dourado);
+    color: var(--preto);
+}
