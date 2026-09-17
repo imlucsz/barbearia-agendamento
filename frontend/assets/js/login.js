@@ -4,7 +4,6 @@ const abrirCadastro = document.getElementById('abrir-cadastro');
 const fecharCadastro = document.getElementById('fechar-cadastro');
 const loginForm = document.querySelector('.login-form');
 const registerForm = document.querySelector('.register-form');
-const API_BASE_URL = 'http://127.0.0.1:8000';
 
 function mostrarMensagem(form, mensagem, tipo = 'erro') {
     const anterior = form.querySelector('.mensagem-form');
@@ -14,15 +13,6 @@ function mostrarMensagem(form, mensagem, tipo = 'erro') {
     mensagemEl.className = `mensagem-form ${tipo}`;
     mensagemEl.textContent = mensagem;
     form.appendChild(mensagemEl);
-}
-
-async function lerMensagemErro(response, mensagemPadrao) {
-    try {
-        const body = await response.json();
-        return body.detail || mensagemPadrao;
-    } catch (error) {
-        return mensagemPadrao;
-    }
 }
 
 // ===== CONTROLE DO MODAL =====
@@ -126,28 +116,12 @@ loginForm.addEventListener('submit', (e) => {
     const botao = loginForm.querySelector('button[type="submit"]');
     botao.disabled = true;
 
-    fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosLogin)
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await lerMensagemErro(response, 'Não foi possível entrar.'));
-            }
-
-            return response.json();
-        })
+    apiPost('/auth/login', dadosLogin)
         .then((dados) => {
             localStorage.setItem('token', dados.access_token);
             localStorage.setItem('user', JSON.stringify(dados.user));
-            localStorage.setItem('usuario', JSON.stringify(dados.user));
 
-            if (dados.user.role === 'admin') {
-                window.location.href = 'admin.html';
-            } else {
-                window.location.href = 'index.html';
-            }
+            window.location.href = dados.user.role === 'admin' ? 'admin.html' : 'index.html';
         })
         .catch((error) => {
             mostrarMensagem(loginForm, error.message || 'Não foi possível conectar com o backend.');
@@ -203,18 +177,7 @@ registerForm.addEventListener('submit', (e) => {
     const botao = registerForm.querySelector('button[type="submit"]');
     botao.disabled = true;
 
-    fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosCadastro)
-    })
-        .then(async (response) => {
-            if (!response.ok) {
-                throw new Error(await lerMensagemErro(response, 'Não foi possível criar a conta.'));
-            }
-
-            return response.json();
-        })
+    apiPost('/auth/register', dadosCadastro)
         .then(() => {
             modal.classList.remove('active');
             registerForm.reset();

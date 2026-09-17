@@ -4,10 +4,11 @@
 //
 // Por enquanto o admin só pode ver/gerenciar a semana atual — navegar para
 // outras semanas fica desativado até vocês decidirem liberar isso.
+//
+// Toda comunicação com o backend passa por api.js (apiGet/apiPost/...).
+// Este arquivo não conhece API_BASE nem faz fetch() diretamente.
 
-const API_BASE_URL = "http://127.0.0.1:8000";
-const TOKEN_KEY = "token";
-const USER_KEY = "usuario";
+const USER_KEY = "user";
 
 const dateRoll = document.getElementById("dateRoll");
 const prevBtn = document.getElementById("prevDates");
@@ -22,9 +23,9 @@ const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 let weekDays = [];
 let selectedDate = new Date();
 
-// --- Helpers de data -------------------------------------------------
 
-// Retorna o domingo (00:00) da semana em que "date" está
+
+
 function getStartOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -33,7 +34,7 @@ function getStartOfWeek(date) {
     return copy;
 }
 
-// Gera um array com os 7 dias (domingo a sábado) da semana de "referenceDate"
+
 function generateWeekDays(referenceDate) {
     const start = getStartOfWeek(referenceDate);
     return Array.from({ length: 7 }, (_, index) => {
@@ -49,7 +50,7 @@ function sameDay(a, b) {
         a.getDate() === b.getDate();
 }
 
-// Formata a data no padrão que a API espera (YYYY-MM-DD)
+
 function formatDateForAPI(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -82,13 +83,8 @@ function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
-function getToken() {
-    return localStorage.getItem(TOKEN_KEY) || "";
-}
-
 function clearSession() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    logout();
 }
 
 function setUserName() {
@@ -109,7 +105,7 @@ function setUserName() {
     }
 }
 
-// --- Renderização do carrossel ---------------------------------------
+
 
 function renderDateRoll() {
     if (!dateRoll) return;
@@ -149,7 +145,7 @@ function selecionarDia(date) {
     carregarAgendaDoDia(selectedDate);
 }
 
-// --- Comunicação com a API --------------------------------------------
+
 
 function normalizeTime(value) {
     if (!value) return "--:--";
@@ -268,48 +264,37 @@ function renderizarAgendamentos(agendamentos) {
     `;
 }
 
+
 async function carregarAgendaDoDia(date) {
     if (!agendaDayLabel) return;
 
     const dataFormatada = formatDateForAPI(date);
     agendaDayLabel.textContent = formatDateForDisplay(date);
 
-    const token = getToken();
-    if (!token) {
+    if (!getToken()) {
         renderAgendaMessage("Sessão expirada. Faça login novamente.", "error");
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/admin/agenda?data=${dataFormatada}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`
-            }
-        });
-
-        if (!response.ok) {
-            let message = "Não foi possível carregar a agenda do dia.";
-
-            if (response.status === 401) {
-                message = "Sessão expirada ou token inválido. Faça login novamente.";
-            } else if (response.status === 404) {
-                message = "Rota da agenda indisponível no backend.";
-            } else if (response.status === 500) {
-                message = "Erro interno do servidor. Tente novamente em alguns instantes.";
-            }
-
-            renderAgendaMessage(message, "error");
-            return;
-        }
-
-        const responseBody = await response.json();
+        const responseBody = await apiGet(`/admin/agenda?data=${dataFormatada}`);
         const agendamentos = normalizeAgendaResponse(responseBody);
         renderizarAgendamentos(agendamentos);
     } catch (error) {
         console.error("Falha ao carregar agenda do dia:", error);
-        renderAgendaMessage("Não foi possível conectar com o backend. Verifique a API e tente novamente.", "error");
+
+        let message = "Não foi possível carregar a agenda do dia.";
+        if (error.status === 401) {
+            message = "Sessão expirada ou token inválido. Faça login novamente.";
+        } else if (error.status === 404) {
+            message = "Rota da agenda indisponível no backend.";
+        } else if (error.status === 500) {
+            message = "Erro interno do servidor. Tente novamente em alguns instantes.";
+        } else if (!error.status) {
+            message = "Não foi possível conectar com o backend. Verifique a API e tente novamente.";
+        }
+
+        renderAgendaMessage(message, "error");
     }
 }
 
