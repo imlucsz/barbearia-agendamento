@@ -1,4 +1,9 @@
+import { apiGet, getCurrentUser, getToken, logout } from "./api.js";
+
+
+
 document.addEventListener("DOMContentLoaded", () => { setupAuthArea(); setupBookingButtons(); setupMobileNav(); loadServices(); document.getElementById("btn-retry-services").addEventListener("click", loadServices); });
+
 
 function setupAuthArea() {
   const authArea = document.getElementById("auth-area");

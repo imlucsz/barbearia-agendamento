@@ -8,6 +8,8 @@
 // Toda comunicação com o backend passa por api.js (apiGet/apiPost/...).
 // Este arquivo não conhece API_BASE nem faz fetch() diretamente.
 
+import { apiGet, getToken, logout } from "./api.js";
+
 const USER_KEY = "user";
 
 const dateRoll = document.getElementById("dateRoll");

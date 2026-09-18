@@ -67,3 +67,6 @@ const apiPost   = (path, body) => apiRequest(path, { method: "POST", body });
 const apiPut    = (path, body) => apiRequest(path, { method: "PUT", body });
 const apiPatch  = (path, body) => apiRequest(path, { method: "PATCH", body });
 const apiDelete = (path)       => apiRequest(path, { method: "DELETE" });
+// ... mantêm-se as funções apiGet, apiPost, etc. ...
+
+export { apiGet, apiPost, apiPut, apiPatch, apiDelete, logout, getCurrentUser, getToken, ApiError };

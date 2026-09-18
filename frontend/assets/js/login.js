@@ -1,4 +1,7 @@
-// ===== ELEMENTOS =====
+import { apiPost } from "./api.js";
+
+
+
 const modal = document.getElementById('modal-cadastro');
 const abrirCadastro = document.getElementById('abrir-cadastro');
 const fecharCadastro = document.getElementById('fechar-cadastro');
