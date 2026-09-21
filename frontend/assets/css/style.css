@@ -650,6 +650,37 @@ img {
   color: var(--gold);
 }
 
+/* ---------- BOTÃO VOLTAR AO TOPO ---------- */
+/* fica sempre no canto de baixo, só que invisível até a pessoa rolar */
+.voltar-topo {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  background: var(--gold);
+  color: var(--dark);
+  border: none;
+  border-radius: 50%;
+  /* começa escondido e um pouquinho pra baixo, pra ele "subir" quando aparece */
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s, background 0.2s;
+}
+
+.voltar-topo.visivel {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.voltar-topo:hover {
+  background: var(--gold-light);
+}
+
 /* ---------- RESPONSIVO ---------- */
 
 /* tablet e janela pequena */

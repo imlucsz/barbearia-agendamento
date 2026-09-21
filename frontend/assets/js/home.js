@@ -37,9 +37,18 @@ const horarios = [
 const navbar = document.getElementById('navbar');
 const menuBtn = document.getElementById('menu-btn');
 
+const voltarTopo = document.getElementById('voltar-topo');
+
 // depois que rola um pouco a barra fica mais escura, senão o texto se perde na foto
+// aproveitei o mesmo scroll pro botão de voltar ao topo (só aparece depois de 600px)
 window.addEventListener('scroll', function () {
   navbar.classList.toggle('rolou', window.scrollY > 40);
+  voltarTopo.classList.toggle('visivel', window.scrollY > 600);
+});
+
+// clicou? sobe suave até o começo (o smooth já tá no html lá no css)
+voltarTopo.addEventListener('click', function () {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 // botão do hamburguer: abre e fecha o menu
