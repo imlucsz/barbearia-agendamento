@@ -1,0 +1,748 @@
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-dim: #8a6f30;
+  --dark: #0e0d0c;
+  --dark-2: #161410;
+  --dark-3: #1f1c17;
+  --cream: #f5ede0;
+  --cream-muted: #c8b89a;
+  --line: rgba(201, 168, 76, 0.15);
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--dark);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* aq ficam os estilos que eu uso em várias seções (pra não repetir código) */
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+/* botões - tem o dourado (principal) e o só-borda (secundário) */
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  transition: 0.2s;
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--dark);
+  font-weight: 500;
+}
+.btn-gold:hover {
+  background: var(--gold-light);
+}
+
+.btn-outline {
+  border-color: rgba(201, 168, 76, 0.4);
+  color: var(--cream-muted);
+  background: none;
+}
+.btn-outline:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-pequeno {
+  padding: 8px 18px;
+  font-size: 12px;
+}
+
+/* ---------- NAVBAR ---------- */
+/* fica fixa no topo, começa meio transparente pra deixar a foto aparecer */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  background: rgba(14, 13, 12, 0.7);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  transition: background 0.3s;
+}
+
+/* essa classe o js coloca quando a pessoa começa a rolar a página */
+.navbar.rolou {
+  background: rgba(14, 13, 12, 0.97);
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+}
+
+.nav-links a {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+  transition: color 0.2s;
+}
+.nav-links a:hover {
+  color: var(--gold);
+}
+
+.nav-botoes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 28px;
+  line-height: 1;
+}
+
+/* esse link só existe pro menu do celular, no desktop já tem os botões */
+.so-mobile {
+  display: none;
+}
+
+/* ---------- HERO ---------- */
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 100px 80px 96px;
+  background: #18181b;
+}
+
+.hero-fundo {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-fundo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.4;
+}
+
+/* degradê escuro por cima da foto senão o texto some */
+.hero-fundo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--dark) 30%, rgba(14, 13, 12, 0.3) 100%);
+}
+
+.hero-conteudo {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 96px;
+  line-height: 1;
+  margin-bottom: 24px;
+}
+
+.hero h1 em {
+  color: var(--gold);
+}
+
+.hero p.texto {
+  max-width: 440px;
+  font-size: 18px;
+  color: var(--cream-muted);
+  margin-bottom: 40px;
+}
+
+.hero-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.numeros {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+.numeros strong {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 36px;
+  color: var(--gold);
+}
+
+.numeros span {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+}
+
+/* ---------- o rombinho ♦ entre as seções ---------- */
+.divisor {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 48px 80px;
+  color: var(--gold-dim);
+}
+
+.divisor::before,
+.divisor::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(201, 168, 76, 0.2);
+}
+
+/* ---------- seções ---------- */
+.secao {
+  padding: 0 80px 96px;
+}
+
+.secao-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+/* ---------- SERVIÇOS ---------- */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filtro {
+  padding: 8px 16px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: none;
+  color: var(--cream-muted);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  transition: 0.2s;
+}
+.filtro:hover {
+  border-color: var(--gold);
+}
+.filtro.ativo {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--dark);
+}
+
+/* truque das linhas finas: o fundo é dourado e o gap de 1px deixa ele aparecer entre os cards */
+.grid-servicos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(201, 168, 76, 0.12);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  background: var(--dark-2);
+  transition: background 0.2s;
+}
+.card:hover {
+  background: var(--dark-3);
+}
+
+.card-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.tag {
+  padding: 4px 8px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+.preco {
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--gold);
+}
+
+.card h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.card p {
+  flex: 1;
+  font-size: 14px;
+  color: var(--cream-muted);
+  margin-bottom: 16px;
+}
+
+.card-rodape {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.duracao {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.btn-agendar {
+  padding: 8px 16px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: none;
+  color: var(--gold);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  transition: 0.2s;
+}
+.btn-agendar:hover {
+  background: var(--gold);
+  color: var(--dark);
+}
+
+/* ---------- AVALIAÇÕES ---------- */
+.resumo {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1px;
+  margin-bottom: 48px;
+  background: rgba(201, 168, 76, 0.12);
+}
+
+.resumo-nota {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--dark-2);
+}
+
+.resumo-nota .numerao {
+  font-family: var(--font-display);
+  font-size: 60px;
+  line-height: 1.2;
+  color: var(--gold);
+}
+
+.resumo-nota small {
+  margin-top: 12px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--cream-muted);
+}
+
+.resumo-barras {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 32px;
+  background: var(--dark-2);
+}
+
+.barra-linha {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--cream-muted);
+}
+
+.barra {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(201, 168, 76, 0.15);
+  overflow: hidden;
+}
+
+.barra div {
+  height: 100%;
+  background: var(--gold);
+}
+
+.estrelas {
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+.estrelas .vazia {
+  color: rgba(201, 168, 76, 0.3);
+}
+
+.lista-avaliacoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.avaliacao {
+  padding: 24px;
+  background: var(--dark-2);
+  border: 1px solid var(--line);
+}
+
+.avaliacao-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pessoa {
+  display: flex;
+  gap: 16px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 14px;
+  background: var(--gold);
+  color: var(--dark);
+}
+
+.pessoa .nome {
+  font-family: var(--font-display);
+  font-size: 16px;
+}
+
+.pessoa .servico {
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.avaliacao .data {
+  font-size: 12px;
+  color: var(--gold-dim);
+}
+
+.avaliacao blockquote {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--cream-muted);
+}
+
+/* ---------- LOCALIZAÇÃO ---------- */
+.local {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: rgba(201, 168, 76, 0.12);
+}
+
+.mapa {
+  min-height: 400px;
+  background: #18181b;
+}
+
+.mapa iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: 0;
+  /* isso aq escurece o mapa do google pra combinar com o resto */
+  filter: grayscale(80%) contrast(1.1) invert(0.85);
+}
+
+.local-info {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 40px;
+  background: var(--dark-2);
+}
+
+.local-info h4 {
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.local-info .rua {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+}
+
+.local-info p {
+  font-size: 14px;
+  color: var(--cream-muted);
+}
+
+.local-info p span {
+  color: var(--cream);
+}
+
+.link-mapa {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.4);
+}
+
+.horario {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--cream-muted);
+  border: 1px solid transparent;
+}
+
+.horario .horas {
+  font-family: var(--font-display);
+}
+
+/* o dia de hoje ganha esse destaque, quem coloca é o js */
+.horario.hoje {
+  color: var(--cream);
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.25);
+}
+.horario.hoje .horas {
+  color: var(--gold);
+}
+.horario .fechado {
+  color: #e07070;
+}
+
+/* ---------- RODAPÉ ---------- */
+.rodape {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 48px 80px;
+  border-top: 1px solid var(--line);
+}
+
+.rodape p {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--gold-dim);
+}
+
+.rodape-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+}
+
+.rodape-links a {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  transition: color 0.2s;
+}
+.rodape-links a:hover {
+  color: var(--gold);
+}
+
+/* ---------- RESPONSIVO ---------- */
+
+/* tablet e janela pequena */
+@media (max-width: 900px) {
+  .navbar {
+    padding: 16px 20px;
+  }
+
+  .nav-botoes {
+    display: none;
+  }
+  .menu-btn {
+    display: block;
+  }
+
+  /* o menu fica escondido e só aparece quando o js põe a classe "aberto".
+     é um painel que cai embaixo da navbar (top: 100%), bem mais simples
+     do que tentar cobrir a tela toda */
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    padding: 40px 20px;
+    background: rgba(14, 13, 12, 0.98);
+    border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+  }
+  .navbar.aberto .nav-links {
+    display: flex;
+  }
+
+  .nav-links a {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 24px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cream);
+  }
+  .nav-links .so-mobile {
+    display: block;
+    color: var(--gold);
+  }
+
+  .grid-servicos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .local,
+  .resumo {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* celular */
+@media (max-width: 700px) {
+  .hero {
+    padding: 100px 24px 64px;
+  }
+  .hero h1 {
+    font-size: 56px;
+  }
+  .hero p.texto {
+    font-size: 16px;
+  }
+  .numeros {
+    gap: 32px;
+  }
+
+  .divisor {
+    padding: 32px 24px;
+  }
+  .secao {
+    padding: 0 24px 64px;
+  }
+  .titulo {
+    font-size: 34px;
+  }
+
+  .grid-servicos {
+    grid-template-columns: 1fr;
+  }
+
+  .local-info {
+    padding: 24px;
+  }
+
+  .rodape {
+    padding: 40px 24px;
+    flex-direction: column;
+    text-align: center;
+  }
+}

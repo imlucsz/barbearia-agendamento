@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nobre Cabeleireiro | Agende seu horário</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+  <!-- menu do topo (no celular os links somem e viram o hamburguer) -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="logo">NOBRE</a>
+
+    <div class="nav-links">
+      <a href="catalog.html">Serviços</a>
+      <a href="#avaliacoes">Avaliações</a>
+      <a href="#contato">Contato</a>
+      <a href="login.html" class="so-mobile">Entrar / Criar conta</a>
+    </div>
+
+    <div class="nav-botoes">
+      <a href="login.html" class="btn btn-outline btn-pequeno">Entrar</a>
+      <a href="schedule.html" class="btn btn-gold btn-pequeno">Agendar</a>
+    </div>
+
+    <button class="menu-btn" id="menu-btn" aria-label="Abrir menu" aria-expanded="false">&#9776;</button>
+  </nav>
+
+  <!-- primeira coisa que a pessoa vê: foto, título e botões -->
+  <header class="hero">
+    <div class="hero-fundo">
+      <img src="https://images.unsplash.com/photo-1759142235060-3191ee596c81?w=1600&h=1000&fit=crop&auto=format" alt="Entrada do Nobre Cabeleireiro">
+    </div>
+
+    <div class="hero-conteudo">
+      <p class="eyebrow">Desde 2009 · São Paulo</p>
+      <h1>Arte que<br><em>transforma.</em></h1>
+      <p class="texto">
+        Mais do que um corte — uma experiência de cuidado e estilo. Ambiente exclusivo, profissionais premiados.
+      </p>
+      <div class="hero-botoes">
+        <a href="schedule.html" class="btn btn-gold">Agendar Horário</a>
+        <a href="catalog.html" class="btn btn-outline">Ver Serviços</a>
+      </div>
+    </div>
+
+    <div class="numeros">
+      <div><strong>15+</strong><span>Anos de experiência</span></div>
+      <div><strong>8k+</strong><span>Clientes atendidos</span></div>
+      <div><strong>3</strong><span>Profissionais premiados</span></div>
+    </div>
+  </header>
+
+  <div class="divisor">&diams;</div>
+
+  <!-- SERVIÇOS - deixei vazio de propósito, os cards o home.js que cria -->
+  <section class="secao" id="servicos">
+    <div class="secao-topo">
+      <div>
+        <p class="eyebrow">O que oferecemos</p>
+        <h2 class="titulo">Nossos Serviços</h2>
+      </div>
+      <div class="filtros" id="filtros"></div>
+    </div>
+
+    <div class="grid-servicos" id="lista-servicos"></div>
+  </section>
+
+  <div class="divisor">&diams;</div>
+
+  <!-- AVALIAÇÕES - mesma coisa, o js preenche (dps vai vir da API creio eu) -->
+  <section class="secao" id="avaliacoes">
+    <div class="secao-topo">
+      <div>
+        <p class="eyebrow">O que dizem</p>
+        <h2 class="titulo">Avaliações</h2>
+      </div>
+    </div>
+
+    <div class="resumo">
+      <div class="resumo-nota">
+        <span class="numerao" id="media-nota">0.0</span>
+        <div class="estrelas" id="media-estrelas"></div>
+        <small id="total-avaliacoes">0 avaliações</small>
+      </div>
+      <div class="resumo-barras" id="barras"></div>
+    </div>
+
+    <div class="lista-avaliacoes" id="lista-avaliacoes"></div>
+  </section>
+
+  <div class="divisor">&diams;</div>
+
+  <!-- ONDE FICA + HORÁRIOS (RF02) -->
+  <section class="secao" id="contato">
+    <div class="secao-topo">
+      <div>
+        <p class="eyebrow">Como chegar</p>
+        <h2 class="titulo">Localização</h2>
+      </div>
+    </div>
+
+    <div class="local">
+      <div class="mapa">
+        <iframe
+          title="Localização do Nobre Cabeleireiro"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3657.1974906706!2d-46.6549!3d-23.5613!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59c8da0aa315%3A0xd59f9431f2c9776a!2sRua%20Augusta%2C%20S%C3%A3o%20Paulo%20-%20SP!5e0!3m2!1spt-BR!2sbr!4v1690000000000!5m2!1spt-BR!2sbr"
+          allowfullscreen
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+
+      <div class="local-info">
+        <div>
+          <h4>Endereço</h4>
+          <p class="rua">Rua Augusta, 1200</p>
+          <p>Jardins, São Paulo — SP · CEP 01304-001</p>
+          <a class="link-mapa" href="https://maps.google.com/?q=Rua+Augusta+1200+Jardins+São+Paulo" target="_blank" rel="noopener">Abrir no Maps →</a>
+        </div>
+
+        <div>
+          <h4>Contato</h4>
+          <p>Telefone: <span>+55 (11) 3456-7890</span></p>
+          <p>WhatsApp: <span>+55 (11) 98765-4321</span></p>
+          <p>E-mail: <span>contato@nobresalon.com.br</span></p>
+        </div>
+
+        <div>
+          <h4>Horários de Funcionamento</h4>
+          <div id="horarios"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- rodapé - os links de rede social ainda tão com # (vcs ai botam o link de verdadekkkk) -->
+  <footer class="rodape">
+    <span class="logo">NOBRE</span>
+    <p>© 2026 Nobre Cabeleireiro. Todos os direitos reservados.</p>
+    <div class="rodape-links">
+      <a href="#">Instagram</a>
+      <a href="#">WhatsApp</a>
+      <a href="#">Facebook</a>
+      <a href="admin.html">Admin</a>
+    </div>
+  </footer>
+
+  <script src="../assets/js/home.js"></script>
+</body>
+</html>
