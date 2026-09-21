@@ -1,6 +1,10 @@
 import os
 from datetime import date, datetime
 
+from dotenv import load_dotenv
+
+load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
+
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
