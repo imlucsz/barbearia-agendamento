@@ -11,7 +11,7 @@ O sistema é uma solução web para agendamento online de barbearias e estabelec
 ### **Backend**
 * **Linguagem:** Python 3.10+
 * **Framework:** FastAPI
-* **ORM / Banco de Dados:** SQLAlchemy / SQLite
+* **ORM / Banco de Dados:** PostgreSQL 
 * **Autenticação:** JWT (JSON Web Tokens) + Passlib (Hash de senhas)
 * **Documentação:** OpenAPI / Swagger UI (Nativo do FastAPI)
 
