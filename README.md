@@ -75,7 +75,7 @@ barbearia-agendamento/
 │   │   │   ├── auth.py             # Login/JWT (Lucas)
 │   │   │   ├── services.py         # CRUD Serviços (Luiz)
 │   │   │   ├── appointments.py     # Agendamentos (Luiz)
-│   │   │   └── admin.py            # Painel Admin (Lucas)
+│   │   │   └── admin.py            # Painel Admin: agenda e financeiro (Lucas)
 │   │   └── core/                   # Segurança e utilitários (Lucas)
 │   │       ├── security.py
 │   │       └── config.py
@@ -91,7 +91,9 @@ barbearia-agendamento/
     │   ├── js/
     │   │   ├── api.js              # Configuração base do fetch (Thiago)
     │   │   ├── auth.js             # Lógica de Login/Token (Thiago)
-    │   │   └── schedule.js         # Lógica de Agendamento (Thiago)
+    │   │   ├── schedule.js         # Lógica de Agendamento (Thiago)
+    │   │   ├── agenda_admin.js     # Agenda semanal do painel admin (Thiago)
+    │   │   └── financeiro_admin.js # Resumo financeiro do painel admin (Thiago)
     │   └── images/                 # Colocar aqui Logos, banners e fotos
     │       └── icon-user.webp
     ├── pages/
