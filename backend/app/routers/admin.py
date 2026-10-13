@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from app.database import get_db
-from app.models.user import Appointment, User, Service, RoleEnum
+from app.models.user import Appointment, User, Service, RoleEnum, AppointmentStatusEnum
 from app.schemas.appointment import AppointmentResponse, AvaliacaoResponse
 from app.routers.auth import get_current_user
 

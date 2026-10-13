@@ -89,6 +89,13 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
             detail="Email ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    # Check if user is active
+    if not db_user.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Conta inativa",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # Create access token
     access_token = create_access_token(data={"sub": db_user.email})

@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, date, timedelta
 from app.database import get_db
-from app.models.user import Appointment, Service, User, RoleEnum
-from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse, AvaliacaoResponse
+from app.models.user import Appointment, Service, User, RoleEnum, AppointmentStatusEnum, Avaliacao
+from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse, AvaliacaoResponse, AvaliacaoCreate
 from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
-@router.post("/", response_model=AppointmentResponse)
+@router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 def create_appointment(
     appointment: AppointmentCreate,
     db: Session = Depends(get_db),
@@ -27,7 +27,7 @@ def create_appointment(
         user_id=current_user.id,
         service_id=appointment.service_id,
         data_hora=appointment.data_hora,
-        status="agendado",
+        status=AppointmentStatusEnum.PENDENTE,
         # RN-05: Snapshot of service data at time of booking
         preco=service.preco,
         duracao_minutos=service.duracao_minutos
@@ -62,24 +62,7 @@ def get_user_appointments(
     return appointments
 
 
-@router.get("/{appointment_id}", response_model=AppointmentResponse)
-def get_appointment(
-    appointment_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
-    if appointment is None:
-        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
-
-    # Check if user owns the appointment or is admin
-    if appointment.user_id != current_user.id and current_user.role != RoleEnum.ADMIN:
-        raise HTTPException(status_code=403, detail="Acesso negado")
-
-    return appointment
-
-
-@router.get("/disponiveis/", response_model=List[dict])
+@router.get("/disponiveis", response_model=List[dict])
 def get_available_slots(
     service_id: int,
     data: date,
@@ -207,7 +190,7 @@ def delete_appointment(
     return None
 
 
-@router.post("/{appointment_id}/avaliacao", response_model=AvaliacaoResponse)
+@router.post("/{appointment_id}/avaliacao", response_model=AvaliacaoResponse, status_code=status.HTTP_201_CREATED)
 def create_avaliacao(
     appointment_id: int,
     avaliacao: AvaliacaoCreate,

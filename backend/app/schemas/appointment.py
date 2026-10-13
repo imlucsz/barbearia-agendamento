@@ -39,7 +39,7 @@ class AvaliacaoBase(BaseModel):
 
 
 class AvaliacaoCreate(AvaliacaoBase):
-    appointment_id: int
+    pass
 
 
 class AvaliacaoResponse(AvaliacaoBase):

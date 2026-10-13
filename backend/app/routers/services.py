@@ -14,8 +14,7 @@ router = APIRouter(prefix="/services", tags=["services"])
 def get_services(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     services = db.query(Service).offset(skip).limit(limit).all()
     return services
