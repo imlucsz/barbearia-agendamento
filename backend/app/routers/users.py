@@ -96,3 +96,16 @@ def update_user(
 
 # Note: Password changes should be handled through a separate endpoint for security
 # Block/unblock is handled via the bloqueado field in the update endpoint above
+
+
+@router.delete("/me")
+def excluir_minha_conta(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    current_user.ativo = False
+    current_user.email = f"excluido_{current_user.id}@anonimizado.local"
+    current_user.nome = "Usuário excluído"
+    # mantém o hashed_password intacto ou randomiza, mas NUNCA deixa null se outro campo depender dele
+    db.commit()
+    return {"mensagem": "Conta excluída com sucesso"}

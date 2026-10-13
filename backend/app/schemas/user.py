@@ -34,6 +34,15 @@ class UserUpdate(BaseModel):
     bloqueado: Optional[bool] = None
 
 
+class EsqueciSenhaRequest(BaseModel):
+    email: EmailStr
+
+
+class RedefinirSenhaRequest(BaseModel):
+    token: str
+    nova_senha: str = Field(min_length=6)
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str

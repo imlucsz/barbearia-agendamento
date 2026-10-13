@@ -28,6 +28,7 @@ class User(Base):
     senha_hash = Column(String, nullable=False)
     role = Column(Enum(RoleEnum), default=RoleEnum.CLIENTE)
     bloqueado = Column(Boolean, default=False)  # RF19: Para bloquear clientes
+    ativo = Column(Boolean, default=True)  # RNF-04: Para exclusão lógica de conta
 
     appointments = relationship("Appointment", back_populates="user")
 
@@ -129,3 +130,13 @@ class BarbearioServico(Base):
 
     barbeiro = relationship("User", foreign_keys=[barbeiro_id])
     service = relationship("Service")
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
