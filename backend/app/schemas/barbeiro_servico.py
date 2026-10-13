@@ -1,0 +1,19 @@
+from pydantic import BaseModel
+from typing import Optional
+from app.models.user import RoleEnum
+
+
+class BarbearioServicoBase(BaseModel):
+    barbeiro_id: int
+    service_id: int
+
+
+class BarbearioServicoCreate(BarbearioServicoBase):
+    pass
+
+
+class BarbearioServicoResponse(BarbearioServicoBase):
+    id: int
+
+    class Config:
+        orm_mode = True
