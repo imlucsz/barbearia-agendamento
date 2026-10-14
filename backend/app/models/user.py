@@ -32,7 +32,7 @@ class User(Base):
     ativo = Column(Boolean, default=True)  # RNF-04: Para exclusão lógica de conta
 
     # Relacionamentos
-    appointments = relationship("Appointment", back_populates="user", foreign_keys="Appointment.user_id")
+    appointments = relationship("User", back_populates="user")  # CLIENTE relation
     barbeiro_appointments = relationship("Appointment", foreign_keys="Appointment.barbeiro_id")
 
 

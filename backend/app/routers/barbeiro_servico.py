@@ -2,13 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.dependencies import get_current_user
 from app.models.user import BarbearioServico, User, Service, RoleEnum
-from app.schemas.barbeiro_servico import (
-    BarbearioServicoCreate,
-    BarbearioServicoResponse,
-    BarbearioServicoWithBarbeiroResponse,
-)
+from app.schemas.barbeiro_servico import BarbearioServicoCreate, BarbearioServicoResponse
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/barbeiro-servico", tags=["barbeiro-servico"])
 
@@ -32,11 +28,11 @@ def get_servicos_barbeiro(
     if not barbeiro or barbeiro.role != RoleEnum.BARBEIRO:
         raise HTTPException(status_code=404, detail="Barbeiro não encontrado")
 
-    servicos = db.query(BarbearioServico).filter(BarbearioServico.barbeiro_id == barbeiro_id).all()
+    servicos = db.query(BarbeiroServico).filter(BarbeiroServico.barbeiro_id == barbeiro_id).all()
     return servicos
 
 
-@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbearioServicoWithBarbeiroResponse])
+@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbeiroServicoWithBarbeiroResponse])
 def get_barbeiros_servico(
     service_id: int,
     db: Session = Depends(get_db),
@@ -56,16 +52,16 @@ def get_barbeiros_servico(
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
     # Join with User to get barbeiro name
-    barbeiros = db.query(BarbearioServico, User.nome).join(
-        User, BarbearioServico.barbeiro_id == User.id
+    barbeiros = db.query(BarbeiroServico, User.nome).join(
+        User, BarbeiroServico.barbeiro_id == User.id
     ).filter(
-        BarbearioServico.service_id == service_id
+        BarbeiroServico.service_id == service_id
     ).all()
 
     # Convert to response model
     result = []
     for barbeiro_servico, barbeiro_nome in barbeiros:
-        result.append(BarbearioServicoWithBarbeiroResponse(
+        result.append(BarbeiroServicoWithBarbeiroResponse(
             id=barbeiro_servico.id,
             barbeiro_id=barbeiro_servico.barbeiro_id,
             service_id=barbeiro_servico.service_id,
@@ -99,7 +95,7 @@ def assign_servico_barbeiro(
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
     # Check if already assigned
-    existing = db.query(BarbearioServico).filter(
+    existing = db.query(BarbeiroServico).filter(
         BarbearioServico.barbeiro_id == barbeiro_servico.barbeiro_id,
         BarbearioServico.service_id == barbeiro_servico.service_id
     ).first()
@@ -141,7 +137,7 @@ def remove_servico_barbeiro(
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    barbeiro_servico = db.query(BarbearioServico).filter(
+    barbeiro_servico = db.query(BarbeiroServico).filter(
         BarbearioServico.barbeiro_id == barbeiro_id,
         BarbearioServico.service_id == service_id
     ).first()
