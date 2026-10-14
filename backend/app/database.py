@@ -1,34 +1,45 @@
 import os
-from datetime import datetime, timedelta
 
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-
-SECRET_KEY = os.getenv("SECRET_KEY", "barbearia-dev-secret-key")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from sqlalchemy import Boolean, Column, DateTime, Float, String, create_engine, false, inspect
+from sqlalchemy.schema import CreateColumn
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./barbearia.db")
+engine_options = {"connect_args": {"check_same_thread": False}} if DATABASE_URL.startswith("sqlite") else {}
+
+engine = create_engine(DATABASE_URL, **engine_options)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
 
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+def ensure_schema_updates():
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    with engine.begin() as connection:
+        if "appointments" in tables:
+            appointment_columns = {column["name"] for column in inspect(connection).get_columns("appointments")}
+            if "valor_cobrado" not in appointment_columns:
+                column = CreateColumn(Column("valor_cobrado", Float())).compile(dialect=connection.dialect)
+                connection.exec_driver_sql(f"ALTER TABLE appointments ADD COLUMN {column}")
+            if "nome_cliente" not in appointment_columns:
+                column = CreateColumn(Column("nome_cliente", String())).compile(dialect=connection.dialect)
+                connection.exec_driver_sql(f"ALTER TABLE appointments ADD COLUMN {column}")
+        if "users" in tables:
+            user_columns = {column["name"] for column in inspect(connection).get_columns("users")}
+            if "consentimento_lgpd" not in user_columns:
+                column = CreateColumn(
+                    Column("consentimento_lgpd", Boolean(), nullable=False, server_default=false())
+                ).compile(dialect=connection.dialect)
+                connection.exec_driver_sql(f"ALTER TABLE users ADD COLUMN {column}")
+            if "consentimento_em" not in user_columns:
+                column = CreateColumn(Column("consentimento_em", DateTime())).compile(dialect=connection.dialect)
+                connection.exec_driver_sql(f"ALTER TABLE users ADD COLUMN {column}")
 
 
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def decode_access_token(token: str) -> dict:
+def get_db():
+    db = SessionLocal()
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload
-    except JWTError as exc:
-        raise ValueError("Token inválido ou expirado") from exc
+        yield db
+    finally:
+        db.close()

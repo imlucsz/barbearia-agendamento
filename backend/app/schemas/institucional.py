@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from app.schemas.base import ORMModel
 
 
-class InformacaoInstitucionalBase(BaseModel):
+class InformacaoInstitucionalBase(ORMModel):
     nome: str
     endereco: str
     telefone: str
@@ -33,6 +34,3 @@ class InformacaoInstitucionalResponse(InformacaoInstitucionalBase):
     id: int
     criado_em: datetime
     atualizado_em: datetime
-
-    class Config:
-        orm_mode = True

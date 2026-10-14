@@ -8,12 +8,13 @@ load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import engine, Base, SessionLocal
+from app.database import engine, Base, SessionLocal, ensure_schema_updates
 from app.routers import auth, services, appointments, admin, institucional, users, horario, barbeiro_servico
 from app.models.user import User, Service, RoleEnum
 from app.core.security import get_password_hash
 
 Base.metadata.create_all(bind=engine)
+ensure_schema_updates()
 
 app = FastAPI(
     title="API Barbearia Agendamento",

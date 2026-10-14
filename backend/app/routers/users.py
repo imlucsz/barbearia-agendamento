@@ -33,6 +33,20 @@ def get_users(
     return users
 
 
+@router.get("/barbeiros", response_model=List[UserResponse])
+def get_barbers(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != RoleEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado. Apenas administradores podem gerenciar barbeiros."
+        )
+
+    return db.query(User).filter(User.role == RoleEnum.BARBEIRO, User.ativo.is_(True)).all()
+
+
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(
     user_id: int,

@@ -3,55 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo de Serviços - Barbearia Agendamento</title>
+  <title>Catálogo de serviços | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body>
-  <header class="bg-primary text-white text-center py-4">
-    <h1>Catálogo de Serviços</h1>
-  </header>
-
-  <main class="container my-4">
-    <div id="services-content" class="border p-4 rounded">
-      <p class="text-center">Carregando serviços...</p>
-    </div>
+<body data-page="services">
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a href="index.html" class="btn btn-ghost">Início</a></div></header>
+  <main class="container client-page">
+    <div class="page-heading"><span class="eyebrow">CATÁLOGO</span><h1>Nossos <em>serviços.</em></h1><p>Consulte preço e duração e escolha o próximo cuidado para você.</p></div>
+    <div id="services-list" class="selection-grid" aria-live="polite"><p class="text-muted">Carregando catálogo…</p></div>
   </main>
-
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
-  </footer>
-
-  <script src="../assets/js/api.js" type="module"></script>
-  <script type="module">
-    import { api } from '../assets/js/api.js';
-
-    async function loadServices() {
-      try {
-        const data = await api.get('/services', { auth: false });
-        const container = document.getElementById('services-content');
-        if (!data || data.length === 0) {
-          container.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
-          return;
-        }
-        // Create a table or cards
-        let html = '<table class="table table-striped"><thead><tr><th>Serviço</th><th>Preço</th><th>Duração</th></tr></thead><tbody>';
-        data.forEach(service => {
-          html += `<tr>
-            <td>${service.nome}</td>
-            <td class="monospace">R$ ${service.preco.toFixed(2)}</td>
-            <td class="monospace">${service.duracao_minutos} min</td>
-          </tr>`;
-        });
-        html += '</tbody></table>';
-        container.innerHTML = html;
-      } catch (err) {
-        console.error('Erro ao carregar serviços:', err);
-        document.getElementById('services-content').innerHTML = `<p class="text-danger">Erro ao carregar serviços.</p>`;
-      }
-    }
-
-    // Load data on page load
-    loadServices();
-  </script>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/schedule.js"></script>
 </body>
 </html>

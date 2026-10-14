@@ -30,6 +30,8 @@ class User(Base):
     role = Column(Enum(RoleEnum), default=RoleEnum.CLIENTE)
     bloqueado = Column(Boolean, default=False)  # RF19: Para bloquear clientes
     ativo = Column(Boolean, default=True)  # RNF-04: Para exclusão lógica de conta
+    consentimento_lgpd = Column(Boolean, nullable=False, default=False)
+    consentimento_em = Column(DateTime, nullable=True)
 
         # Relacionamentos
     appointments = relationship("Appointment", back_populates="user", foreign_keys="Appointment.user_id")
@@ -51,7 +53,8 @@ class Appointment(Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    nome_cliente = Column(String, nullable=True)
     service_id = Column(Integer, ForeignKey("services.id"))
     barbeiro_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     data_hora = Column(DateTime, nullable=False)
@@ -59,6 +62,7 @@ class Appointment(Base):
     # RN-05: Snapshot of service price and duration at time of booking
     preco = Column(Float, nullable=False)
     duracao_minutos = Column(Integer, nullable=False)
+    valor_cobrado = Column(Float, nullable=True)
     # RN-02: Track number of reschedules (limit Y=2)
     reschedule_count = Column(Integer, default=0)
 

@@ -3,69 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Barbearia Agendamento</title>
+  <meta name="theme-color" content="#15120f">
+  <title>Entrar | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-  <header class="bg-primary text-white text-center py-4">
-    <h1>Login</h1>
-  </header>
-
-  <main class="container my-4">
-    <div class="row justify-content-center">
-      <div class="col-md-6 col-lg-4">
-        <div class="border p-4 rounded mb-4">
-          <form id="login-form">
-            <div class="mb-3">
-              <label for="login-email" class="form-label">E-mail</label>
-              <input type="email" class="form-control" id="login-email" required>
-            </div>
-            <div class="mb-3">
-              <label for="login-senha" class="form-label">Senha</label>
-              <input type="password" class="form-control" id="login-senha" required>
-            </div>
-            <div class="d-grid">
-              <button type="submit" class="btn btn-primary">Entrar</button>
-            </div>
-          </form>
-          <div class="text-center mt-3">
-            <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
-            <p><a href="forgot.html">Esqueci minha senha</a></p>
-          </div>
-        </div>
-      </div>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a>
+      <a class="btn btn-ghost" href="index.html">Voltar ao início</a>
     </div>
+  </header>
+  <main class="page-shell">
+    <div class="page-heading"><span class="eyebrow">BEM-VINDO DE VOLTA</span><h1>Entre e escolha<br><em>seu horário.</em></h1><p>Acesse sua conta para acompanhar seus agendamentos.</p></div>
+    <section class="card" aria-labelledby="login-title">
+      <h2 id="login-title" class="visually-hidden">Entrar na conta</h2>
+      <div id="form-message" class="alert" role="alert" tabindex="-1" hidden></div>
+      <form id="login-form" class="form-grid">
+        <div class="form-field form-field--full"><label class="form-label" for="login-email">E-mail</label><input id="login-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="form-field form-field--full"><label class="form-label" for="login-password">Senha</label><input id="login-password" name="senha" type="password" autocomplete="current-password" required></div>
+        <div class="form-field form-field--full"><button class="btn w-100" type="submit">Entrar na minha conta</button></div>
+      </form>
+      <div class="auth-links"><a href="forgot.html">Esqueci minha senha</a><span>Ainda não tem conta? <a href="cadastro.html">Cadastre-se</a></span></div>
+    </section>
   </main>
-
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
-  </footer>
-
-  <script src="../assets/js/api.js" type="module"></script>
-  <script type="module">
-    import { api, setToken } from '../assets/js/api.js';
-
-    const form = document.getElementById('login-form');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = document.getElementById('login-email').value.trim();
-      const senha = document.getElementById('login-senha').value;
-
-      try {
-        const data = await api.post('/auth/login', { email, senha });
-        // Assume the response includes user and access_token
-        if (data.access_token) {
-          setToken(data.access_token);
-          // Redirect to appropriate page based on role? For now, go to client area
-          window.location.href = 'client.html'; // We'll create client area later
-        } else {
-          alert('Login falhou: token não recebido');
-        }
-      } catch (err) {
-        console.error('Erro ao fazer login:', err);
-        alert(`Erro: ${err.message}`);
-      }
-    });
-  </script>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/auth.js"></script>
 </body>
 </html>

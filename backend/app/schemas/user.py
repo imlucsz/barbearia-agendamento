@@ -1,16 +1,17 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
-from app.models.user import RoleEnum
+from app.schemas.base import ORMModel
 
 
-class UserBase(BaseModel):
+class UserBase(ORMModel):
     email: EmailStr
     nome: str
 
 
 class UserCreate(UserBase):
     senha: str = Field(..., min_length=6)
+    consentimento_lgpd: bool
 
 
 class UserLogin(BaseModel):
@@ -22,10 +23,6 @@ class UserResponse(UserBase):
     id: int
     role: str
     bloqueado: bool = False
-
-    class Config:
-        orm_mode = True
-
 
 class UserUpdate(BaseModel):
     nome: Optional[str] = None
@@ -43,18 +40,11 @@ class RedefinirSenhaRequest(BaseModel):
     nova_senha: str = Field(min_length=6)
 
 
-class Token(BaseModel):
+class Token(ORMModel):
     access_token: str
     token_type: str
 
-    class Config:
-        orm_mode = True
-
-
-class UserTokenResponse(BaseModel):
+class UserTokenResponse(ORMModel):
     user: UserResponse
     access_token: str
     token_type: str
-
-    class Config:
-        orm_mode = True

@@ -8,7 +8,7 @@
 // Toda comunicação com o backend passa por api.js (apiGet/apiPost/...).
 // Este arquivo não conhece API_BASE nem faz fetch() diretamente.
 
-import { apiGet, getToken, logout } from "./api.js";
+import { api, getCurrentUser, getToken, logout } from "./api.js";
 
 const USER_KEY = "user";
 
@@ -24,6 +24,8 @@ const DIAS_SEMANA = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 let weekDays = [];
 let selectedDate = new Date();
+let currentUser = null;
+let referenceMaps = { services: new Map(), clients: new Map(), barbers: new Map() };
 
 
 
@@ -91,20 +93,8 @@ function clearSession() {
 
 function setUserName() {
     if (!userNameEl) return;
-
-    const userRaw = localStorage.getItem(USER_KEY);
-    if (!userRaw) {
-        userNameEl.textContent = "Administrador";
-        return;
-    }
-
-    try {
-        const user = JSON.parse(userRaw);
-        const nome = user?.nome || user?.name || user?.username || "Administrador";
-        userNameEl.textContent = toTitleCase(nome);
-    } catch (error) {
-        userNameEl.textContent = "Administrador";
-    }
+    currentUser = getCurrentUser();
+    userNameEl.textContent = toTitleCase(currentUser?.nome || currentUser?.name || "Equipe");
 }
 
 
@@ -169,9 +159,9 @@ function normalizeTime(value) {
 }
 
 function normalizeAppointment(item) {
-    const customer = item?.cliente?.nome || item?.cliente_nome || item?.cliente || item?.customer?.nome || item?.customer_name || "Cliente";
-    const service = item?.servico?.nome || item?.servico_nome || item?.servico || item?.service?.nome || item?.service_name || "Serviço";
-    const professional = item?.profissional?.nome || item?.profissional_nome || item?.profissional || item?.barbeiro?.nome || item?.barbeiro || item?.employee?.nome || item?.employee_name || "Equipe";
+    const customer = item?.cliente?.nome || item?.nome_cliente || item?.cliente_nome || item?.cliente || item?.customer?.nome || item?.customer_name || referenceMaps.clients.get(item?.user_id) || `Cliente #${item?.user_id ?? ""}`;
+    const service = item?.servico?.nome || item?.servico_nome || item?.servico || item?.service?.nome || item?.service_name || referenceMaps.services.get(item?.service_id) || `Serviço #${item?.service_id ?? ""}`;
+    const professional = item?.profissional?.nome || item?.profissional_nome || item?.profissional || item?.barbeiro?.nome || item?.barbeiro || item?.employee?.nome || item?.employee_name || referenceMaps.barbers.get(item?.barbeiro_id) || `Equipe #${item?.barbeiro_id ?? ""}`;
 
     return {
         id: item?.id ?? `${item?.horario ?? "agenda"}-${Math.random().toString(16).slice(2)}`,
@@ -179,7 +169,9 @@ function normalizeAppointment(item) {
         cliente: String(customer),
         servico: String(service),
         profissional: String(professional),
-        status: String(item?.status ?? item?.estado ?? "pendente").toLowerCase()
+        status: String(item?.status ?? item?.estado ?? "pendente").toLowerCase(),
+        preco: Number(item?.preco ?? 0),
+        valorCobrado: item?.valor_cobrado == null ? null : Number(item.valor_cobrado)
     };
 }
 
@@ -234,6 +226,16 @@ function renderizarAgendamentos(agendamentos) {
     const linhas = lista.map((item) => {
         const statusKey = String(item.status || "pendente").toLowerCase();
         const statusLabel = getStatusLabel(statusKey);
+        const isActive = ["pendente", "confirmado"].includes(statusKey);
+        const actions = isActive && (currentUser?.role === "admin" || currentUser?.role === "barbeiro")
+            ? `<div class="agenda-actions">
+                <label class="visually-hidden" for="charged-${escapeHtml(item.id)}">Valor cobrado em reais</label>
+                <input class="agenda-price-input" id="charged-${escapeHtml(item.id)}" type="number" min="0" step="0.01" value="${escapeHtml(item.valorCobrado ?? item.preco)}">
+                <button type="button" class="btn btn-sm btn-ghost" data-appointment-status="concluido" data-appointment-id="${escapeHtml(item.id)}">Concluído</button>
+                <button type="button" class="btn btn-sm btn-ghost" data-appointment-status="falta" data-appointment-id="${escapeHtml(item.id)}">Falta</button>
+                <button type="button" class="btn btn-sm btn-danger" data-appointment-status="cancelado" data-appointment-id="${escapeHtml(item.id)}">Cancelar</button>
+            </div>`
+            : "";
 
         return `
             <tr class="agenda-row">
@@ -242,6 +244,7 @@ function renderizarAgendamentos(agendamentos) {
                 <td data-label="Serviço">${escapeHtml(item.servico)}</td>
                 <td data-label="Profissional">${escapeHtml(item.profissional)}</td>
                 <td data-label="Status"><span class="status-badge status-${statusKey}">${escapeHtml(statusLabel)}</span></td>
+                <td data-label="Ações">${actions}</td>
             </tr>
         `;
     }).join("");
@@ -256,6 +259,7 @@ function renderizarAgendamentos(agendamentos) {
                         <th>Serviço</th>
                         <th>Profissional</th>
                         <th>Status</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -264,6 +268,25 @@ function renderizarAgendamentos(agendamentos) {
             </table>
         </div>
     `;
+    agendaList.querySelectorAll("[data-appointment-status]").forEach((button) => {
+        button.addEventListener("click", async () => {
+            button.disabled = true;
+            try {
+                const update = { status: button.dataset.appointmentStatus };
+                if (update.status === "concluido") {
+                    const amount = Number(agendaList.querySelector(`#charged-${CSS.escape(button.dataset.appointmentId)}`)?.value);
+                    if (!Number.isFinite(amount) || amount < 0) throw new Error("Informe um valor cobrado válido.");
+                    update.valor_cobrado = amount;
+                }
+                await api.put(`/appointments/${encodeURIComponent(button.dataset.appointmentId)}`, update);
+                await carregarAgendaDoDia(selectedDate);
+            } catch (error) {
+                console.error("Falha ao atualizar status do atendimento:", error);
+                renderAgendaMessage(error.message || "Não foi possível atualizar o atendimento.", "error");
+                button.disabled = false;
+            }
+        });
+    });
 }
 
 
@@ -279,7 +302,8 @@ async function carregarAgendaDoDia(date) {
     }
 
     try {
-        const responseBody = await apiGet(`/admin/agenda?data=${dataFormatada}`);
+        const endpoint = currentUser?.role === "barbeiro" ? "/admin/me/agenda" : "/admin/agenda";
+        const responseBody = await api.get(endpoint, { params: { data: dataFormatada } });
         const agendamentos = normalizeAgendaResponse(responseBody);
         renderizarAgendamentos(agendamentos);
     } catch (error) {
@@ -303,11 +327,30 @@ async function carregarAgendaDoDia(date) {
 // --- Inicialização ------------------------------------------------------
 
 function init() {
+    if (!getToken()) {
+        window.location.href = "login.html?redirect=admin.html";
+        return;
+    }
     setUserName();
     if (logoutLink) logoutLink.addEventListener("click", clearSession);
+    if (currentUser?.role === "admin") {
+        Promise.all([
+            api.get("/services/"),
+            api.get("/users/"),
+            api.get("/users/barbeiros"),
+        ]).then(([services, clients, barbers]) => {
+            referenceMaps.services = new Map(services.map((item) => [item.id, item.nome]));
+            referenceMaps.clients = new Map(clients.map((item) => [item.id, item.nome]));
+            referenceMaps.barbers = new Map(barbers.map((item) => [item.id, item.nome]));
+            return carregarAgendaDoDia(selectedDate);
+        }).catch((error) => {
+            console.error("Falha ao carregar dados de referência da agenda:", error);
+            renderAgendaMessage(error.message || "Não foi possível carregar os dados da agenda.", "error");
+        });
+    }
     weekDays = generateWeekDays(selectedDate);
     renderDateRoll();
-    carregarAgendaDoDia(selectedDate);
+    if (currentUser?.role !== "admin") carregarAgendaDoDia(selectedDate);
 }
 
 document.addEventListener("DOMContentLoaded", init);

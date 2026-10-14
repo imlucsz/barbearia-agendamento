@@ -3,372 +3,146 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barbearia Agendamento</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <meta name="description" content="Agende seu próximo corte em poucos cliques. Conheça serviços, equipe e horários da Barbearia Agendamento.">
+  <meta name="theme-color" content="#15120f">
+  <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/home.css">
 </head>
 <body>
-  <header class="bg-dark text-white">
-    <div class="container d-flex align-items-center justify-content-between">
-      <div class="logo">
-        <h1 class="h4 m-0">Barbearia Agendamento</h1>
-      </div>
-      <nav class="nav d-none d-md-flex">
-        <a href="#" class="nav-link text-white me-3">Home</a>
-        <a href="#" class="nav-link text-white me-3">Serviços</a>
-        <a href="#" class="nav-link text-white me-3">Agendar</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand-lockup" href="index.html" aria-label="Barbearia Agendamento - início">
+        <span class="brand-mark" aria-hidden="true">B.</span>
+        <span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span>
+      </a>
+      <button id="nav-toggle" class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
+        <a href="#services">Serviços</a>
+        <a href="#how-it-works">Como funciona</a>
+        <a href="#business-info">Onde estamos</a>
+        <a href="#reviews">Avaliações</a>
       </nav>
-      <div>
-        <a href="login.html" class="btn btn-outline-light me-2">Entrar</a>
-        <a href="schedule.html" class="btn btn-warning">Agendar</a>
+      <div id="auth-area" class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Entrar</a>
+        <a href="client-services.html" class="btn">Agendar horário</a>
       </div>
     </div>
   </header>
 
-  <main class="container">
-    <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-content">
-        <div class="hero-badge">DESDE 2009 · SÃO PAULO</div>
-        <h1 class="hero-title">
-          Barbearia de qualidade
-          <span class="hero-title-highlight">com estilo único</span>
-        </h1>
-        <p class="hero-text">
-          Agende seu horário com os melhores barbeiros da cidade.
-          Atendimento personalizado e ambiente tradicional.
-        </p>
+  <main>
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> Seu próximo visual começa aqui</span>
+        <h1 id="hero-title" class="hero-title">O clássico nunca sai de <em>cena.</em></h1>
+        <p class="hero-text">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
         <div class="hero-actions">
-          <a href="schedule.html" class="btn btn-warning me-2">Agendar Horário</a>
-          <a href="services.html" class="btn btn-outline-light">Ver Serviços</a>
+          <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large">Escolher meu horário <span aria-hidden="true">↗</span></a>
+          <a href="#services" class="btn btn-large btn-ghost">Explorar serviços</a>
+        </div>
+        <div class="hero-proof">
+          <span class="proof-stars" aria-label="Avaliações dos clientes">★★★★★</span>
+          <span>Atendimento com cuidado em cada detalhe</span>
         </div>
       </div>
-      <div class="hero-media">
-        <img src="../assets/images/hero-fallback.svg" alt="Barbearia" class="hero-image">
-        <div class="hero-fallback">![Imagem da Barbearia]</div>
+      <div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
+        <div class="art-frame">
+          <div class="art-glow"></div>
+          <div class="barber-pole" aria-hidden="true"><span></span></div>
+          <div class="art-copy"><span>DESDE O PRIMEIRO CORTE</span><strong>TRADIÇÃO<br>NO SEU ESTILO.</strong></div>
+          <div class="art-stamp" aria-hidden="true"><span>✦</span><small>BARBER<br>SHOP</small></div>
+          <div class="art-bottom-line" aria-hidden="true"></div>
+        </div>
+        <span class="art-caption">Técnica, personalidade e aquele acabamento impecável.</span>
       </div>
     </section>
 
-    <!-- Services Section -->
-    <section id="services" class="mb-5">
-      <div class="section-head text-center">
-        <span class="section-head-badge">O QUE OFERECEMOS</span>
-        <h2 class="section-title">Nossos Serviços</h2>
-        <p class="section-lede">Confira nossos serviços especializados para looks impecáveis</p>
-      </div>
-      <div class="filter-tabs">
-        <button class="filter-btn active" data-filter="all">Todos</button>
-        <button class="filter-btn" data-filter="corte">Corte</button>
-        <button class="filter-btn" data-filter="barba">Barba</button>
-      </div>
-      <div id="services-skeleton" class="skeleton-loading">
-        <div class="service-row"></div>
-        <div class="service-row"></div>
-        <div class="service-row"></div>
-      </div>
-      <ul id="services-list" class="services-list"></ul>
-      <div id="services-error" class="services-error">
-        <p>Erro ao carregar serviços. <button id="btn-retry-services" class="btn btn-sm btn-outline-primary mt-2">Tentar novamente</button></p>
-      </div>
-    </section>
-
-    <!-- How it works Section -->
-    <section id="how-it-works" class="how-it-works mb-5">
-      <div class="section-head text-center">
-        <span class="section-head-badge">COMO FUNCIONA</span>
-        <h2 class="section-title">Como Funciona</h2>
-        <p class="section-lede">Agende seu horário em poucos passos</p>
-      </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-number">1</div>
-          <div>
-            <h3>Escolha o serviço</h3>
-            <p>Selecione o serviço desejado na nossa lista</p>
-          </div>
+    <section id="services" class="home-section services-section" aria-labelledby="services-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">FEITO PRA VOCÊ</span><h2 id="services-title">Ritual de cuidado.<br><em>Resultado de respeito.</em></h2></div>
+          <p>Veja o que fazemos, quanto tempo leva e escolha o melhor momento para sua visita.</p>
         </div>
-        <div class="step">
-          <div class="step-number">2</div>
-          <div>
-            <h3>Escolha o horário</h3>
-            <p>Selecione o horário disponível que melhor se adequa a você</p>
-          </div>
+        <div class="filter-tabs" role="group" aria-label="Filtrar serviços">
+          <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">Todos</button>
+          <button class="filter-btn" type="button" data-filter="corte" aria-pressed="false">Cortes</button>
+          <button class="filter-btn" type="button" data-filter="barba" aria-pressed="false">Barba</button>
         </div>
-        <div class="step">
-          <div class="step-number">3</div>
-          <div>
-            <h3>Confirme e compareça</h3>
-            <p>Confirme o agendamento e compareça ao horário marcado</p>
-          </div>
+        <div id="services-skeleton" class="services-grid" aria-label="Carregando catálogo" aria-live="polite">
+          <div class="skeleton-loading"></div><div class="skeleton-loading"></div><div class="skeleton-loading"></div>
+        </div>
+        <ul id="services-list" class="services-grid" aria-live="polite" hidden></ul>
+        <div id="services-error" class="services-error" hidden>
+          <p>Não conseguimos carregar o catálogo agora.</p>
+          <button id="btn-retry-services" class="btn btn-ghost" type="button">Tentar novamente</button>
         </div>
       </div>
     </section>
 
-    <!-- Business Info / Location Section -->
-    <section id="business-info" class="business-info mb-5">
-      <div class="section-head text-center">
-        <span class="section-head-badge">LOCALIZAÇÃO</span>
-        <h2 class="section-title">Informações da Barbearia</h2>
-        <p class="section-lede">Encontre-nos facilmente e agende sua visita</p>
-      </div>
-      <div class="info-grid">
-        <div class="info-block">
-          <h2>Endereço</h2>
-          <div class="info-list">
-            <div>
-              <dt>Endereço</dt>
-              <dd id="address" class="monospace">Carregando...</dd>
-            </div>
-            <div>
-              <dt>Telefone</dt>
-              <dd id="phone" class="monospace">Carregando...</dd>
-            </div>
-            <div>
-              <dt>WhatsApp</dt>
-              <dd id="whatsapp" class="monospace">Carregando...</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd id="email" class="monospace">Carregando...</dd>
-            </div>
-          </div>
+    <section id="how-it-works" class="home-section process-section" aria-labelledby="process-title">
+      <div class="container">
+        <div class="section-heading section-heading-centered">
+          <div><span class="eyebrow">SEM ENROLAÇÃO</span><h2 id="process-title">Seu horário em <em>3 passos.</em></h2></div>
+          <p>Você escolhe, a gente prepara a cadeira.</p>
         </div>
-        <div class="info-block">
-          <h2>Horário de Funcionamento</h2>
-          <div id="map-container"></div>
-          <div class="schedule-table">
-            <table class="table table-borderless">
-              <tbody id="schedule-table-body">
-                <tr><td>Segunda</td><td class="text-end monospace" id="mon">Carregando...</td></tr>
-                <tr><td>Terça</td><td class="text-end monospace" id="tue">Carregando...</td></tr>
-                <tr><td>Quarta</td><td class="text-end monospace" id="wed">Carregando...</td></tr>
-                <tr><td>Quinta</td><td class="text-end monospace" id="thu">Carregando...</td></tr>
-                <tr><td>Sexta</td><td class="text-end monospace" id="fri">Carregando...</td></tr>
-                <tr><td>Sábado</td><td class="text-end monospace" id="sat">Carregando...</td></tr>
-                <tr><td>Domingo</td><td class="text-end monospace" id="sun">Carregando...</td></tr>
-              </tbody>
-            </table>
-            <p id="current-day-highlight" class="text-center mt-2">Dia atual: <span id="current-day" class="fw-bold"></span></p>
-          </div>
-          <div class="info-actions mt-4">
-            <a href="#" class="btn btn-outline-primary">Ver no Google Maps</a>
-          </div>
+        <div class="steps">
+          <article class="step-card"><span class="step-number">01</span><h3>Escolha seu serviço</h3><p>Confira os detalhes, preço e duração antes de reservar.</p></article>
+          <article class="step-card"><span class="step-number">02</span><h3>Encontre seu horário</h3><p>Selecione o profissional, a data e um horário disponível.</p></article>
+          <article class="step-card"><span class="step-number">03</span><h3>Chegue no estilo</h3><p>Confirme seu agendamento e venha viver a experiência.</p></article>
         </div>
       </div>
     </section>
 
-    <!-- Reviews Section -->
-    <section id="reviews" class="reviews mb-5">
-      <div class="section-head text-center">
-        <span class="section-head-badge">O QUE DIZEM</span>
-        <h2 class="section-title">Avaliações dos Clientes</h2>
-        <p class="section-lede">Confira o que nossos clientes estão dizendo</p>
+    <section id="business-info" class="home-section location-section" aria-labelledby="location-title">
+      <div class="container location-layout">
+        <div class="location-copy">
+          <span class="eyebrow">PASSE PRA TOMAR UM CAFÉ</span>
+          <h2 id="location-title">A cadeira certa<br><em>fica mais perto.</em></h2>
+          <p>Consulte nosso endereço e horário de funcionamento. Esperamos você.</p>
+          <dl class="business-details">
+            <div><dt>Endereço</dt><dd id="address">Carregando…</dd></div>
+            <div><dt>Telefone</dt><dd id="phone">Carregando…</dd></div>
+            <div><dt>Dias</dt><dd id="operating-days">Carregando…</dd></div>
+            <div><dt>E-mail</dt><dd id="email">Carregando…</dd></div>
+          </dl>
+        </div>
+        <div class="location-card">
+          <div class="location-card-heading"><div><span class="eyebrow">HORÁRIOS</span><h3>Quando nos encontrar</h3></div><span class="location-icon" aria-hidden="true">◷</span></div>
+          <div class="schedule-table"><table><tbody id="schedule-table-body">
+            <tr><th scope="row">Segunda</th><td id="mon">—</td></tr>
+            <tr><th scope="row">Terça</th><td id="tue">—</td></tr>
+            <tr><th scope="row">Quarta</th><td id="wed">—</td></tr>
+            <tr><th scope="row">Quinta</th><td id="thu">—</td></tr>
+            <tr><th scope="row">Sexta</th><td id="fri">—</td></tr>
+            <tr><th scope="row">Sábado</th><td id="sat">—</td></tr>
+            <tr><th scope="row">Domingo</th><td id="sun">—</td></tr>
+          </tbody></table></div>
+          <div id="map-container" class="map-container"><p class="text-muted">Mapa não disponível.</p></div>
+          <a id="map-link" class="map-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver rota no mapa <span aria-hidden="true">↗</span></a>
+        </div>
       </div>
-      <div id="reviews-list" class="reviews-list"></div>
+    </section>
+
+    <section id="reviews" class="home-section reviews-section" aria-labelledby="reviews-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">QUEM JÁ SENTOU NA CADEIRA</span><h2 id="reviews-title">Respeito se conquista.<br><em>Olha só quem conta.</em></h2></div>
+          <div id="review-average" class="review-average" aria-live="polite">Carregando avaliações…</div>
+        </div>
+        <div id="reviews-list" class="reviews-grid" aria-live="polite"><p class="text-muted">Carregando avaliações…</p></div>
+      </div>
     </section>
   </main>
 
-  <footer class="bg-dark text-white py-4">
-    <div class="container text-center">
-      <p>&copy; <span id="current-year"></span> Barbearia Agendamento. Todos os direitos reservados.</p>
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="brand-lockup" href="index.html"><span class="brand-mark" aria-hidden="true">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a>
+      <p>Um bom corte muda o dia. <span>© <span id="current-year"></span> Barbearia Agendamento.</span></p>
+      <a href="client-services.html">Agende sua visita <span aria-hidden="true">↗</span></a>
     </div>
   </footer>
-
   <script type="module" src="../assets/js/home.js"></script>
-  <script type="module">
-    import { apiGet } from '../assets/js/api.js';
-
-    // Carregar ano atual no footer
-    document.getElementById('current-year').textContent = new Date().getFullYear();
-
-    // Carregar informações institucionais para a seção business-info
-    async function loadBusinessInfo() {
-      try {
-        const data = await apiGet('/informacoes', { auth: false });
-
-        // Endereço
-        document.getElementById('address').textContent = data.endereco || 'Não informado';
-        // Telefone
-        document.getElementById('phone').textContent = data.telefone || 'Não informado';
-        // WhatsApp (se existir)
-        const whatsappEl = document.getElementById('whatsapp');
-        if (data.whatsapp) {
-          whatsappEl.textContent = data.whatsapp;
-          whatsappEl.innerHTML = `<a href="https://wa.me/${data.whatsapp}" target="_blank">${data.whatsapp}</a>`;
-        } else {
-          whatsappEl.textContent = 'Não informado';
-        }
-        // Email
-        const emailEl = document.getElementById('email');
-        if (data.email) {
-          emailEl.textContent = data.email;
-          emailEl.innerHTML = `<a href="mailto:${data.email}">${data.email}</a>`;
-        } else {
-          emailEl.textContent = 'Não informado';
-        }
-
-        // Horário de funcionamento (assumindo que vem como string separada por vírgula ou similar)
-        const horario = data.horario_funcionamento || '';
-        const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-        const diaIds = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-        const horarios = horario.split(',').map(h => h.trim());
-        horarios.forEach((h, index) => {
-          if (diaIds[index]) {
-            document.getElementById(diaIds[index]).textContent = h || 'Fechado';
-          }
-        });
-
-        // Destacar dia atual
-        const hoje = new Date().getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
-        const diaNome = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'][hoje];
-        document.getElementById('current-day').textContent = diaNome;
-        // Destacar a linha do dia atual na tabela (opcional)
-        const rowIndex = hoje === 0 ? 6 : hoje - 1; // Ajustar para índice da tabela (0=Seg)
-        const rows = document.querySelectorAll('#schedule-table-body tr');
-        rows.forEach((row, idx) => {
-          if (idx === rowIndex) {
-            row.style.fontWeight = 'bold';
-            row.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
-          }
-        });
-
-        // Mapa embed (se disponível)
-        const mapContainer = document.getElementById('map-container');
-        if (data.endereco_maps) {
-          const iframe = document.createElement('iframe');
-          iframe.src = data.endereco_maps;
-          iframe.width = "100%";
-          iframe.height = "300px";
-          iframe.style.border = "none";
-          iframe.style.borderRadius = "var(--radius-md)";
-          mapContainer.appendChild(iframe);
-        } else {
-          // Se não houver mapa, podemos exibir uma mensagem ou deixar o container vazio
-          mapContainer.innerHTML = '<p class="text-center text-muted">Mapa não disponível</p>';
-        }
-
-      } catch (err) {
-        console.error('Erro ao carregar informações institucionais:', err);
-        // Mostrar mensagem de erro nos campos
-        document.getElementById('address').textContent = 'Erro ao carregar endereço';
-        document.getElementById('phone').textContent = 'Erro ao carregar telefone';
-        document.getElementById('whatsapp').textContent = 'Erro ao carregar WhatsApp';
-        document.getElementById('email').textContent = 'Erro ao carregar email';
-        // Limpar horários
-        ['mon','tue','wed','thu','fri','sat','sun'].forEach(id => {
-          document.getElementById(id).textContent = 'Erro';
-        });
-        // Também limpar o mapa container
-        const mapContainer = document.getElementById('map-container');
-        if (mapContainer) {
-          mapContainer.innerHTML = '<p class="text-center text-danger">Erro ao carregar mapa</p>';
-        }
-      }
-    }
-
-    // Carregar avaliações para a seção reviews
-    async function loadReviews() {
-      try {
-        const data = await apiGet('/avaliacoes', { auth: false });
-        const container = document.getElementById('reviews-list');
-        if (!data || data.length === 0) {
-          container.innerHTML = '<p class="text-center">Ainda não há avaliações.</p>';
-          return;
-        }
-        const total = data.reduce((sum, item) => sum + item.nota, 0);
-        const average = (total / data.length).toFixed(1);
-        // Criar elemento de nota média
-        const averageEl = document.createElement('div');
-        averageEl.className = 'text-center mb-4';
-        averageEl.innerHTML = `
-          <p><strong>Nota Média:</strong> <span class="monospace">${average}/5.0</span> (${data.length} avaliações)</p>
-        `;
-        container.prepend(averageEl);
-
-        // Lista de avaliações
-        const reviewsListEl = document.createElement('div');
-        reviewsListEl.className = 'reviews-list';
-        reviewsListEl.innerHTML = `
-          ${data.slice(0, 6).map(item => `
-            <div class="review-card">
-              <div class="review-head">
-                <div class="review-avatar">${item.nome ? item.nome.charAt(0) : 'A'}</div>
-                <div>
-                  <strong>${item.nome || 'Anônimo'}</strong>
-                  <div class="review-rating">${'★'.repeat(item.nota)}${'☆'.repeat(5 - item.nota)}</div>
-                  <div class="review-date">${item.data ? new Date(item.data).toLocaleDateString('pt-BR') : ''}</div>
-                </div>
-              </div>
-              <p class="review-comment">${item.comentario || ''}</p>
-            </div>
-          `).join('')}
-        `;
-        // Se já existir um .reviews-list, substituir; senão, adicionar
-        const existing = container.querySelector('.reviews-list');
-        if (existing) {
-          existing.outerHTML = reviewsListEl.outerHTML;
-        } else {
-          container.appendChild(reviewsListEl);
-        }
-
-      } catch (err) {
-        console.error('Erro ao carregar avaliações:', err);
-        document.getElementById('reviews-list').innerHTML = '<p class="text-danger">Erro ao carregar avaliações.</p>';
-      }
-    }
-
-    // Inicialização
-    document.addEventListener('DOMContentLoaded', () => {
-      loadBusinessInfo();
-      loadReviews();
-      // O carregamento de serviços já é feito pelo home.js via loadServices()
-      // Também iniciamos o carregamento de serviços aqui para garantir
-      // Mas o home.js já tem o event listener DOMContentLoaded que chama loadServices()
-      // Então podemos apenas disparar um evento ou confiar nele.
-      // Vamos garantir que o home.js seja executado primeiro? Ambos são módulos, ordem não garantida.
-      // Vamos chamar loadServices do home.js se exposto, ou simplesmente recarregar aqui.
-      // Para simplicidade, vamos assumir que o home.js já cuida disso.
-      // Vamos também adicionar lógica para as abas de filtro de serviços.
-      initServiceFilters();
-    });
-
-    // Lógica para abas de filtro de serviços
-    function initServiceFilters() {
-      const filterButtons = document.querySelectorAll('.filter-btn');
-      const servicesList = document.getElementById('services-list');
-
-      // Função para filtrar serviços (será chamada após o carregamento dos serviços)
-      window.filterServices = (filter) => {
-        filterButtons.forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.filter === filter || (filter === 'all' && btn.dataset.filter === 'all'));
-        });
-        // A filtragem real será feita no home.js - vamos expôr uma função global ou atualizar via evento
-        // Para simplificar, vamos disparar um evento personalizado
-        document.dispatchEvent(new CustomEvent('filterServices', { detail: { filter } }));
-      };
-
-      filterButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          const filter = button.dataset.filter;
-          filterServices(filter);
-        });
-      });
-    }
-
-    // Escutar evento de filtro para atualizar a lista de serviços (se necessário)
-    // O home.js já tem a lógica de carregamento e renderização; podemos fazer com que ele re-renderize com filtro
-    // Vamos modificar o home.js para aceitar um filtro, mas por enquanto vamos recarregar os serviços e filtrar na renderização
-    // Vamos criar uma função global que o home.js pode usar para definir o filtro atual
-    window.currentServiceFilter = 'all';
-
-    // Sobrescrever a função loadServices do home.js para usar o filtro atual? Melhor não sobrescrever.
-    // Vamos em vez disso, adicionar um listener para quando os serviços forem carregados, então filtrar.
-    // Vamos modificar o home.js posteriormente para suportar filtro.
-    // Por enquanto, vamos deixar o home.js como está e adaptar posteriormente.
-    // Vamos agora atualizar o home.js para suportar filtro de serviços.
-  </script>
 </body>
 </html>

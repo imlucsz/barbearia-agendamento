@@ -6,6 +6,7 @@ from app.models.user import User, RoleEnum, PasswordResetToken
 from app.schemas.user import UserCreate, UserLogin, UserResponse, UserTokenResponse, EsqueciSenhaRequest, RedefinirSenhaRequest
 from app.core.security import verify_password, get_password_hash, create_access_token
 import secrets
+import os
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -13,6 +14,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    if not user.consentimento_lgpd:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="O consentimento para tratamento de dados é obrigatório")
+
     # Check if user already exists
     db_user = db.query(User).filter(User.email == user.email).first()
     if db_user:
@@ -27,7 +31,9 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         nome=user.nome,
         email=user.email,
         senha_hash=hashed_password,
-        role=RoleEnum.CLIENTE  # Default role for registration
+        role=RoleEnum.CLIENTE,
+        consentimento_lgpd=True,
+        consentimento_em=datetime.utcnow(),
     )
     db.add(db_user)
     db.commit()
@@ -52,6 +58,8 @@ def login_user(user: UserLogin, db: Session = Depends(get_db)):
             detail="Conta inativa",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if db_user.bloqueado:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Conta bloqueada")
 
     # Create access token
     access_token = create_access_token(data={"sub": db_user.email})
@@ -81,8 +89,10 @@ def esqueci_senha(payload: EsqueciSenhaRequest, db: Session = Depends(get_db)):
         )
         db.add(reset)
         db.commit()
-        # DEV ONLY: em produção isso deve ser enviado por e-mail, nunca retornado na resposta
-        return {"mensagem": "Se o email existir, um link de redefinição foi gerado.", "dev_token": token}
+        response = {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
+        if os.getenv("APP_ENV", "development").lower() == "development":
+            response["dev_token"] = token
+        return response
     return {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
 
 

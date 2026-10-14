@@ -1,62 +1,144 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="painel do administrador">
-        <title>Admin</title>
-        <!--modificar o css style.css, modificar o estilo do header e depois fazer o admin.css pegar as regras apenas do admin.css-->
-        <link rel="stylesheet" href="../assets/css/admin.css">
-        <link rel="stylesheet" href="../assets/css/style.css">
-        <script type="module" src="../assets/js/agenda_admin.js"></script>
-    </head>
-    <body>
-        <header>
-            <span class="nome-usuario">Nome-barbeiro</span>
-            <nav class="nav-link">
-                <a href="#agenda" class="botao-rolar-header">Agenda</a>
-                <a href="#financeiro" class="botao-rolar-header">Financeiro</a>
-            </nav>
-            <div class="header-user">
-                <input type="checkbox" id="user-menu-toggle" class="user-toggle-checkbox">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#15120f">
+  <title>Painel de gestão | Barbearia</title>
+  <link rel="stylesheet" href="../assets/css/admin.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/admin-workspace.css">
+  <script type="module" src="../assets/js/agenda_admin.js"></script>
+  <script type="module" src="../assets/js/admin_management.js"></script>
+  <script type="module" src="../assets/js/financeiro_admin.js"></script>
+</head>
+<body>
+  <header class="admin-header">
+    <div class="container admin-header-top">
+      <a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>PAINEL DA EQUIPE</small></span></a>
+      <div class="admin-user"><span id="userName">Carregando…</span><a href="index.html" class="btn-logout">Sair</a></div>
+    </div>
+    <nav class="container admin-nav" aria-label="Gestão">
+      <a href="#agenda">Agenda</a>
+      <a href="#agendamento-manual" data-admin-only>Agendamento manual</a>
+      <a href="#servicos" data-admin-only>Serviços</a>
+      <a href="#equipe" data-admin-only>Equipe</a>
+      <a href="#clientes" data-admin-only>Clientes</a>
+      <a href="#jornadas" data-admin-only>Jornadas e bloqueios</a>
+      <a href="#institucional" data-admin-only>Institucional</a>
+      <a href="#financeiro" data-admin-only>Financeiro</a>
+      <a href="#avaliacoes" data-admin-only>Avaliações</a>
+    </nav>
+  </header>
 
-                <label for="user-menu-toggle" class="profile-trigger" aria-label="Abrir menu do usuário">
-                    <img src="../assets/images/icon-user.webp" alt="foto do usuário" class="icon-user">
-                </label>
+  <main class="container admin-workspace">
+    <section id="agenda" class="admin-section">
+      <div class="section-heading"><div><span class="eyebrow">OPERAÇÃO DO DIA</span><h1>Agenda da <em>barbearia.</em></h1></div><p>Selecione uma data para acompanhar e atualizar os atendimentos.</p></div>
+      <div class="Agenda" aria-label="Seletor de calendário da agenda">
+        <button class="date-nav-btn" id="prevDates" aria-label="Dias anteriores" type="button" disabled>‹</button>
+        <div class="date-roll" id="dateRoll" aria-live="polite"></div>
+        <button class="date-nav-btn" id="nextDates" aria-label="Próximos dias" type="button" disabled>›</button>
+      </div>
+      <div class="agenda-panel" aria-labelledby="agenda-title">
+        <div class="agenda-header"><h2 id="agenda-title">Atendimentos</h2><span id="agendaDayLabel" class="agenda-day-label">Carregando…</span></div>
+        <div id="agendaList" class="agenda-list" aria-live="polite"></div>
+      </div>
+    </section>
 
-                <div class="dropdown-menu">
-                    <div class="user-info">
-                        <span class="user-name" id="userName">Carregando</span>
-                        <span class="user-role">Administrador</span>
-                    </div>
-                    <hr class="divider">
-                    <a href="index.html" class="btn-logout">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        Sair da conta
-                    </a>
-                </div>
-            </div>
-        </header>
+    <section id="agendamento-manual" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">ATENDIMENTO PRESENCIAL</span><h2>Agendamento manual</h2></div><p>Registre um horário reservado por telefone ou presencialmente.</p></div>
+      <form id="manual-appointment-form" class="management-form form-grid">
+        <div class="form-field"><label for="manual-client" class="form-label">Cliente cadastrado (opcional)</label><select id="manual-client" name="user_id"></select></div>
+        <div class="form-field"><label for="manual-customer-name" class="form-label">Nome do cliente avulso</label><input id="manual-customer-name" name="nome_cliente" maxlength="120" autocomplete="name"></div>
+        <div class="form-field"><label for="manual-service" class="form-label">Serviço</label><select id="manual-service" name="service_id" required></select></div>
+        <div class="form-field"><label for="manual-barber" class="form-label">Barbeiro</label><select id="manual-barber" name="barbeiro_id" required></select></div>
+        <div class="form-field"><label for="manual-date" class="form-label">Data e hora</label><input id="manual-date" name="data_hora" type="datetime-local" required></div>
+        <div class="form-field form-field--full"><p class="text-muted">Selecione um cliente cadastrado ou informe apenas o nome de quem agendou por telefone ou presencialmente.</p><button class="btn" type="submit">Criar agendamento</button></div>
+      </form>
+      <div id="manual-message" aria-live="polite"></div>
+    </section>
 
-        <main>
-            <p class="titulo-agenda">Agenda</p>
+    <section id="servicos" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">CATÁLOGO</span><h2>Gerenciar serviços</h2></div><p>Atualize nome, preço e duração. Agendamentos existentes preservam seu snapshot.</p></div>
+      <form id="service-form" class="management-form form-grid">
+        <input type="hidden" name="id">
+        <div class="form-field"><label for="service-name" class="form-label">Nome</label><input id="service-name" name="nome" required></div>
+        <div class="form-field"><label for="service-price" class="form-label">Preço (R$)</label><input id="service-price" name="preco" type="number" min="0" step="0.01" required></div>
+        <div class="form-field"><label for="service-duration" class="form-label">Duração (minutos)</label><input id="service-duration" name="duracao_minutos" type="number" min="1" required></div>
+        <div class="form-field form-field--full"><button class="btn" type="submit">Salvar serviço</button><button class="btn btn-ghost" id="service-cancel-edit" type="button" hidden>Cancelar edição</button></div>
+      </form>
+      <div id="services-admin-list" class="management-list" aria-live="polite"></div>
+    </section>
 
-            <div class="Agenda" aria-label="Seletor de calendário da agenda">
-                <button class="date-nav-btn" id="prevDates" aria-label="Dias anteriores" type="button">&lt;</button>
+    <section id="equipe" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">EQUIPE</span><h2>Serviços por barbeiro</h2></div><p>Associe os serviços que cada profissional está habilitado a realizar.</p></div>
+      <form id="barber-service-form" class="management-form form-grid">
+        <div class="form-field"><label for="barber-service-barber" class="form-label">Barbeiro</label><select id="barber-service-barber" name="barbeiro_id" required></select></div>
+        <div class="form-field"><label for="barber-service-service" class="form-label">Serviço</label><select id="barber-service-service" name="service_id" required></select></div>
+        <div class="form-field form-field--full"><button class="btn" type="submit">Associar serviço</button></div>
+      </form>
+      <div id="barber-services-list" class="management-list" aria-live="polite"></div>
+    </section>
 
-                <div class="date-roll" id="dateRoll" aria-live="polite"></div>
+    <section id="clientes" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">RELACIONAMENTO</span><h2>Clientes</h2></div><p>Consulte clientes e altere o acesso à conta quando necessário.</p></div>
+      <div id="clients-list" class="management-list" aria-live="polite"></div>
+    </section>
 
-                <button class="date-nav-btn" id="nextDates" aria-label="Próximos dias" type="button">&gt;</button>
-            </div>
+    <section id="jornadas" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">DISPONIBILIDADE DA EQUIPE</span><h2>Jornadas e bloqueios</h2></div><p>Configure dias de atendimento, folgas, feriados e bloqueios pontuais.</p></div>
+      <div class="management-columns">
+        <form id="schedule-form" class="management-form form-grid">
+          <h3 class="form-field--full">Nova jornada semanal</h3>
+          <div class="form-field"><label for="schedule-barber" class="form-label">Barbeiro</label><select id="schedule-barber" name="barbeiro_id" required></select></div>
+          <div class="form-field"><label for="schedule-day" class="form-label">Dia da semana</label><select id="schedule-day" name="dia_semana" required><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
+          <div class="form-field"><label for="schedule-start" class="form-label">Início</label><input id="schedule-start" name="hora_inicio" type="time" required></div>
+          <div class="form-field"><label for="schedule-end" class="form-label">Fim</label><input id="schedule-end" name="hora_fim" type="time" required></div>
+          <button class="btn form-field--full" type="submit">Adicionar jornada</button>
+          <div id="schedules-list" class="management-list form-field--full"></div>
+        </form>
+        <form id="block-form" class="management-form form-grid">
+          <h3 class="form-field--full">Bloquear período</h3>
+          <div class="form-field form-field--full"><label for="block-barber" class="form-label">Barbeiro</label><select id="block-barber" name="barbeiro_id" required></select></div>
+          <div class="form-field"><label for="block-start" class="form-label">Início</label><input id="block-start" name="inicio" type="datetime-local" required></div>
+          <div class="form-field"><label for="block-end" class="form-label">Fim</label><input id="block-end" name="fim" type="datetime-local" required></div>
+          <div class="form-field"><label for="block-type" class="form-label">Tipo</label><select id="block-type" name="tipo"><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="bloqueio_ad_hoc">Outro bloqueio</option></select></div>
+          <div class="form-field"><label for="block-reason" class="form-label">Motivo</label><input id="block-reason" name="motivo"></div>
+          <button class="btn form-field--full" type="submit">Salvar bloqueio</button>
+          <div id="blocks-list" class="management-list form-field--full"></div>
+        </form>
+      </div>
+    </section>
 
-            <section class="agenda-panel" aria-labelledby="agenda-title">
-                <div class="agenda-header">
-                    <h2 id="agenda-title">Agendamentos</h2>
-                    <span id="agendaDayLabel" class="agenda-day-label">Carregando...</span>
-                </div>
+    <section id="institucional" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">A CASA</span><h2>Informações institucionais</h2></div><p>Esses dados aparecem na página pública da barbearia.</p></div>
+      <form id="institutional-form" class="management-form form-grid">
+        <div class="form-field"><label for="institution-name" class="form-label">Nome</label><input id="institution-name" name="nome" required></div>
+        <div class="form-field"><label for="institution-address" class="form-label">Endereço</label><input id="institution-address" name="endereco" required></div>
+        <div class="form-field"><label for="institution-phone" class="form-label">Telefone</label><input id="institution-phone" name="telefone" required></div>
+        <div class="form-field"><label for="institution-email" class="form-label">E-mail</label><input id="institution-email" name="email" type="email"></div>
+        <div class="form-field"><label for="institution-site" class="form-label">Site</label><input id="institution-site" name="site" type="url"></div>
+        <div class="form-field"><label for="institution-days" class="form-label">Dias de atendimento</label><input id="institution-days" name="dias_atendimento" required></div>
+        <div class="form-field"><label for="institution-hours" class="form-label">Horário de funcionamento</label><input id="institution-hours" name="horario_funcionamento" required></div>
+        <div class="form-field"><label for="institution-map" class="form-label">Link do Google Maps</label><input id="institution-map" name="endereco_maps" type="url"></div>
+        <div class="form-field form-field--full"><button class="btn" type="submit">Salvar informações</button></div>
+      </form>
+    </section>
 
-                <div id="agendaList" class="agenda-list" aria-live="polite"></div>
-            </section>
-        </main>
-    </body>
+    <section id="financeiro" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">RF21 · ATENDIMENTOS CONCLUÍDOS</span><h2>Relatório financeiro</h2></div><p>Consulte receita estimada e ticket médio do período.</p></div>
+      <form id="finance-form" class="management-form form-grid">
+        <div class="form-field"><label for="finance-start" class="form-label">De</label><input id="finance-start" name="inicio" type="date" required></div>
+        <div class="form-field"><label for="finance-end" class="form-label">Até</label><input id="finance-end" name="fim" type="date" required></div>
+        <div class="form-field form-field--full"><button class="btn" type="submit">Gerar relatório</button></div>
+      </form>
+      <div id="finance-result" class="finance-result" aria-live="polite"></div>
+    </section>
+
+    <section id="avaliacoes" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">RF22 · MODERAÇÃO</span><h2>Avaliações</h2></div><p>Oculte avaliações inadequadas. Conteúdo oculto não é exibido ao público.</p></div>
+      <div id="reviews-admin-list" class="management-list" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
 </html>

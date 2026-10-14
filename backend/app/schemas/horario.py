@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from app.models.user import RoleEnum
+from app.schemas.base import ORMModel
 
 
-class JornadaTrabalhoBase(BaseModel):
+class JornadaTrabalhoBase(ORMModel):
     barbeiro_id: int
     dia_semana: int  # 0=Domingo, 1=Segunda, ..., 6=Sábado
     hora_inicio: str  # Format: "HH:MM"
@@ -26,11 +26,7 @@ class JornadaTrabalhoUpdate(BaseModel):
 class JornadaTrabalhoResponse(JornadaTrabalhoBase):
     id: int
 
-    class Config:
-        orm_mode = True
-
-
-class BloqueioHorarioBase(BaseModel):
+class BloqueioHorarioBase(ORMModel):
     barbeiro_id: int
     inicio: datetime
     fim: datetime
@@ -53,6 +49,3 @@ class BloqueioHorarioUpdate(BaseModel):
 
 class BloqueioHorarioResponse(BloqueioHorarioBase):
     id: int
-
-    class Config:
-        orm_mode = True

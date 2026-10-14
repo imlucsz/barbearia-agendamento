@@ -3,92 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmar Agendamento - Barbearia Agendamento</title>
+  <title>Confirmar agendamento | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body>
-  <header class="bg-primary text-white text-center py-3">
-    <div class="container d-flex justify-content-between align-items-center">
-      <a href="client-date.html" class="text-white text-decoration-none">← Voltar</a>
-      <h2>Confirmar Agendamento</h2>
-      <a href="client-dashboard.html" class="text-white text-decoration-none">Dashboard</a>
-    </div>
-  </header>
-
-  <main class="container my-4">
-    <div id="confirmation-content" class="border p-4 rounded">
-      <p class="text-center">Carregando detalhes...</p>
-    </div>
-
-    <div class="d-grid gap-2 col-6 mx-auto mt-4">
-      <button id="confirm-btn" class="btn btn-success">Confirmar Agendamento</button>
-    </div>
+<body data-page="confirm">
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-date.html">← Horários</a></div></header>
+  <main class="container client-page">
+    <div class="page-heading"><span class="eyebrow">ÚLTIMO PASSO</span><h1>Confirme seu <em>horário.</em></h1><p>Confira os detalhes antes de reservar a cadeira.</p></div>
+    <section id="confirmation-content" class="card confirmation-card" aria-live="polite"><p>Carregando detalhes…</p></section>
+    <div class="confirm-actions"><button id="confirm-btn" class="btn btn-large" type="button">Confirmar agendamento</button><a href="client-appointments.html" class="btn btn-ghost">Meus agendamentos</a></div>
   </main>
-
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
-  </footer>
-
-  <script src="../assets/js/api.js" type="module"></script>
-  <script type="module">
-    import { api, setToken } from '../assets/js/api.js';
-
-    // Get parameters from query string
-    const urlParams = new URLSearchParams(window.location.search);
-    const serviceId = urlParams.get('service_id');
-    const barbeiroId = urlParams.get('barbeiro_id');
-    const dateTime = urlParams.get('date_time');
-    if (!serviceId || !barbeiroId || !dateTime) {
-      window.location.href = 'client-services.html';
-    }
-
-    async function loadDetails() {
-      try {
-        // Fetch service info
-        const serviceData = await api.get(`/services/${serviceId}`, { auth: false });
-        // Fetch barbeiro info (user)
-        const barbeiroData = await api.get(`/users/${barbeiroId}`, { auth: true }); // This may fail due to permissions
-        const container = document.getElementById('confirmation-content');
-        container.innerHTML = `
-          <p><strong>Serviço:</strong> ${serviceData.nome}</p>
-          <p><strong>Profissional:</strong> ${barbeiroData.nome}</p>
-          <p><strong>Data e Hora:</strong> <span class="monospace">${new Date(dateTime).toLocaleString('pt-BR')}</span></p>
-          <p><strong>Preço:</strong> <span class="monospace">R$ ${serviceData.preco.toFixed(2)}</span></p>
-          <p><strong>Duração:</strong> <span class="monospace">${serviceData.duracao_minutos} min</span></p>
-        `;
-      } catch (err) {
-        console.error('Erro ao carregar detalhes:', err);
-        if (err.message.includes('401')) {
-          // Token missing or invalid, redirect to login
-          window.location.href = 'login.html';
-        } else {
-          document.getElementById('confirmation-content').innerHTML = '<p class="text-danger">Erro ao carregar detalhes do agendamento.</p>';
-        }
-      }
-    }
-
-    document.getElementById('confirm-btn').addEventListener('click', async () => {
-      try {
-        const response = await api.post('/appointments/', {
-          service_id: parseInt(serviceId),
-          barbeiro_id: parseInt(barbeiroId),
-          data_hora: dateTime
-        }, { auth: true });
-        alert('Agendamento criado com sucesso!');
-        window.location.href = 'client-appointments.html';
-      } catch (err) {
-        console.error('Erro ao criar agendamento:', err);
-        if (err.message.includes('401')) {
-          // Token missing or invalid, redirect to login
-          window.location.href = 'login.html';
-        } else {
-          alert(`Erro: ${err.message}`);
-        }
-      }
-    });
-
-    // Load details on page load
-    loadDetails();
-  </script>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/schedule.js"></script>
 </body>
 </html>

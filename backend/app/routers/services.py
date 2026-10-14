@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models.user import Service
+from app.models.user import Service, User
 from app.schemas.service import ServiceCreate, ServiceUpdate, ServiceResponse
 from app.dependencies import get_current_user
 from app.models.user import RoleEnum
@@ -43,8 +43,7 @@ def create_service(
 @router.get("/{service_id}", response_model=ServiceResponse)
 def get_service(
     service_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     service = db.query(Service).filter(Service.id == service_id).first()
     if service is None:

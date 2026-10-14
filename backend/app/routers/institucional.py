@@ -2,18 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models.user import InformacaoInstitucional
+from app.models.user import InformacaoInstitucional, User, RoleEnum
 from app.schemas.institucional import InformacaoInstitucionalCreate, InformacaoInstitucionalUpdate, InformacaoInstitucionalResponse
 from app.dependencies import get_current_user
-from app.models.user import RoleEnum
 
 router = APIRouter(prefix="/informacoes", tags=["informacoes-institucionais"])
 
 
 @router.get("/", response_model=InformacaoInstitucionalResponse)
 def get_informacoes(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     # RF20: Informações institucionais - público para visualização
     # (Em um sistema real, talvez queiramos permitir edição apenas por ADMIN)

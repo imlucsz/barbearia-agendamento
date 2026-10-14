@@ -3,84 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Barbearia Agendamento</title>
+  <title>Minha área | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
 </head>
-<body>
-  <header class="bg-primary text-white text-center py-3">
-    <div class="container d-flex justify-content-between align-items-center">
-      <h2>Dashboard do Cliente</h2>
-      <div>
-        <span id="user-name" class="me-3"></span>
-        <a href="login.html" class="text-white text-decoration-none">Sair</a>
-      </div>
-    </div>
-  </header>
-
-  <main class="container my-4">
-    <div class="row g-4">
-      <div class="col-md-6">
-        <div class="card h-100 border shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Novo Agendamento</h5>
-            <p class="card-text">Agende um horário para serviço.</p>
-            <a href="client-services.html" class="btn btn-primary">Selecionar Serviço</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card h-100 border shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Meus Agendamentos</h5>
-            <p class="card-text">Visualize, cancele ou reagende seus agendamentos.</p>
-            <a href="client-appointments.html" class="btn btn-primary">Ver Agendamentos</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row g-4 mt-4">
-      <div class="col-md-6">
-        <div class="card h-100 border shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Avaliar Atendimento</h5>
-            <p class="card-text">Avalie um atendimento concluído.</p>
-            <a href="client-evaluations.html" class="btn btn-primary">Avaliar</a>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card h-100 border shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Minha Conta</h5>
-            <p class="card-text">Gerencie seus dados e exclua sua conta se necessário.</p>
-            <a href="client-account.html" class="btn btn-primary">Minha Conta</a>
-          </div>
-        </div>
-      </div>
+<body data-page="dashboard">
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><nav class="header-actions"><a href="index.html" class="btn btn-ghost">Início</a><a id="logout-link" href="login.html" class="btn btn-ghost">Sair</a></nav></div></header>
+  <main class="container client-page">
+    <div class="page-heading"><span class="eyebrow">SUA ÁREA</span><h1>Bom te ver, <em id="user-name">cliente.</em></h1><p>Seu próximo atendimento está a poucos cliques.</p></div>
+    <div class="dashboard-grid">
+      <article class="card dashboard-card"><span class="eyebrow">NOVO VISUAL</span><h2>Reserve sua cadeira.</h2><p>Escolha serviço, profissional e horário com disponibilidade atualizada.</p><a class="btn" href="client-services.html">Agendar agora <span aria-hidden="true">↗</span></a></article>
+      <article class="card dashboard-card"><span class="eyebrow">SUA AGENDA</span><h2>Próximos e anteriores.</h2><p>Consulte, reagende ou cancele seus horários e avalie um atendimento concluído.</p><a class="btn btn-ghost" href="client-appointments.html">Ver agendamentos</a></article>
+      <article class="card dashboard-card"><span class="eyebrow">SEUS DADOS</span><h2>Conta e privacidade.</h2><p>Consulte os dados da sua conta ou solicite a exclusão.</p><a class="btn btn-ghost" href="client-account.html">Minha conta</a></article>
     </div>
   </main>
-
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
-  </footer>
-
-  <script src="../assets/js/api.js" type="module"></script>
-  <script type="module">
-    import { api } from '../assets/js/api.js';
-
-    // Fetch user info to display name
-    async function loadUserInfo() {
-      try {
-        const data = await api.get('/auth/me');
-        document.getElementById('user-name').textContent = data.nome;
-      } catch (err) {
-        console.error('Erro ao carregar informações do usuário:', err);
-        // Se falhar, talvez o token esteja inválido, redireciona para login
-        window.location.href = 'login.html';
-      }
-    }
-
-    loadUserInfo();
-  </script>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/schedule.js"></script>
 </body>
 </html>

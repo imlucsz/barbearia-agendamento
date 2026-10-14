@@ -1,8 +1,9 @@
 from pydantic import BaseModel
 from typing import Optional
+from app.schemas.base import ORMModel
 
 
-class ServiceBase(BaseModel):
+class ServiceBase(ORMModel):
     nome: str
     preco: float
     duracao_minutos: int
@@ -20,6 +21,3 @@ class ServiceUpdate(BaseModel):
 
 class ServiceResponse(ServiceBase):
     id: int
-
-    class Config:
-        orm_mode = True

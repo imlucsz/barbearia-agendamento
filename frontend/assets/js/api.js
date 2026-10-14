@@ -1,89 +1,89 @@
-// api.js - Funções centralizadas para comunicação com o backend
-// Base URL da API (ajustar conforme ambiente)
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = (window.BARBEARIA_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
-// Função interna para obter o token de autenticação (ex: do localStorage)
-function getAuthToken() {
-  return localStorage.getItem('token');
+export function getToken() {
+  return localStorage.getItem("token");
 }
 
-// Função interna para configurar headers comuns
-function getHeaders(includeAuth = true) {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (includeAuth) {
-    const token = getAuthToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return headers;
-}
-
-// Função genérica de requisição
-async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const { method = 'GET', body, auth = true, ...rest } = options;
-
-  const config = {
-    method,
-    headers: getHeaders(auth),
-    ...rest,
-  };
-
-  if (body && !(body instanceof FormData)) {
-    config.body = JSON.stringify(body);
-  }
-
+export function getCurrentUser() {
   try {
-    const response = await fetch(url, config);
-    // Tratamento de erros comuns
-    if (!response.ok) {
-      let errorMsg = `Erro ${response.status}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.detail) {
-          errorMsg += `: ${errorData.detail}`;
-        } else if (errorData.message) {
-          errorMsg += `: ${errorData.message}`;
-        }
-      } catch (e) {
-        // Se não conseguir parsear o JSON, usa o texto da resposta
-        errorMsg += `: ${await response.text()}`;
-      }
-      throw new Error(errorMsg);
-    }
-    // Se a resposta não tiver conteúdo (ex: 204), retorna null
-    if (response.status === 204) {
-      return null;
-    }
-    return await response.json();
+    return JSON.parse(localStorage.getItem("user") || "null");
   } catch (error) {
-    // Re-throw para que o chamador possa tratar
+    console.error("Dados locais do usuário inválidos:", error);
+    return null;
+  }
+}
+
+export function setToken(token) {
+  if (token) localStorage.setItem("token", token);
+  else localStorage.removeItem("token");
+}
+
+export function clearToken() {
+  localStorage.removeItem("token");
+}
+
+export function logout() {
+  clearToken();
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
+}
+
+async function request(endpoint, options = {}) {
+  const { method = "GET", body, auth = true, params, headers = {}, ...rest } = options;
+  const url = new URL(`${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`);
+
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    }
+  }
+
+  const requestHeaders = new Headers(headers);
+  if (body !== undefined && !(body instanceof FormData)) {
+    requestHeaders.set("Content-Type", "application/json");
+  }
+
+  const token = auth ? getToken() : null;
+  if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(url, {
+    method,
+    headers: requestHeaders,
+    body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+    ...rest,
+  });
+
+  if (!response.ok) {
+    const responseText = await response.text();
+    let detail = "";
+    try {
+      const data = JSON.parse(responseText);
+      detail = data.detail || data.message || "";
+    } catch {
+      detail = responseText.trim();
+    }
+    const error = new Error(detail ? `Erro ${response.status}: ${detail}` : `Erro ${response.status}`);
+    error.status = response.status;
     throw error;
   }
+
+  if (response.status === 204) return null;
+  if (response.status === 205) return null;
+  return response.json();
 }
 
-// Exporta métodos HTTP específicos
 export const api = {
-  get: (endpoint, opts = {}) => request(endpoint, { method: 'GET', ...opts }),
-  post: (endpoint, data, opts = {}) => request(endpoint, { method: 'POST', body: data, ...opts }),
-  put: (endpoint, data, opts = {}) => request(endpoint, { method: 'PUT', body: data, ...opts }),
-  patch: (endpoint, data, opts = {}) => request(endpoint, { method: 'PATCH', body: data, ...opts }),
-  delete: (endpoint, opts = {}) => request(endpoint, { method: 'DELETE', ...opts }),
+  get: (endpoint, options = {}) => request(endpoint, { method: "GET", ...options }),
+  post: (endpoint, body, options = {}) => request(endpoint, { method: "POST", body, ...options }),
+  put: (endpoint, body, options = {}) => request(endpoint, { method: "PUT", body, ...options }),
+  patch: (endpoint, body, options = {}) => request(endpoint, { method: "PATCH", body, ...options }),
+  delete: (endpoint, options = {}) => request(endpoint, { method: "DELETE", ...options }),
 };
 
-// Função auxiliar para atualizar o token (ex: após login)
-export function setToken(token) {
-  if (token) {
-    localStorage.setItem('token', token);
-  } else {
-    localStorage.removeItem('token');
-  }
-}
-
-// Função auxiliar para limpar o token (logout)
-export function clearToken() {
-  localStorage.removeItem('token');
-}
+export const apiGet = (endpoint, options = {}) => api.get(endpoint, options);
+export const apiPost = (endpoint, body, options = {}) => api.post(endpoint, body, options);
+export const apiPut = (endpoint, body, options = {}) => api.put(endpoint, body, options);
+export const apiPatch = (endpoint, body, options = {}) => api.patch(endpoint, body, options);
+export const apiDelete = (endpoint, options = {}) => api.delete(endpoint, options);

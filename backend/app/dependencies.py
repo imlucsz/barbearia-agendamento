@@ -51,5 +51,10 @@ def get_current_user(
             detail="Conta inativa",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.bloqueado:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Conta bloqueada",
+        )
 
     return user

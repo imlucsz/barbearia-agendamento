@@ -5,3 +5,5 @@ venv/
 .vscode/
 *.db
 *.sqlite3
+.github/
+barbearia.db

@@ -1,6 +1,6 @@
 # 💈 Sistema de Agendamento Online - Barbearia
 
-> Projeto acadêmico desenvolvido por estudantes do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Itaquera**.git 
+> Projeto acadêmico desenvolvido por estudantes do curso de Desenvolvimento de Software Multiplataforma (DSM) da **FATEC Itaquera**.
 
 O sistema é uma solução web para agendamento online de barbearias e estabelecimentos de estética. A aplicação permite que clientes visualizem o catálogo de serviços, consultem disponibilidade de horários e realizem agendamentos. Além disso, conta com um painel administrativo restrito para gestão de horários, equipe e relatórios operacionais.
 
@@ -21,18 +21,56 @@ O sistema é uma solução web para agendamento online de barbearias e estabelec
 
 ---
 
-## 📌 Requisitos Funcionais
+## 📌 Requisitos do Sistema
 
-| Código | Requisito | Descrição |
-| :--- | :--- | :--- |
-| **RF01** | Catálogo de Serviços | Exibição do menu de serviços com preços e duração estimada. |
-| **RF02** | Informações Institucionais | Exibição de endereço, mapa interativo e horários de funcionamento. |
-| **RF03** | Agendamento Online | Seleção de serviço, profissional, data e horário disponível. |
-| **RF04** | Gestão de Conta do Cliente | Cadastro, login com autenticação e perfil do cliente. |
-| **RF05** | Gestão de Agendamentos | Histórico de agendamentos, cancelamento e reagendamento. |
-| **RF06** | Avaliações | Cadastro de notas/opiniões com cálculo de média exibido no site. |
-| **RF07** | Painel Administrativo | Dashboard do gestor com agenda diária e relatórios financeiros simples. |
-| **RF08** | Gestão de Serviços e Equipe | CRUD de serviços, preços, profissionais e jornadas de trabalho. |
+### Requisitos Funcionais (RF01–RF22)
+
+| Código | Requisito |
+| :--- | :--- |
+| **RF01** | Exibir o catálogo de serviços com preço e duração para visitantes. |
+| **RF02** | Exibir informações institucionais — endereço, mapa e horário de funcionamento — para visitantes. |
+| **RF03** | Exibir a nota média das avaliações. |
+| **RF04** | Cadastrar conta de cliente. |
+| **RF05** | Autenticar clientes, barbeiros e gestores, com controle de acesso por perfil. |
+| **RF06** | Permitir recuperação de senha. |
+| **RF07** | Consultar horários disponíveis por serviço, profissional e data, conforme RN-01. |
+| **RF08** | Agendar serviço escolhendo serviço, profissional, data e horário. |
+| **RF09** | Cancelar agendamento conforme RN-02. |
+| **RF10** | Reagendar agendamento conforme RN-02. |
+| **RF11** | Consultar histórico de agendamentos. |
+| **RF12** | Avaliar atendimento concluído com nota, conforme RN-04. |
+| **RF13** | Visualizar a agenda do dia: barbeiros veem a própria agenda e gestores veem a agenda de todos. |
+| **RF14** | Marcar atendimento como concluído, cancelado ou falta, registrando o valor cobrado. |
+| **RF15** | Criar agendamento manual para cliente presencial ou por telefone, vinculando cliente cadastrado ou registrando apenas o nome do cliente avulso. |
+| **RF16** | Gerenciar serviços (criar, editar e excluir), incluindo preço e duração. |
+| **RF17** | Gerenciar barbeiros e os serviços que cada um executa. |
+| **RF18** | Gerenciar jornadas, folgas, feriados e bloqueios de horário. |
+| **RF19** | Gerenciar clientes: visualizar, editar e bloquear. |
+| **RF20** | Gerenciar informações institucionais. |
+| **RF21** | Emitir relatório financeiro por período, com base nos atendimentos concluídos registrados em RF14. |
+| **RF22** | Moderar avaliações. |
+
+### Regras de Negócio
+
+| Código | Regra |
+| :--- | :--- |
+| **RN-01** | Um horário só está disponível se estiver dentro da jornada do barbeiro, sem bloqueio ou conflito com outro agendamento e comportar a duração do serviço. |
+| **RN-02** | Cancelar ou reagendar exige pelo menos **24 horas** de antecedência. Cada agendamento pode ser reagendado no máximo **2 vezes**. |
+| **RN-03** | O agendamento pode ser marcado com até **14 dias** de antecedência. |
+| **RN-04** | Só o cliente dono de um agendamento concluído pode avaliá-lo, uma única vez por agendamento. |
+| **RN-05** | O agendamento guarda um snapshot do preço e da duração do serviço no momento da criação. |
+
+Os limites de 24 horas, 2 reagendamentos e 14 dias foram escolhidos como padrões iniciais razoáveis para dar previsibilidade à agenda e permitir que a equipe preencha horários liberados.
+
+### Requisitos Não Funcionais (RNF-01–RNF-05)
+
+| Código | Requisito |
+| :--- | :--- |
+| **RNF-01** | Evitar overbooking em acessos simultâneos, serializando no banco as reservas e os reagendamentos por barbeiro antes de validar conflitos. |
+| **RNF-02** | Armazenar senhas com hash e usar sessões com expiração. |
+| **RNF-03** | Oferecer interface responsiva, priorizando o uso em celulares. |
+| **RNF-04** | Atender à LGPD, incluindo consentimento e exclusão de conta. |
+| **RNF-05** | Impedir acesso a rotas administrativas sem autenticação e perfil adequado. |
 
 ---
 
