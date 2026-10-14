@@ -31,8 +31,8 @@ class User(Base):
     bloqueado = Column(Boolean, default=False)  # RF19: Para bloquear clientes
     ativo = Column(Boolean, default=True)  # RNF-04: Para exclusão lógica de conta
 
-    # Relacionamentos
-    appointments = relationship("User", back_populates="user")  # CLIENTE relation
+        # Relacionamentos
+    appointments = relationship("Appointment", back_populates="user", foreign_keys="Appointment.user_id")
     barbeiro_appointments = relationship("Appointment", foreign_keys="Appointment.barbeiro_id")
 
 
