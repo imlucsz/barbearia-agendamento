@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecionar Serviço - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="client-dashboard.html" class="text-white text-decoration-none">← Voltar ao Dashboard</a>
+      <h2>Selecionar Serviço</h2>
+      <a href="login.html" class="text-white text-decoration-none">Sair</a>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div id="services-list" class="row g-4">
+      <p class="text-center">Carregando serviços...</p>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    async function loadServices() {
+      try {
+        const data = await api.get('/services', { auth: false });
+        const container = document.getElementById('services-list');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<p class="text-center">Nenhum serviço cadastrado.</p>';
+          return;
+        }
+        container.innerHTML = '';
+        data.forEach(service => {
+          const col = document.createElement('div');
+          col.className = 'col-md-4';
+          col.innerHTML = `
+            <div class="card h-100 border shadow-sm">
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">${service.nome}</h5>
+                <p class="card-text monospace">
+                  <strong>Preço:</strong> R$ ${service.preco.toFixed(2)}<br>
+                  <strong>Duração:</strong> ${service.duracao_minutos} min
+                </p>
+                <a href="client-profissional.html?service_id=${service.id}" class="btn btn-primary mt-auto">Selecionar</a>
+              </div>
+            </div>
+          `;
+          container.appendChild(col);
+        });
+      } catch (err) {
+        console.error('Erro ao carregar serviços:', err);
+        document.getElementById('services-list').innerHTML = '<p class="text-center text-danger">Erro ao carregar serviços.</p>';
+      }
+    }
+
+    // Load data on page load
+    loadServices();
+  </script>
+</body>
+</html>

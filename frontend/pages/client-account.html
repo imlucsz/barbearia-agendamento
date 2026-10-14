@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Conta - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="client-dashboard.html" class="text-white text-decoration-none">← Voltar</a>
+      <h2>Minha Conta</h2>
+      <a href="login.html" class="text-white text-decoration-none">Sair</a>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div id="account-info" class="border p-4 rounded mb-4">
+      <p class="text-center">Carregando informações da conta...</p>
+    </div>
+
+    <div class="d-grid gap-2">
+      <button id="delete-account-btn" class="btn btn-danger">Excluir Minha Conta</button>
+    </div>
+    <div id="delete-message" class="mt-3"></div>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    async function loadAccountInfo() {
+      try {
+        const data = await api.get('/auth/me', { auth: true });
+        const container = document.getElementById('account-info');
+        container.innerHTML = `
+          <p><strong>Nome:</strong> ${data.nome}</p>
+          <p><strong>E-mail:</strong> ${data.email}</p>
+          <p><strong>Papél:</strong> ${data.role}</p>
+          <p><strong>Conta Ativa:</strong> ${data.ativo ? 'Sim' : 'Não'}</p>
+          <p><strong>Bloqueado:</strong> ${data.bloqueado ? 'Sim' : 'Não'}</p>
+        `;
+      } catch (err) {
+        console.error('Erro ao carregar informações da conta:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('account-info').innerHTML = '<p class="text-danger">Erro ao carregar informações da conta.</p>';
+        }
+      }
+    }
+
+    document.getElementById('delete-account-btn').addEventListener('click', async () => {
+      if (!confirm('Tem certeza que deseja excluir sua conta? Esta ação irá tornar sua conta inativa e anonimizar seus dados.')) {
+        return;
+      }
+      try {
+        const response = await api.delete('/users/me', { auth: true });
+        const messageDiv = document.getElementById('delete-message');
+        messageDiv.innerHTML = '<p class="alert alert-success">Conta excluída com sucesso. Você será redirecionado para o login.</p>';
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = 'login.html';
+        }, 1500);
+      } catch (err) {
+        console.error('Erro ao excluir conta:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('delete-message').innerHTML = `<p class="alert alert-danger">Erro: ${err.message}</p>`;
+        }
+      }
+    });
+
+    // Load account info on page load
+    loadAccountInfo();
+  </script>
+</body>
+</html>

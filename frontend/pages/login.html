@@ -1,70 +1,71 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <link rel="stylesheet" href="../assets/css/client.css">
-    <script type="module" src="../assets/js/login.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
-    <div class="login-container">
-        <div class="card-header">
-            <h2>Entrar na conta</h2>
+  <header class="bg-primary text-white text-center py-4">
+    <h1>Login</h1>
+  </header>
+
+  <main class="container my-4">
+    <div class="row justify-content-center">
+      <div class="col-md-6 col-lg-4">
+        <div class="border p-4 rounded mb-4">
+          <form id="login-form">
+            <div class="mb-3">
+              <label for="login-email" class="form-label">E-mail</label>
+              <input type="email" class="form-control" id="login-email" required>
+            </div>
+            <div class="mb-3">
+              <label for="login-senha" class="form-label">Senha</label>
+              <input type="password" class="form-control" id="login-senha" required>
+            </div>
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Entrar</button>
+            </div>
+          </form>
+          <div class="text-center mt-3">
+            <p>Não tem uma conta? <a href="cadastro.html">Cadastre-se</a></p>
+            <p><a href="forgot.html">Esqueci minha senha</a></p>
+          </div>
         </div>
-
-        <form class="login-form">
-            <div class="input-group">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" placeholder="meuemail@ex.com" required>
-            </div>
-
-            <div class="input-group">
-                <label for="senha">Senha</label>
-                <input type="password" id="senha" placeholder="Digite sua senha" required>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="btn-primary">Entrar</button>
-                <a href="#" id="abrir-cadastro" class="btn-register-link">Criar Conta</a>
-            </div>
-        </form>
+      </div>
     </div>
+  </main>
 
-    <div id="modal-cadastro" class="modal-register">
-        <div class="modal-content">
-            <div class="card-header">
-                <h2>Criar Nova Conta</h2>
-            </div>
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
 
-            <form class="register-form">
-                <div class="input-group">
-                    <label for="nome-completo">Nome Completo</label>
-                    <input type="text" id="nome-completo" placeholder="Seu nome completo" required>
-                </div>
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api, setToken } from '../assets/js/api.js';
 
-                <div class="input-group">
-                    <label for="telefone">Número de Telefone/Celular</label>
-                    <input type="tel" id="telefone" placeholder="(00) 90000-0000" required>
-                </div>
+    const form = document.getElementById('login-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const senha = document.getElementById('login-senha').value;
 
-                <div class="input-group">
-                    <label for="email-cad">E-mail</label>
-                    <input type="email" id="email-cad" placeholder="meuemail@ex.com" required>
-                </div>
-
-                <div class="input-group">
-                    <label for="senha-cad">Senha</label>
-                    <input type="password" id="senha-cad" placeholder="Crie sua senha" required>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Cadastrar</button>
-                    <a href="#" id="fechar-cadastro" class="btn-link">Voltar ao Login</a>
-                </div>
-            </form>
-        </div>
-    </div>
-
+      try {
+        const data = await api.post('/auth/login', { email, senha });
+        // Assume the response includes user and access_token
+        if (data.access_token) {
+          setToken(data.access_token);
+          // Redirect to appropriate page based on role? For now, go to client area
+          window.location.href = 'client.html'; // We'll create client area later
+        } else {
+          alert('Login falhou: token não recebido');
+        }
+      } catch (err) {
+        console.error('Erro ao fazer login:', err);
+        alert(`Erro: ${err.message}`);
+      }
+    });
+  </script>
 </body>
 </html>

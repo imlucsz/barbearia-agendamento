@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliar Atendimento - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="client-appointments.html" class="text-white text-decoration-none">← Voltar</a>
+      <h2>Avaliar Atendimento</h2>
+      <a href="client-dashboard.html" class="text-white text-decoration-none">Dashboard</a>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div id="evaluate-content" class="border p-4 rounded">
+      <p class="text-center">Carregando detalhes do agendamento...</p>
+    </div>
+
+    <form id="evaluate-form" class="mt-4">
+      <div class="mb-3">
+        <label for="eval-nota" class="form-label">Nota (1 a 5)</label>
+        <input type="number" class="form-control" id="eval-nota" min="1" max="5" required>
+      </div>
+      <div class="mb-3">
+        <label for="eval-comentario" class="form-label">Comentário</label>
+        <textarea class="form-control" id="eval-comentario" rows="3"></textarea>
+      </div>
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary">Enviar Avaliação</button>
+      </div>
+    </form>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    // Get appointment_id from query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const appointmentId = urlParams.get('appointment_id');
+    if (!appointmentId) {
+      window.location.href = 'client-appointments.html';
+    }
+
+    async function loadAppointment() {
+      try {
+        const data = await api.get(`/appointments/${appointmentId}`, { auth: true });
+        const container = document.getElementById('evaluate-content');
+        // Check if appointment is completed
+        if (data.status !== 'concluido') {
+          container.innerHTML = '<p class="text-danger">Só é possível avaliar agendamentos concluídos.</p>';
+          document.getElementById('evaluate-form').style.display = 'none';
+          return;
+        }
+        container.innerHTML = `
+          <p><strong>Serviço:</strong> ${data.service.nome}</p>
+          <p><strong>Data/Hora:</strong> <span class="monospace">${new Date(data.data_hora).toLocaleString('pt-BR')}</span></p>
+          <p><strong>Status:</strong> <span class="badge bg-success">${data.status}</span></p>
+        `;
+      } catch (err) {
+        console.error('Erro ao carregar agendamento:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('evaluate-content').innerHTML = '<p class="text-danger">Erro ao carregar detalhes do agendamento.</p>';
+          document.getElementById('evaluate-form').style.display = 'none';
+        }
+      }
+    }
+
+    document.getElementById('evaluate-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nota = parseInt(document.getElementById('eval-nota').value);
+      const comentario = document.getElementById('eval-comentario').value.trim();
+
+      try {
+        await api.post(`/appointments/${appointmentId}/avaliacao`, { nota, comentario }, { auth: true });
+        alert('Avaliação enviada com sucesso!');
+        window.location.href = 'client-appointments.html';
+      } catch (err) {
+        console.error('Erro ao enviar avaliação:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          alert(`Erro: ${err.message}`);
+        }
+      }
+    });
+
+    // Load appointment details on page load
+    loadAppointment();
+  </script>
+</body>
+</html>
