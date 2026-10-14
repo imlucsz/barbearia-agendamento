@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meus Agendamentos - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="client-dashboard.html" class="text-white text-decoration-none">← Voltar</a>
+      <h2>Meus Agendamentos</h2>
+      <a href="login.html" class="text-white text-decoration-none">Sair</a>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div id="appointments-list">
+      <p class="text-center">Carregando agendamentos...</p>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    async function loadAppointments() {
+      try {
+        const data = await api.get('/appointments');
+        const container = document.getElementById('appointments-list');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<p class="text-center">Você ainda não tem agendamentos.</p>';
+          return;
+        }
+        let html = '';
+        for (const appt of data) {
+          // We need to get service and barbeiro info for each appointment
+          // For simplicity, we'll fetch them in parallel (could be optimized)
+          html += `
+            <div class="card mb-3 border shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">Agendamento #${appt.id}</h5>
+                <p class="card-text">
+                  <strong>Status:</strong> <span class="badge bg-${getStatusColor(appt.status)}">${appt.status}</span><br>
+                  <strong>Data/Hora:</strong> <span class="monospace">${new Date(appt.data_hora).toLocaleString('pt-BR')}</span><br>
+                  <strong>Duração:</strong> <span class="monospace">${appt.duracao_minutos} min</span><br>
+                  <strong>Preço:</strong> <span class="monospace">R$ ${appt.preco.toFixed(2)}</span>
+                </p>
+                <div class="d-flex gap-2">
+                  ${appt.status === 'pendente' || appt.status === 'confirmado' ? `
+                    <button onclick="rescheduleAppointment(${appt.id}, ${appt.service_id}, ${appt.barbeiro_id})" class="btn btn-sm btn-outline-warning">Reagendar</button>
+                  ` : ''}
+                  ${appt.status === 'concluido' ? `
+                    <a href="client-evaluate.html?appointment_id=${appt.id}" class="btn btn-sm btn-outline-success">Avaliar</a>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('Erro ao carregar agendamentos:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          document.getElementById('appointments-list').innerHTML = '<p class="text-center text-danger">Erro ao carregar agendamentos.</p>';
+        }
+      }
+    }
+
+    function getStatusColor(status) {
+      switch (status) {
+        case 'pendente': return 'warning';
+        case 'confirmado': return 'info';
+        case 'concluido': return 'success';
+        case 'cancelado': return 'danger';
+        case 'falta': return 'secondary';
+        case 'avaliado': return 'dark';
+        default: return 'secondary';
+      }
+    }
+
+    window.rescheduleAppointment = async (id, serviceId, barbeiroId) => {
+      if (!confirm('Tem certeza que deseja reagendar este agendamento? Isso irá cancelar o horário atual e permitir que você escolha um novo.')) return;
+      try {
+        // First, cancel the existing appointment
+        await api.delete(`/appointments/${id}`, { auth: true });
+        // Then redirect to date selection for the same service and barbeiro
+        window.location.href = `client-date.html?service_id=${serviceId}&barbeiro_id=${barbeiroId}`;
+      } catch (err) {
+        console.error('Erro ao reagendar agendamento:', err);
+        alert(`Erro: ${err.message}`);
+      }
+    };
+
+    // Load data on page load
+    loadAppointments();
+  </script>
+</body>
+</html>

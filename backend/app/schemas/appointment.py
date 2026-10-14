@@ -6,6 +6,7 @@ from app.models.user import AppointmentStatusEnum
 
 class AppointmentBase(BaseModel):
     service_id: int
+    barbeiro_id: int
     data_hora: datetime
 
 
@@ -22,6 +23,7 @@ class AppointmentResponse(BaseModel):
     id: int
     user_id: int
     service_id: int
+    barbeiro_id: int
     data_hora: datetime
     status: AppointmentStatusEnum
     # RN-05: Snapshot of service price and duration at time of booking

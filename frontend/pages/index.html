@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-4">
+    <h1>Barbearia Agendamento</h1>
+  </header>
+
+  <main class="container my-4">
+    <!-- Informações Institucionais -->
+    <section id="institucional" class="mb-5">
+      <h2>Informações Institucionais</h2>
+      <div id="institucional-content" class="border p-4 rounded">
+        <p class="text-center">Carregando...</p>
+      </div>
+    </section>
+
+    <!-- Nota Média de Avaliações -->
+    <section id="avaliacoes" class="mb-5">
+      <h2>Avaliações</h2>
+      <div id="avaliacoes-content" class="border p-4 rounded">
+        <p class="text-center">Carregando...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    async function loadInstitucional() {
+      try {
+        const data = await api.get('/informacoes', { auth: false });
+        const container = document.getElementById('institucional-content');
+        container.innerHTML = `
+          <p><strong>Nome:</strong> ${data.nome}</p>
+          <p><strong>Endereço:</strong> ${data.endereco}</p>
+          <p><strong>Telefone:</strong> ${data.telefone}</p>
+          ${data.email ? `<p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>` : ''}
+          ${data.site ? `<p><strong>Site:</strong> <a href="${data.site}" target="_blank">${data.site}</a></p>` : ''}
+          <p><strong>Horário de Funcionamento:</strong> ${data.horario_funcionamento}</p>
+          <p><strong>Dias de Atendimento:</strong> ${data.dias_atendimento}</p>
+          ${data.endereco_maps ? `<p><strong>Localização:</strong> <a href="${data.endereco_maps}" target="_blank">Ver no mapa</a></p>` : ''}
+        `;
+      } catch (err) {
+        console.error('Erro ao carregar informações institucionais:', err);
+        document.getElementById('institucional-content').innerHTML = `<p class="text-danger">Erro ao carregar informações.</p>`;
+      }
+    }
+
+    async function loadAvaliacoes() {
+      try {
+        const data = await api.get('/avaliacoes', { auth: false });
+        const container = document.getElementById('avaliacoes-content');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<p>Ainda não há avaliações.</p>';
+          return;
+        }
+        const total = data.reduce((sum, item) => sum + item.nota, 0);
+        const average = (total / data.length).toFixed(1);
+        container.innerHTML = `
+          <p><strong>Nota Média:</strong> <span class="monospace">${average}/5.0</span> (${data.length} avaliações)</p>
+          <div class="mt-3">
+            <strong>Últimas avaliações:</strong>
+            <ul class="list-unstyled">
+              ${data.slice(0, 3).map(item => `<li>${'★'.repeat(item.nota)}${'☆'.repeat(5 - item.nota)} ${item.comentario || ''}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      } catch (err) {
+        console.error('Erro ao carregar avaliações:', err);
+        document.getElementById('avaliacoes-content').innerHTML = `<p class="text-danger">Erro ao carregar avaliações.</p>`;
+      }
+    }
+
+    // Load data on page load
+    loadInstitucional();
+    loadAvaliacoes();
+  </script>
+</body>
+</html>

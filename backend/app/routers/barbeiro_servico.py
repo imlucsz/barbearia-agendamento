@@ -32,18 +32,18 @@ def get_servicos_barbeiro(
     return servicos
 
 
-@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbearioServicoResponse])
+@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbeiroServicoWithBarbeiroResponse])
 def get_barbeiros_servico(
     service_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     # RF17: Gerenciar barbeiros e serviços que cada um executa
-    # Apenas admin pode ver quais barbeiros podem executar um serviço específico
-    if current_user.role != RoleEnum.ADMIN:
+    # Admin e cliente podem ver quais barbeiros podem executar um serviço específico
+    if current_user.role not in [RoleEnum.ADMIN, RoleEnum.CLIENTE]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso negado. Apenas administrador pode visualizar/gerenciar quais barbeiros executam um serviço."
+            detail="Acesso negado. Apenas administrador ou cliente pode visualizar quais barbeiros executam um serviço."
         )
 
     # Verify that the service exists
@@ -51,8 +51,23 @@ def get_barbeiros_servico(
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    barbeiros = db.query(BarbeiroServico).filter(BarbeiroServico.service_id == service_id).all()
-    return barbeiros
+    # Join with User to get barbeiro name
+    barbeiros = db.query(BarbeiroServico, User.nome).join(
+        User, BarbeiroServico.barbeiro_id == User.id
+    ).filter(
+        BarbeiroServico.service_id == service_id
+    ).all()
+
+    # Convert to response model
+    result = []
+    for barbeiro_servico, barbeiro_nome in barbeiros:
+        result.append(BarbeiroServicoWithBarbeiroResponse(
+            id=barbeiro_servico.id,
+            barbeiro_id=barbeiro_servico.barbeiro_id,
+            service_id=barbeiro_servico.service_id,
+            barbeiro_nome=barbeiro_nome
+        ))
+    return result
 
 
 @router.post("/", response_model=BarbearioServicoResponse, status_code=status.HTTP_201_CREATED)

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecionar Data - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-3">
+    <div class="container d-flex justify-content-between align-items-center">
+      <a href="client-profissional.html" class="text-white text-decoration-none">← Voltar</a>
+      <h2>Selecionar Data</h2>
+      <a href="client-dashboard.html" class="text-white text-decoration-none">Dashboard</a>
+    </div>
+  </header>
+
+  <main class="container my-4">
+    <div id="date-picker" class="mb-4">
+      <label for="date-input" class="form-label">Selecione a data</label>
+      <input type="date" id="date-input" class="form-control" min="">
+    </div>
+    <div id="slots-container">
+      <p class="text-center">Selecione uma data para ver os horários disponíveis.</p>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    // Get service_id and barbeiro_id from query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceId = urlParams.get('service_id');
+    const barbeiroId = urlParams.get('barbeiro_id');
+    if (!serviceId || !barbeiroId) {
+      window.location.href = 'client-services.html';
+    }
+
+    const dateInput = document.getElementById('date-input');
+    const slotsContainer = document.getElementById('slots-container');
+
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.min = today;
+
+    async function loadSlots(dateStr) {
+      try {
+        slotsContainer.innerHTML = '<p class="text-center">Carregando horários...</p>';
+        const data = await api.get('/appointments/disponiveis', {
+          params: { service_id: serviceId, data: dateStr, barbeiro_id: barbeiroId },
+          auth: true
+        });
+        if (!data || data.length === 0) {
+          slotsContainer.innerHTML = '<p class="text-center">Nenhum horário disponível para esta data.</p>';
+          return;
+        }
+        // Display slots as buttons
+        let html = '<div class="d-flex flex-wrap gap-3">';
+        data.forEach(slot => {
+          const time = new Date(slot.data_hora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          html += `
+            <button type="button" class="btn btn-outline-primary" onclick="selectSlot('${slot.data_hora}')">
+              ${time}
+            </button>
+          `;
+        });
+        html += '</div>';
+        slotsContainer.innerHTML = html;
+      } catch (err) {
+        console.error('Erro ao carregar horários:', err);
+        if (err.message.includes('401')) {
+          // Token missing or invalid, redirect to login
+          window.location.href = 'login.html';
+        } else {
+          slotsContainer.innerHTML = `<p class="text-center text-danger">Erro ao carregar horários.</p>`;
+        }
+      }
+    }
+
+    window.selectSlot = (dateTime) => {
+      // Redirect to confirmation page with service_id, barbeiro_id, date_time
+      window.location.href = `client-confirm.html?service_id=${serviceId}&barbeiro_id=${barbeiroId}&date_time=${encodeURIComponent(dateTime)}`;
+    };
+
+    dateInput.addEventListener('change', (e) => {
+      const selectedDate = e.target.value;
+      if (selectedDate) {
+        loadSlots(selectedDate);
+      } else {
+        slotsContainer.innerHTML = '<p class="text-center">Selecione uma data para ver os horários disponíveis.</p>';
+      }
+    });
+  </script>
+</body>
+</html>

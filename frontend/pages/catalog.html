@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Serviços - Barbearia Agendamento</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="bg-primary text-white text-center py-4">
+    <h1>Catálogo de Serviços</h1>
+  </header>
+
+  <main class="container my-4">
+    <div id="services-content" class="border p-4 rounded">
+      <p class="text-center">Carregando serviços...</p>
+    </div>
+  </main>
+
+  <footer class="bg-dark text-white text-center py-3">
+    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module">
+    import { api } from '../assets/js/api.js';
+
+    async function loadServices() {
+      try {
+        const data = await api.get('/services', { auth: false });
+        const container = document.getElementById('services-content');
+        if (!data || data.length === 0) {
+          container.innerHTML = '<p>Nenhum serviço cadastrado.</p>';
+          return;
+        }
+        // Create a table or cards
+        let html = '<table class="table table-striped"><thead><tr><th>Serviço</th><th>Preço</th><th>Duração</th></tr></thead><tbody>';
+        data.forEach(service => {
+          html += `<tr>
+            <td>${service.nome}</td>
+            <td class="monospace">R$ ${service.preco.toFixed(2)}</td>
+            <td class="monospace">${service.duracao_minutos} min</td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      } catch (err) {
+        console.error('Erro ao carregar serviços:', err);
+        document.getElementById('services-content').innerHTML = `<p class="text-danger">Erro ao carregar serviços.</p>`;
+      }
+    }
+
+    // Load data on page load
+    loadServices();
+  </script>
+</body>
+</html>
