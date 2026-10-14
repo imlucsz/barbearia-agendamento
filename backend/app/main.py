@@ -7,13 +7,15 @@ load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, decode_access_token, get_password_hash, verify_password
+from app.core.security import create_access_token, get_password_hash, verify_password
 from app.database import Base, engine, get_db
-from app.models.user import Appointment, RoleEnum, Service, User
+from app.dependencies import get_current_user
+from app.models.user import Appointment, RoleEnum, Service, User, InformacaoInstitucional
+from app.routers.appointments import router as appointments_router
+from app.routers.barbeiro_servico import router as barbeiro_servico_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -31,8 +33,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-security = HTTPBearer(auto_error=False)
-
+app.include_router(appointments_router)
+app.include_router(barbeiro_servico_router)
 
 @app.get("/")
 def root():
@@ -42,45 +44,6 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(security),
-    db: Session = Depends(get_db),
-):
-    if credentials is None or not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token de autenticação não informado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        payload = decode_access_token(credentials.credentials)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido ou expirado",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
-
-    email = payload.get("sub")
-    if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token sem usuário válido",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário não encontrado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
 
 
 @app.post("/auth/register")
@@ -305,4 +268,32 @@ def seed_demo(db: Session = Depends(get_db)):
         "message": "Dados demo criados com sucesso.",
         "admin": {"email": admin_email, "senha": "admin123"},
         "cliente": {"email": "cliente@barbearia.com", "senha": "cliente123"},
+    }
+
+
+@app.get("/informacoes")
+def get_informacoes(db: Session = Depends(get_db)):
+    informacao = db.query(InformacaoInstitucional).first()
+    if informacao is None:
+        # Return a default or empty structure? We'll return an empty dict or raise 404?
+        # For the frontend, it expects certain fields. We'll return a default with empty strings.
+        return {
+            "nome": "",
+            "endereco": "",
+            "telefone": "",
+            "email": "",
+            "site": "",
+            "horario_funcionamento": "",
+            "dias_atendimento": "",
+            "endereco_maps": ""
+        }
+    return {
+        "nome": informacao.nome,
+        "endereco": informacao.endereco,
+        "telefone": informacao.telefone,
+        "email": informacao.email,
+        "site": informacao.site,
+        "horario_funcionamento": informacao.horario_funcionamento,
+        "dias_atendimento": informacao.dias_atendimento,
+        "endereco_maps": informacao.endereco_maps
     }
