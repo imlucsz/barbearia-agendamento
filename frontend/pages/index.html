@@ -4,87 +4,371 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Barbearia Agendamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/home.css">
 </head>
 <body>
-  <header class="bg-primary text-white text-center py-4">
-    <h1>Barbearia Agendamento</h1>
+  <header class="bg-dark text-white">
+    <div class="container d-flex align-items-center justify-content-between">
+      <div class="logo">
+        <h1 class="h4 m-0">Barbearia Agendamento</h1>
+      </div>
+      <nav class="nav d-none d-md-flex">
+        <a href="#" class="nav-link text-white me-3">Home</a>
+        <a href="#" class="nav-link text-white me-3">Serviços</a>
+        <a href="#" class="nav-link text-white me-3">Agendar</a>
+      </nav>
+      <div>
+        <a href="login.html" class="btn btn-outline-light me-2">Entrar</a>
+        <a href="schedule.html" class="btn btn-warning">Agendar</a>
+      </div>
+    </div>
   </header>
 
-  <main class="container my-4">
-    <!-- Informações Institucionais -->
-    <section id="institucional" class="mb-5">
-      <h2>Informações Institucionais</h2>
-      <div id="institucional-content" class="border p-4 rounded">
-        <p class="text-center">Carregando...</p>
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-badge">DESDE 2009 · SÃO PAULO</div>
+        <h1 class="hero-title">
+          Barbearia de qualidade
+          <span class="hero-title-highlight">com estilo único</span>
+        </h1>
+        <p class="hero-text">
+          Agende seu horário com os melhores barbeiros da cidade.
+          Atendimento personalizado e ambiente tradicional.
+        </p>
+        <div class="hero-actions">
+          <a href="schedule.html" class="btn btn-warning me-2">Agendar Horário</a>
+          <a href="services.html" class="btn btn-outline-light">Ver Serviços</a>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="../assets/images/hero-fallback.svg" alt="Barbearia" class="hero-image">
+        <div class="hero-fallback">![Imagem da Barbearia]</div>
       </div>
     </section>
 
-    <!-- Nota Média de Avaliações -->
-    <section id="avaliacoes" class="mb-5">
-      <h2>Avaliações</h2>
-      <div id="avaliacoes-content" class="border p-4 rounded">
-        <p class="text-center">Carregando...</p>
+    <!-- Services Section -->
+    <section id="services" class="mb-5">
+      <div class="section-head text-center">
+        <span class="section-head-badge">O QUE OFERECEMOS</span>
+        <h2 class="section-title">Nossos Serviços</h2>
+        <p class="section-lede">Confira nossos serviços especializados para looks impecáveis</p>
       </div>
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">Todos</button>
+        <button class="filter-btn" data-filter="corte">Corte</button>
+        <button class="filter-btn" data-filter="barba">Barba</button>
+      </div>
+      <div id="services-skeleton" class="skeleton-loading">
+        <div class="service-row"></div>
+        <div class="service-row"></div>
+        <div class="service-row"></div>
+      </div>
+      <ul id="services-list" class="services-list"></ul>
+      <div id="services-error" class="services-error">
+        <p>Erro ao carregar serviços. <button id="btn-retry-services" class="btn btn-sm btn-outline-primary mt-2">Tentar novamente</button></p>
+      </div>
+    </section>
+
+    <!-- How it works Section -->
+    <section id="how-it-works" class="how-it-works mb-5">
+      <div class="section-head text-center">
+        <span class="section-head-badge">COMO FUNCIONA</span>
+        <h2 class="section-title">Como Funciona</h2>
+        <p class="section-lede">Agende seu horário em poucos passos</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div>
+            <h3>Escolha o serviço</h3>
+            <p>Selecione o serviço desejado na nossa lista</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div>
+            <h3>Escolha o horário</h3>
+            <p>Selecione o horário disponível que melhor se adequa a você</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div>
+            <h3>Confirme e compareça</h3>
+            <p>Confirme o agendamento e compareça ao horário marcado</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Business Info / Location Section -->
+    <section id="business-info" class="business-info mb-5">
+      <div class="section-head text-center">
+        <span class="section-head-badge">LOCALIZAÇÃO</span>
+        <h2 class="section-title">Informações da Barbearia</h2>
+        <p class="section-lede">Encontre-nos facilmente e agende sua visita</p>
+      </div>
+      <div class="info-grid">
+        <div class="info-block">
+          <h2>Endereço</h2>
+          <div class="info-list">
+            <div>
+              <dt>Endereço</dt>
+              <dd id="address" class="monospace">Carregando...</dd>
+            </div>
+            <div>
+              <dt>Telefone</dt>
+              <dd id="phone" class="monospace">Carregando...</dd>
+            </div>
+            <div>
+              <dt>WhatsApp</dt>
+              <dd id="whatsapp" class="monospace">Carregando...</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd id="email" class="monospace">Carregando...</dd>
+            </div>
+          </div>
+        </div>
+        <div class="info-block">
+          <h2>Horário de Funcionamento</h2>
+          <div id="map-container"></div>
+          <div class="schedule-table">
+            <table class="table table-borderless">
+              <tbody id="schedule-table-body">
+                <tr><td>Segunda</td><td class="text-end monospace" id="mon">Carregando...</td></tr>
+                <tr><td>Terça</td><td class="text-end monospace" id="tue">Carregando...</td></tr>
+                <tr><td>Quarta</td><td class="text-end monospace" id="wed">Carregando...</td></tr>
+                <tr><td>Quinta</td><td class="text-end monospace" id="thu">Carregando...</td></tr>
+                <tr><td>Sexta</td><td class="text-end monospace" id="fri">Carregando...</td></tr>
+                <tr><td>Sábado</td><td class="text-end monospace" id="sat">Carregando...</td></tr>
+                <tr><td>Domingo</td><td class="text-end monospace" id="sun">Carregando...</td></tr>
+              </tbody>
+            </table>
+            <p id="current-day-highlight" class="text-center mt-2">Dia atual: <span id="current-day" class="fw-bold"></span></p>
+          </div>
+          <div class="info-actions mt-4">
+            <a href="#" class="btn btn-outline-primary">Ver no Google Maps</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="reviews mb-5">
+      <div class="section-head text-center">
+        <span class="section-head-badge">O QUE DIZEM</span>
+        <h2 class="section-title">Avaliações dos Clientes</h2>
+        <p class="section-lede">Confira o que nossos clientes estão dizendo</p>
+      </div>
+      <div id="reviews-list" class="reviews-list"></div>
     </section>
   </main>
 
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  <footer class="bg-dark text-white py-4">
+    <div class="container text-center">
+      <p>&copy; <span id="current-year"></span> Barbearia Agendamento. Todos os direitos reservados.</p>
+    </div>
   </footer>
 
-  <script src="../assets/js/api.js" type="module"></script>
+  <script type="module" src="../assets/js/home.js"></script>
   <script type="module">
-    import { api } from '../assets/js/api.js';
+    import { apiGet } from '../assets/js/api.js';
 
-    async function loadInstitucional() {
+    // Carregar ano atual no footer
+    document.getElementById('current-year').textContent = new Date().getFullYear();
+
+    // Carregar informações institucionais para a seção business-info
+    async function loadBusinessInfo() {
       try {
-        const data = await api.get('/informacoes', { auth: false });
-        const container = document.getElementById('institucional-content');
-        container.innerHTML = `
-          <p><strong>Nome:</strong> ${data.nome}</p>
-          <p><strong>Endereço:</strong> ${data.endereco}</p>
-          <p><strong>Telefone:</strong> ${data.telefone}</p>
-          ${data.email ? `<p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>` : ''}
-          ${data.site ? `<p><strong>Site:</strong> <a href="${data.site}" target="_blank">${data.site}</a></p>` : ''}
-          <p><strong>Horário de Funcionamento:</strong> ${data.horario_funcionamento}</p>
-          <p><strong>Dias de Atendimento:</strong> ${data.dias_atendimento}</p>
-          ${data.endereco_maps ? `<p><strong>Localização:</strong> <a href="${data.endereco_maps}" target="_blank">Ver no mapa</a></p>` : ''}
-        `;
+        const data = await apiGet('/informacoes', { auth: false });
+
+        // Endereço
+        document.getElementById('address').textContent = data.endereco || 'Não informado';
+        // Telefone
+        document.getElementById('phone').textContent = data.telefone || 'Não informado';
+        // WhatsApp (se existir)
+        const whatsappEl = document.getElementById('whatsapp');
+        if (data.whatsapp) {
+          whatsappEl.textContent = data.whatsapp;
+          whatsappEl.innerHTML = `<a href="https://wa.me/${data.whatsapp}" target="_blank">${data.whatsapp}</a>`;
+        } else {
+          whatsappEl.textContent = 'Não informado';
+        }
+        // Email
+        const emailEl = document.getElementById('email');
+        if (data.email) {
+          emailEl.textContent = data.email;
+          emailEl.innerHTML = `<a href="mailto:${data.email}">${data.email}</a>`;
+        } else {
+          emailEl.textContent = 'Não informado';
+        }
+
+        // Horário de funcionamento (assumindo que vem como string separada por vírgula ou similar)
+        const horario = data.horario_funcionamento || '';
+        const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+        const diaIds = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        const horarios = horario.split(',').map(h => h.trim());
+        horarios.forEach((h, index) => {
+          if (diaIds[index]) {
+            document.getElementById(diaIds[index]).textContent = h || 'Fechado';
+          }
+        });
+
+        // Destacar dia atual
+        const hoje = new Date().getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+        const diaNome = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'][hoje];
+        document.getElementById('current-day').textContent = diaNome;
+        // Destacar a linha do dia atual na tabela (opcional)
+        const rowIndex = hoje === 0 ? 6 : hoje - 1; // Ajustar para índice da tabela (0=Seg)
+        const rows = document.querySelectorAll('#schedule-table-body tr');
+        rows.forEach((row, idx) => {
+          if (idx === rowIndex) {
+            row.style.fontWeight = 'bold';
+            row.style.backgroundColor = 'rgba(255, 193, 7, 0.1)';
+          }
+        });
+
+        // Mapa embed (se disponível)
+        const mapContainer = document.getElementById('map-container');
+        if (data.endereco_maps) {
+          const iframe = document.createElement('iframe');
+          iframe.src = data.endereco_maps;
+          iframe.width = "100%";
+          iframe.height = "300px";
+          iframe.style.border = "none";
+          iframe.style.borderRadius = "var(--radius-md)";
+          mapContainer.appendChild(iframe);
+        } else {
+          // Se não houver mapa, podemos exibir uma mensagem ou deixar o container vazio
+          mapContainer.innerHTML = '<p class="text-center text-muted">Mapa não disponível</p>';
+        }
+
       } catch (err) {
         console.error('Erro ao carregar informações institucionais:', err);
-        document.getElementById('institucional-content').innerHTML = `<p class="text-danger">Erro ao carregar informações.</p>`;
+        // Mostrar mensagem de erro nos campos
+        document.getElementById('address').textContent = 'Erro ao carregar endereço';
+        document.getElementById('phone').textContent = 'Erro ao carregar telefone';
+        document.getElementById('whatsapp').textContent = 'Erro ao carregar WhatsApp';
+        document.getElementById('email').textContent = 'Erro ao carregar email';
+        // Limpar horários
+        ['mon','tue','wed','thu','fri','sat','sun'].forEach(id => {
+          document.getElementById(id).textContent = 'Erro';
+        });
+        // Também limpar o mapa container
+        const mapContainer = document.getElementById('map-container');
+        if (mapContainer) {
+          mapContainer.innerHTML = '<p class="text-center text-danger">Erro ao carregar mapa</p>';
+        }
       }
     }
 
-    async function loadAvaliacoes() {
+    // Carregar avaliações para a seção reviews
+    async function loadReviews() {
       try {
-        const data = await api.get('/avaliacoes', { auth: false });
-        const container = document.getElementById('avaliacoes-content');
+        const data = await apiGet('/avaliacoes', { auth: false });
+        const container = document.getElementById('reviews-list');
         if (!data || data.length === 0) {
-          container.innerHTML = '<p>Ainda não há avaliações.</p>';
+          container.innerHTML = '<p class="text-center">Ainda não há avaliações.</p>';
           return;
         }
         const total = data.reduce((sum, item) => sum + item.nota, 0);
         const average = (total / data.length).toFixed(1);
-        container.innerHTML = `
+        // Criar elemento de nota média
+        const averageEl = document.createElement('div');
+        averageEl.className = 'text-center mb-4';
+        averageEl.innerHTML = `
           <p><strong>Nota Média:</strong> <span class="monospace">${average}/5.0</span> (${data.length} avaliações)</p>
-          <div class="mt-3">
-            <strong>Últimas avaliações:</strong>
-            <ul class="list-unstyled">
-              ${data.slice(0, 3).map(item => `<li>${'★'.repeat(item.nota)}${'☆'.repeat(5 - item.nota)} ${item.comentario || ''}</li>`).join('')}
-            </ul>
-          </div>
         `;
+        container.prepend(averageEl);
+
+        // Lista de avaliações
+        const reviewsListEl = document.createElement('div');
+        reviewsListEl.className = 'reviews-list';
+        reviewsListEl.innerHTML = `
+          ${data.slice(0, 6).map(item => `
+            <div class="review-card">
+              <div class="review-head">
+                <div class="review-avatar">${item.nome ? item.nome.charAt(0) : 'A'}</div>
+                <div>
+                  <strong>${item.nome || 'Anônimo'}</strong>
+                  <div class="review-rating">${'★'.repeat(item.nota)}${'☆'.repeat(5 - item.nota)}</div>
+                  <div class="review-date">${item.data ? new Date(item.data).toLocaleDateString('pt-BR') : ''}</div>
+                </div>
+              </div>
+              <p class="review-comment">${item.comentario || ''}</p>
+            </div>
+          `).join('')}
+        `;
+        // Se já existir um .reviews-list, substituir; senão, adicionar
+        const existing = container.querySelector('.reviews-list');
+        if (existing) {
+          existing.outerHTML = reviewsListEl.outerHTML;
+        } else {
+          container.appendChild(reviewsListEl);
+        }
+
       } catch (err) {
         console.error('Erro ao carregar avaliações:', err);
-        document.getElementById('avaliacoes-content').innerHTML = `<p class="text-danger">Erro ao carregar avaliações.</p>`;
+        document.getElementById('reviews-list').innerHTML = '<p class="text-danger">Erro ao carregar avaliações.</p>';
       }
     }
 
-    // Load data on page load
-    loadInstitucional();
-    loadAvaliacoes();
+    // Inicialização
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBusinessInfo();
+      loadReviews();
+      // O carregamento de serviços já é feito pelo home.js via loadServices()
+      // Também iniciamos o carregamento de serviços aqui para garantir
+      // Mas o home.js já tem o event listener DOMContentLoaded que chama loadServices()
+      // Então podemos apenas disparar um evento ou confiar nele.
+      // Vamos garantir que o home.js seja executado primeiro? Ambos são módulos, ordem não garantida.
+      // Vamos chamar loadServices do home.js se exposto, ou simplesmente recarregar aqui.
+      // Para simplicidade, vamos assumir que o home.js já cuida disso.
+      // Vamos também adicionar lógica para as abas de filtro de serviços.
+      initServiceFilters();
+    });
+
+    // Lógica para abas de filtro de serviços
+    function initServiceFilters() {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const servicesList = document.getElementById('services-list');
+
+      // Função para filtrar serviços (será chamada após o carregamento dos serviços)
+      window.filterServices = (filter) => {
+        filterButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.filter === filter || (filter === 'all' && btn.dataset.filter === 'all'));
+        });
+        // A filtragem real será feita no home.js - vamos expôr uma função global ou atualizar via evento
+        // Para simplificar, vamos disparar um evento personalizado
+        document.dispatchEvent(new CustomEvent('filterServices', { detail: { filter } }));
+      };
+
+      filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const filter = button.dataset.filter;
+          filterServices(filter);
+        });
+      });
+    }
+
+    // Escutar evento de filtro para atualizar a lista de serviços (se necessário)
+    // O home.js já tem a lógica de carregamento e renderização; podemos fazer com que ele re-renderize com filtro
+    // Vamos modificar o home.js para aceitar um filtro, mas por enquanto vamos recarregar os serviços e filtrar na renderização
+    // Vamos criar uma função global que o home.js pode usar para definir o filtro atual
+    window.currentServiceFilter = 'all';
+
+    // Sobrescrever a função loadServices do home.js para usar o filtro atual? Melhor não sobrescrever.
+    // Vamos em vez disso, adicionar um listener para quando os serviços forem carregados, então filtrar.
+    // Vamos modificar o home.js posteriormente para suportar filtro.
+    // Por enquanto, vamos deixar o home.js como está e adaptar posteriormente.
+    // Vamos agora atualizar o home.js para suportar filtro de serviços.
   </script>
 </body>
 </html>
