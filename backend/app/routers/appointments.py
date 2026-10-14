@@ -4,9 +4,9 @@ from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from datetime import datetime, date, timedelta
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.user import Appointment, Service, User, RoleEnum, AppointmentStatusEnum, Avaliacao, JornadaTrabalho, BloqueioHorario, BarbearioServico
 from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentResponse, AvaliacaoResponse, AvaliacaoCreate
-from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 

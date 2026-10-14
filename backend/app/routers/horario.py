@@ -4,7 +4,7 @@ from typing import List
 from app.database import get_db
 from app.models.user import JornadaTrabalho, BloqueioHorario, User, RoleEnum
 from app.schemas.horario import JornadaTrabalhoCreate, JornadaTrabalhoUpdate, JornadaTrabalhoResponse, BloqueioHorarioCreate, BloqueioHorarioUpdate, BloqueioHorarioResponse
-from app.routers.auth import get_current_user
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/horario", tags=["horario"])
 

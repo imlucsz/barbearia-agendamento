@@ -4,7 +4,7 @@ from typing import List
 from app.database import get_db
 from app.models.user import InformacaoInstitucional
 from app.schemas.institucional import InformacaoInstitucionalCreate, InformacaoInstitucionalUpdate, InformacaoInstitucionalResponse
-from app.routers.auth import get_current_user
+from app.dependencies import get_current_user
 from app.models.user import RoleEnum
 
 router = APIRouter(prefix="/informacoes", tags=["informacoes-institucionais"])
