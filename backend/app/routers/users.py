@@ -4,7 +4,7 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.user import User, RoleEnum
 from app.schemas.user import UserCreate, UserLogin, UserResponse, UserUpdate
-from app.routers.auth import get_current_user
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/users", tags=["usuarios"])
 

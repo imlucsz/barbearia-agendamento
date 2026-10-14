@@ -2,9 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.user import BarbearioServico, User, Service, RoleEnum
-from app.schemas.barbeiro_servico import BarbearioServicoCreate, BarbearioServicoResponse
-from app.routers.auth import get_current_user
+from app.schemas.barbeiro_servico import (
+    BarbearioServicoCreate,
+    BarbearioServicoResponse,
+    BarbearioServicoWithBarbeiroResponse,
+)
 
 router = APIRouter(prefix="/barbeiro-servico", tags=["barbeiro-servico"])
 
@@ -28,22 +32,22 @@ def get_servicos_barbeiro(
     if not barbeiro or barbeiro.role != RoleEnum.BARBEIRO:
         raise HTTPException(status_code=404, detail="Barbeiro não encontrado")
 
-    servicos = db.query(BarbeiroServico).filter(BarbeiroServico.barbeiro_id == barbeiro_id).all()
+    servicos = db.query(BarbearioServico).filter(BarbearioServico.barbeiro_id == barbeiro_id).all()
     return servicos
 
 
-@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbearioServicoResponse])
+@router.get("/servico/{service_id}/barbeiros", response_model=List[BarbearioServicoWithBarbeiroResponse])
 def get_barbeiros_servico(
     service_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     # RF17: Gerenciar barbeiros e serviços que cada um executa
-    # Apenas admin pode ver quais barbeiros podem executar um serviço específico
-    if current_user.role != RoleEnum.ADMIN:
+    # Admin e cliente podem ver quais barbeiros podem executar um serviço específico
+    if current_user.role not in [RoleEnum.ADMIN, RoleEnum.CLIENTE]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso negado. Apenas administrador pode visualizar/gerenciar quais barbeiros executam um serviço."
+            detail="Acesso negado. Apenas administrador ou cliente pode visualizar quais barbeiros executam um serviço."
         )
 
     # Verify that the service exists
@@ -51,8 +55,23 @@ def get_barbeiros_servico(
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    barbeiros = db.query(BarbeiroServico).filter(BarbeiroServico.service_id == service_id).all()
-    return barbeiros
+    # Join with User to get barbeiro name
+    barbeiros = db.query(BarbearioServico, User.nome).join(
+        User, BarbearioServico.barbeiro_id == User.id
+    ).filter(
+        BarbearioServico.service_id == service_id
+    ).all()
+
+    # Convert to response model
+    result = []
+    for barbeiro_servico, barbeiro_nome in barbeiros:
+        result.append(BarbearioServicoWithBarbeiroResponse(
+            id=barbeiro_servico.id,
+            barbeiro_id=barbeiro_servico.barbeiro_id,
+            service_id=barbeiro_servico.service_id,
+            barbeiro_nome=barbeiro_nome
+        ))
+    return result
 
 
 @router.post("/", response_model=BarbearioServicoResponse, status_code=status.HTTP_201_CREATED)
@@ -80,7 +99,7 @@ def assign_servico_barbeiro(
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
     # Check if already assigned
-    existing = db.query(BarbeiroServico).filter(
+    existing = db.query(BarbearioServico).filter(
         BarbearioServico.barbeiro_id == barbeiro_servico.barbeiro_id,
         BarbearioServico.service_id == barbeiro_servico.service_id
     ).first()
@@ -122,7 +141,7 @@ def remove_servico_barbeiro(
     if not service:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    barbeiro_servico = db.query(BarbeiroServico).filter(
+    barbeiro_servico = db.query(BarbearioServico).filter(
         BarbearioServico.barbeiro_id == barbeiro_id,
         BarbearioServico.service_id == service_id
     ).first()

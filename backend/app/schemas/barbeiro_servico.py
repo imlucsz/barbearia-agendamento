@@ -17,3 +17,13 @@ class BarbearioServicoResponse(BarbearioServicoBase):
 
     class Config:
         orm_mode = True
+
+
+class BarbearioServicoWithBarbeiroResponse(BaseModel):
+    id: int
+    barbeiro_id: int
+    service_id: int
+    barbeiro_nome: str
+
+    class Config:
+        orm_mode = True

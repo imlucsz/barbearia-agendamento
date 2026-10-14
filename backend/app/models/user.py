@@ -1,9 +1,9 @@
-
 import enum
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
+
 
 class RoleEnum(str, enum.Enum):
     CLIENTE = "cliente"
@@ -19,6 +19,7 @@ class AppointmentStatusEnum(str, enum.Enum):
     FALTA = "falta"
     AVALIADO = "avaliado"
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -30,7 +31,10 @@ class User(Base):
     bloqueado = Column(Boolean, default=False)  # RF19: Para bloquear clientes
     ativo = Column(Boolean, default=True)  # RNF-04: Para exclusão lógica de conta
 
-    appointments = relationship("Appointment", back_populates="user")
+    # Relacionamentos
+    appointments = relationship("Appointment", back_populates="user", foreign_keys="Appointment.user_id")
+    barbeiro_appointments = relationship("Appointment", foreign_keys="Appointment.barbeiro_id")
+
 
 class Service(Base):
     __tablename__ = "services"
@@ -42,12 +46,14 @@ class Service(Base):
 
     appointments = relationship("Appointment", back_populates="service")
 
+
 class Appointment(Base):
     __tablename__ = "appointments"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     service_id = Column(Integer, ForeignKey("services.id"))
+    barbeiro_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     data_hora = Column(DateTime, nullable=False)
     status = Column(Enum(AppointmentStatusEnum), default=AppointmentStatusEnum.PENDENTE)
     # RN-05: Snapshot of service price and duration at time of booking
@@ -56,13 +62,14 @@ class Appointment(Base):
     # RN-02: Track number of reschedules (limit Y=2)
     reschedule_count = Column(Integer, default=0)
 
-    # RNF-01: Prevent overbooking - unique constraint on service + time
-    # Note: This is a simplified constraint. A more complete solution would
-    # include barbeiro/professional reference and check against working hours.
-    __table_args__ = (UniqueConstraint('service_id', 'data_hora', name='_service_date_uc'),)
+    # Relacionamentos
+    user = relationship("User", foreign_keys=[user_id])
+    service = relationship("Service", foreign_keys=[service_id])
+    barbeiro = relationship("User", foreign_keys=[barbeiro_id])
 
-    user = relationship("User", back_populates="appointments")
-    service = relationship("Service", back_populates="appointments")
+    # Note: The unique constraint below is a simplification. Real conflict detection
+    # happens in the query for available slots (considering duration, working hours, blocks).
+    __table_args__ = (UniqueConstraint('service_id', 'data_hora', name='_service_date_uc'),)
 
 
 class Avaliacao(Base):

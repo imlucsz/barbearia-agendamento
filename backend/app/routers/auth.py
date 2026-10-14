@@ -1,58 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.dependencies import get_current_user
 from app.models.user import User, RoleEnum, PasswordResetToken
 from app.schemas.user import UserCreate, UserLogin, UserResponse, UserTokenResponse, EsqueciSenhaRequest, RedefinirSenhaRequest
-from app.core.security import verify_password, get_password_hash, create_access_token, decode_access_token
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from app.core.security import verify_password, get_password_hash, create_access_token
 import secrets
 from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-security = HTTPBearer()
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
-):
-    if not credentials or not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token de autenticação não informado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        payload = decode_access_token(credentials.credentials)
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token inválido ou expirado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário não encontrado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if not user.ativo:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Conta inativa",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 from app.database import get_db
 from app.models.user import Appointment, User, Service, RoleEnum, AppointmentStatusEnum
 from app.schemas.appointment import AppointmentResponse, AvaliacaoResponse
-from app.routers.auth import get_current_user
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
