@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Agende seu próximo corte em poucos cliques. Conheça serviços, equipe e horários da Barbearia Agendamento.">
+  <meta name="theme-color" content="#15120f">
+  <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/home.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand-lockup" href="index.html" aria-label="Barbearia Agendamento - início">
+        <span class="brand-mark" aria-hidden="true">B.</span>
+        <span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span>
+      </a>
+      <button id="nav-toggle" class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
+        <a href="#services">Serviços</a>
+        <a href="#how-it-works">Como funciona</a>
+        <a href="#business-info">Onde estamos</a>
+        <a href="#reviews">Avaliações</a>
+      </nav>
+      <div id="auth-area" class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Entrar</a>
+        <a href="client-services.html" class="btn">Agendar horário</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero container" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> Seu próximo visual começa aqui</span>
+        <h1 id="hero-title" class="hero-title">O clássico nunca sai de <em>cena.</em></h1>
+        <p class="hero-text">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
+        <div class="hero-actions">
+          <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large">Escolher meu horário <span aria-hidden="true">↗</span></a>
+          <a href="#services" class="btn btn-large btn-ghost">Explorar serviços</a>
+        </div>
+        <div class="hero-proof">
+          <span class="proof-stars" aria-label="Avaliações dos clientes">★★★★★</span>
+          <span>Atendimento com cuidado em cada detalhe</span>
+        </div>
+      </div>
+      <div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
+        <div class="art-frame">
+          <div class="art-glow"></div>
+          <div class="barber-pole" aria-hidden="true"><span></span></div>
+          <div class="art-copy"><span>DESDE O PRIMEIRO CORTE</span><strong>TRADIÇÃO<br>NO SEU ESTILO.</strong></div>
+          <div class="art-stamp" aria-hidden="true"><span>✦</span><small>BARBER<br>SHOP</small></div>
+          <div class="art-bottom-line" aria-hidden="true"></div>
+        </div>
+        <span class="art-caption">Técnica, personalidade e aquele acabamento impecável.</span>
+      </div>
+    </section>
+
+    <section id="services" class="home-section services-section" aria-labelledby="services-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">FEITO PRA VOCÊ</span><h2 id="services-title">Ritual de cuidado.<br><em>Resultado de respeito.</em></h2></div>
+          <p>Veja o que fazemos, quanto tempo leva e escolha o melhor momento para sua visita.</p>
+        </div>
+        <div class="filter-tabs" role="group" aria-label="Filtrar serviços">
+          <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">Todos</button>
+          <button class="filter-btn" type="button" data-filter="corte" aria-pressed="false">Cortes</button>
+          <button class="filter-btn" type="button" data-filter="barba" aria-pressed="false">Barba</button>
+        </div>
+        <div id="services-skeleton" class="services-grid" aria-label="Carregando catálogo" aria-live="polite">
+          <div class="skeleton-loading"></div><div class="skeleton-loading"></div><div class="skeleton-loading"></div>
+        </div>
+        <ul id="services-list" class="services-grid" aria-live="polite" hidden></ul>
+        <div id="services-error" class="services-error" hidden>
+          <p>Não conseguimos carregar o catálogo agora.</p>
+          <button id="btn-retry-services" class="btn btn-ghost" type="button">Tentar novamente</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="home-section process-section" aria-labelledby="process-title">
+      <div class="container">
+        <div class="section-heading section-heading-centered">
+          <div><span class="eyebrow">SEM ENROLAÇÃO</span><h2 id="process-title">Seu horário em <em>3 passos.</em></h2></div>
+          <p>Você escolhe, a gente prepara a cadeira.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card"><span class="step-number">01</span><h3>Escolha seu serviço</h3><p>Confira os detalhes, preço e duração antes de reservar.</p></article>
+          <article class="step-card"><span class="step-number">02</span><h3>Encontre seu horário</h3><p>Selecione o profissional, a data e um horário disponível.</p></article>
+          <article class="step-card"><span class="step-number">03</span><h3>Chegue no estilo</h3><p>Confirme seu agendamento e venha viver a experiência.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="business-info" class="home-section location-section" aria-labelledby="location-title">
+      <div class="container location-layout">
+        <div class="location-copy">
+          <span class="eyebrow">PASSE PRA TOMAR UM CAFÉ</span>
+          <h2 id="location-title">A cadeira certa<br><em>fica mais perto.</em></h2>
+          <p>Consulte nosso endereço e horário de funcionamento. Esperamos você.</p>
+          <dl class="business-details">
+            <div><dt>Endereço</dt><dd id="address">Carregando…</dd></div>
+            <div><dt>Telefone</dt><dd id="phone">Carregando…</dd></div>
+            <div><dt>Dias</dt><dd id="operating-days">Carregando…</dd></div>
+            <div><dt>E-mail</dt><dd id="email">Carregando…</dd></div>
+          </dl>
+        </div>
+        <div class="location-card">
+          <div class="location-card-heading"><div><span class="eyebrow">HORÁRIOS</span><h3>Quando nos encontrar</h3></div><span class="location-icon" aria-hidden="true">◷</span></div>
+          <div class="schedule-table"><table><tbody id="schedule-table-body">
+            <tr><th scope="row">Segunda</th><td id="mon">—</td></tr>
+            <tr><th scope="row">Terça</th><td id="tue">—</td></tr>
+            <tr><th scope="row">Quarta</th><td id="wed">—</td></tr>
+            <tr><th scope="row">Quinta</th><td id="thu">—</td></tr>
+            <tr><th scope="row">Sexta</th><td id="fri">—</td></tr>
+            <tr><th scope="row">Sábado</th><td id="sat">—</td></tr>
+            <tr><th scope="row">Domingo</th><td id="sun">—</td></tr>
+          </tbody></table></div>
+          <div id="map-container" class="map-container"><p class="text-muted">Mapa não disponível.</p></div>
+          <a id="map-link" class="map-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver rota no mapa <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="reviews" class="home-section reviews-section" aria-labelledby="reviews-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">QUEM JÁ SENTOU NA CADEIRA</span><h2 id="reviews-title">Respeito se conquista.<br><em>Olha só quem conta.</em></h2></div>
+          <div id="review-average" class="review-average" aria-live="polite">Carregando avaliações…</div>
+        </div>
+        <div id="reviews-list" class="reviews-grid" aria-live="polite"><p class="text-muted">Carregando avaliações…</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="brand-lockup" href="index.html"><span class="brand-mark" aria-hidden="true">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a>
+      <p>Um bom corte muda o dia. <span>© <span id="current-year"></span> Barbearia Agendamento.</span></p>
+      <a href="client-services.html">Agende sua visita <span aria-hidden="true">↗</span></a>
+    </div>
+  </footer>
+  <script type="module" src="../assets/js/home.js"></script>
+</body>
+</html>

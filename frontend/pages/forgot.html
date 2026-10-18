@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#15120f">
+  <title>Recuperar senha | Barbearia</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="login.html">Voltar ao login</a></div></header>
+  <main class="page-shell">
+    <div class="page-heading"><span class="eyebrow">ACESSO À CONTA</span><h1>Vamos resolver<br><em>isso rapidinho.</em></h1><p>Informe seu e-mail cadastrado para receber as instruções de recuperação.</p></div>
+    <section class="card">
+      <div id="form-message" class="alert" role="alert" tabindex="-1" hidden></div>
+      <form id="forgot-form" class="form-grid">
+        <div class="form-field form-field--full"><label class="form-label" for="forgot-email">E-mail cadastrado</label><input id="forgot-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="form-field form-field--full"><button class="btn w-100" type="submit">Enviar instruções</button></div>
+      </form>
+    </section>
+  </main>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/auth.js"></script>
+</body>
+</html>

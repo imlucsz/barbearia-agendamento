@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escolha seu horário | Barbearia</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body data-page="date">
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-profissional.html">← Profissional</a></div></header>
+  <main class="container client-page">
+    <div class="page-heading"><span class="eyebrow">PASSO 3 · DATA E HORÁRIO</span><h1>Quando fica <em>melhor?</em></h1><p>Confira os horários disponíveis. A agenda abre para os próximos 14 dias.</p></div>
+    <section class="card date-picker-card">
+      <label class="form-label" for="date-input">Selecione a data</label>
+      <input type="date" id="date-input" class="form-control">
+    </section>
+    <section id="slots-container" class="slots-container" aria-live="polite"><p class="empty-state">Selecione uma data para consultar os horários.</p></section>
+  </main>
+  <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
+  <script type="module" src="../assets/js/schedule.js"></script>
+</body>
+</html>
