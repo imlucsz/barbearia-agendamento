@@ -1,3 +1,5 @@
+:root { --poste-ajuste-x: -8px; }
+
 .header-inner {
   display: flex;
   min-height: 78px;
@@ -124,8 +126,8 @@
 .art-frame {
   position: relative;
   display: grid;
-  min-height: clamp(340px, 43vw, 540px);
-  overflow: hidden;
+  min-height: clamp(360px, 45vw, 560px);
+  overflow: visible;
   place-items: center;
   border: 1px solid rgba(234, 207, 155, .25);
   border-radius: 180px 180px 14px 14px;
@@ -171,41 +173,16 @@
   transform: translateX(-50%);
 }
 
-.barber-pole {
-  position: absolute;
-  top: 17%;
-  right: 19%;
-  width: 52px;
-  height: 210px;
-  overflow: hidden;
-  border: 7px solid #ede1ce;
-  border-radius: 26px;
-  background: repeating-linear-gradient(135deg, #8d2621 0 17px, #ede1ce 17px 33px, #263d48 33px 50px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
-  transform: rotate(9deg);
-}
+.hero-pole { position: absolute; z-index: 2; top: 60%; left: 0; width: auto; height: 120px; max-width: none; image-rendering: pixelated; transform: translateX(calc(-50% + var(--poste-ajuste-x))) translateY(-50%); pointer-events: none; }
 
-.barber-pole::before,
-.barber-pole::after {
-  position: absolute;
-  left: -7px;
-  width: 52px;
-  height: 18px;
-  border-radius: 50%;
-  background: #e8d9bf;
-  content: "";
-}
-
-.barber-pole::before { top: -12px; }
-.barber-pole::after { bottom: -12px; }
-.art-copy { position: absolute; z-index: 1; bottom: 16%; left: 12%; display: grid; gap: .65rem; }
+.art-copy { position: absolute; z-index: 3; bottom: 16%; left: 12%; display: grid; gap: .65rem; }
 .art-copy span { color: var(--color-primary-strong); font-size: .63rem; font-weight: 800; letter-spacing: .2em; }
 .art-copy strong { color: #fff6e8; font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1.02; }
-.art-stamp { position: absolute; z-index: 1; top: 22%; left: 14%; display: grid; width: 70px; height: 70px; place-content: center; border: 1px solid rgba(240, 200, 117, .55); border-radius: 50%; color: var(--color-primary-strong); text-align: center; transform: rotate(-12deg); }
-.art-stamp span { font-size: 1rem; }
-.art-stamp small { color: inherit; font-size: .5rem; font-weight: 800; letter-spacing: .12em; line-height: 1.1; }
 .art-bottom-line { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; height: 7px; background: linear-gradient(90deg, transparent, var(--color-primary), transparent); }
 .art-caption { display: block; margin-top: 1rem; color: var(--color-muted); font-size: .82rem; text-align: right; }
+
+@media (max-width: 600px) { .hero-pole { height: 88px; } }
+@media (max-width: 479px) { :root { --poste-ajuste-x: -6px; } }
 
 .home-section { width: 100%; max-width: none; margin: 0; padding: clamp(4.5rem, 9vw, 8rem) 0; }
 .services-section,
@@ -307,7 +284,6 @@
 @media (max-width: 900px) {
   .hero { min-height: auto; grid-template-columns: 1fr  .8fr; }
   .hero-title { font-size: clamp(3rem, 9vw, 5rem); }
-  .barber-pole { right: 13%; transform: scale(.82) rotate(9deg); transform-origin: top right; }
   .services-grid,
   .reviews-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .location-layout { gap: 2rem; }
@@ -330,7 +306,6 @@
   .hero-art { order: 0; max-width: 420px; margin-inline: auto; }
   .art-frame { min-height: 340px; border-radius: 140px 140px 12px 12px; }
   .art-copy { bottom: 13%; }
-  .barber-pole { top: 14%; right: 15%; height: 170px; }
   .art-caption { text-align: left; }
   .home-section { padding-block: 4.3rem; }
   .section-heading { align-items: flex-start; flex-direction: column; gap: .8rem; margin-bottom: 1.8rem; }
