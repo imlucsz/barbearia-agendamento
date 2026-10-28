@@ -1,8 +1,8 @@
 import enum
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.core.clock import utc_now_naive
 
 
 class RoleEnum(str, enum.Enum):
@@ -35,7 +35,11 @@ class User(Base):
 
         # Relacionamentos
     appointments = relationship("Appointment", back_populates="user", foreign_keys="Appointment.user_id")
-    barbeiro_appointments = relationship("Appointment", foreign_keys="Appointment.barbeiro_id")
+    barbeiro_appointments = relationship(
+        "Appointment",
+        back_populates="barbeiro",
+        foreign_keys="Appointment.barbeiro_id",
+    )
 
 
 class Service(Base):
@@ -69,12 +73,11 @@ class Appointment(Base):
     # Relacionamentos
     user = relationship("User", foreign_keys=[user_id])
     service = relationship("Service", foreign_keys=[service_id])
-    barbeiro = relationship("User", foreign_keys=[barbeiro_id])
-
-    # Note: The unique constraint below is a simplification. Real conflict detection
-    # happens in the query for available slots (considering duration, working hours, blocks).
-    __table_args__ = (UniqueConstraint('service_id', 'data_hora', name='_service_date_uc'),)
-
+    barbeiro = relationship(
+        "User",
+        back_populates="barbeiro_appointments",
+        foreign_keys=[barbeiro_id],
+    )
 
 class Avaliacao(Base):
     __tablename__ = "avaliacoes"
@@ -83,7 +86,7 @@ class Avaliacao(Base):
     appointment_id = Column(Integer, ForeignKey("appointments.id"), unique=True)
     nota = Column(Integer, nullable=False)  # Assuming 1-5 scale
     comentario = Column(String, nullable=True)
-    criada_em = Column(DateTime, default=datetime.utcnow)
+    criada_em = Column(DateTime, default=utc_now_naive)
     oculta = Column(Boolean, default=False)  # RF22: Para moderação de avaliações
 
     appointment = relationship("Appointment")
@@ -101,8 +104,8 @@ class InformacaoInstitucional(Base):
     horario_funcionamento = Column(String, nullable=False)  # e.g., "08:00-18:00"
     dias_atendimento = Column(String, nullable=False)  # e.g., "Segunda a Sexta"
     endereco_maps = Column(String, nullable=True)  # URL or embed code for map
-    criado_em = Column(DateTime, default=datetime.utcnow)
-    atualizado_em = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    criado_em = Column(DateTime, default=utc_now_naive)
+    atualizado_em = Column(DateTime, default=utc_now_naive, onupdate=utc_now_naive)
 
 
 class JornadaTrabalho(Base):

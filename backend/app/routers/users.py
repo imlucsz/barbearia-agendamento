@@ -99,7 +99,7 @@ def update_user(
             detail="Este endpoint é apenas para gerenciamento de clientes"
         )
 
-    update_data = user_update.dict(exclude_unset=True)
+    update_data = user_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(user, key, value)
 

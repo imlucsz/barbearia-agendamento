@@ -39,14 +39,14 @@ def create_or_update_informacoes(
 
     if informacao_existente:
         # Update existing
-        for key, value in informacao.dict().items():
+        for key, value in informacao.model_dump().items():
             setattr(informacao_existente, key, value)
         db.commit()
         db.refresh(informacao_existente)
         return informacao_existente
     else:
         # Create new
-        db_informacao = InformacaoInstitucional(**informacao.dict())
+        db_informacao = InformacaoInstitucional(**informacao.model_dump())
         db.add(db_informacao)
         db.commit()
         db.refresh(db_informacao)
@@ -70,7 +70,7 @@ def update_informacoes(
     if informacao_existente is None:
         raise HTTPException(status_code=404, detail="Informações institucionais não encontradas")
 
-    update_data = informacao.dict(exclude_unset=True)
+    update_data = informacao.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(informacao_existente, key, value)
 

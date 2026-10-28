@@ -5,6 +5,7 @@ from app.database import get_db
 from app.models.user import JornadaTrabalho, BloqueioHorario, User, RoleEnum
 from app.schemas.horario import JornadaTrabalhoCreate, JornadaTrabalhoUpdate, JornadaTrabalhoResponse, BloqueioHorarioCreate, BloqueioHorarioUpdate, BloqueioHorarioResponse
 from app.dependencies import get_current_user
+from app.booking import normalize_datetime
 
 router = APIRouter(prefix="/horario", tags=["horario"])
 
@@ -50,7 +51,7 @@ def create_jornada(
     if not barbeiro or barbeiro.role != RoleEnum.BARBEIRO:
         raise HTTPException(status_code=404, detail="Barbeiro não encontrado")
 
-    db_jornada = JornadaTrabalho(**jornada.dict())
+    db_jornada = JornadaTrabalho(**jornada.model_dump())
     db.add(db_jornada)
     db.commit()
     db.refresh(db_jornada)
@@ -75,7 +76,7 @@ def update_jornada(
             detail="Acesso negado. Apenas o próprio barbeiro ou administrador pode criar/alterar jornadas."
         )
 
-    update_data = jornada_update.dict(exclude_unset=True)
+    update_data = jornada_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(jornada, key, value)
 
@@ -125,7 +126,12 @@ def create_bloqueio(
     if not barbeiro or barbeiro.role != RoleEnum.BARBEIRO:
         raise HTTPException(status_code=404, detail="Barbeiro não encontrado")
 
-    db_bloqueio = BloqueioHorario(**bloqueio.dict())
+    data = bloqueio.model_dump()
+    data["inicio"] = normalize_datetime(data["inicio"])
+    data["fim"] = normalize_datetime(data["fim"])
+    if data["fim"] <= data["inicio"]:
+        raise HTTPException(status_code=400, detail="O fim do bloqueio deve ser posterior ao início")
+    db_bloqueio = BloqueioHorario(**data)
     db.add(db_bloqueio)
     db.commit()
     db.refresh(db_bloqueio)
@@ -150,7 +156,15 @@ def update_bloqueio(
             detail="Acesso negado. Apenas o próprio barbeiro ou administrador pode criar/alterar bloqueios."
         )
 
-    update_data = bloqueio_update.dict(exclude_unset=True)
+    update_data = bloqueio_update.model_dump(exclude_unset=True)
+    inicio = normalize_datetime(update_data.get("inicio", bloqueio.inicio))
+    fim = normalize_datetime(update_data.get("fim", bloqueio.fim))
+    if fim <= inicio:
+        raise HTTPException(status_code=400, detail="O fim do bloqueio deve ser posterior ao início")
+    if "inicio" in update_data:
+        update_data["inicio"] = inicio
+    if "fim" in update_data:
+        update_data["fim"] = fim
     for key, value in update_data.items():
         setattr(bloqueio, key, value)
 

@@ -42,7 +42,48 @@ source .venv/bin/activate
 
 A API fica em `http://127.0.0.1:8000`. A documentação interativa do FastAPI fica em `http://127.0.0.1:8000/docs`; o schema OpenAPI está em `/openapi.json`.
 
-O banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. Na primeira inicialização, as tabelas são criadas automaticamente. `Base.metadata.create_all()` cria tabelas novas, mas não substitui um sistema de migrações para mudanças complexas de schema.
+No ambiente local (`APP_ENV=development`), o banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. Nos demais ambientes, `DATABASE_URL` deve ser configurada explicitamente; a API falha ao iniciar se estiver ausente. A aplicação ainda cria tabelas ausentes com `Base.metadata.create_all()` e aplica atualizações aditivas específicas ao iniciar. As mudanças versionadas de schema devem ser aplicadas explicitamente pelo Alembic antes de disponibilizar a nova versão da API.
+
+### Migrações de banco com Alembic
+
+O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambiente ou de `backend/.env`. Nenhuma URL com credenciais fica gravada no repositório. Execute os comandos a partir de `backend`, com as dependências do `requirements.txt` instaladas:
+
+```powershell
+.\.venv\Scripts\python.exe -m alembic current
+.\.venv\Scripts\python.exe -m alembic history
+.\.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+Esta primeira revisão **não é uma migração de criação de schema**: ela só procura e remove a restrição única antiga de `appointments(service_id, data_hora)`. Se a tabela não existir, a revisão não cria tabelas e registra a versão; a inicialização da aplicação continua responsável pela criação do schema novo. Também não há `stamp` automático.
+
+Procedimento de adoção:
+
+- **Banco existente com a restrição antiga:** faça backup, pare a API, confirme que `DATABASE_URL` aponta para esse banco e execute `python -m alembic upgrade head`. A revisão remove somente a restrição cujas colunas são `service_id` e `data_hora`, sem depender do nome. Depois, inicie a API. A validação por intervalo e barbeiro continua no backend.
+- **Banco existente sem essa restrição:** execute o mesmo `upgrade head`. A revisão não altera a tabela e registra a versão do Alembic.
+- **Banco novo:** pode executar `upgrade head` antes da primeira inicialização (a revisão não cria tabelas) e depois iniciar a API para `create_all()`, ou iniciar a API primeiro e executar a migração em seguida. Em ambos os casos, o modelo atual cria `appointments` sem a unicidade global.
+- **Banco com `alembic_version` preexistente ou schema inesperado:** interrompa a adoção e compare o histórico e o schema antes de aplicar ou marcar revisões. Não use `stamp` para contornar divergências sem uma inspeção e backup.
+
+Para reverter a revisão, primeiro pare a API e avalie os dados. `python -m alembic downgrade -1` só recria a unicidade antiga se não houver duas linhas com o mesmo serviço e início. Se houver duplicatas, o downgrade falha claramente e preserva as reservas; resolva os registros de forma explícita e faça backup antes de tentar novamente. Não apague nem altere reservas automaticamente para forçar a reversão.
+
+#### Testes de integração PostgreSQL
+
+Os testes usam SQLite temporário por padrão, mesmo que `BOOKING_TEST_POSTGRES_URL` esteja definida. Para habilitar PostgreSQL, configure **ambas** `BOOKING_TEST_BACKEND=postgresql` e `BOOKING_TEST_POSTGRES_URL` com uma URL `postgresql+psycopg://` cujo nome de banco termine em `_test`. O suporte não usa `DATABASE_URL` nem lê `.env` para escolher o banco de teste. Antes de criar qualquer schema, valida a autenticação e confirma o banco e usuário conectados; depois cria um schema `barbearia_test_*` exclusivo e remove somente esse schema ao terminar. O banco dedicado precisa permitir `CREATE SCHEMA` e `DROP SCHEMA`. Não aponte a URL a bancos de desenvolvimento ou produção.
+
+O projeto fornece `compose.postgres-test.yml` para um PostgreSQL efêmero, ligado somente a `127.0.0.1:55432`, sem volume persistente. A configuração não foi iniciada automaticamente. No PowerShell, depois de instalar manualmente as dependências do `requirements.txt` e ter Docker Compose disponível:
+
+```powershell
+$env:POSTGRES_TEST_PASSWORD = (& .\.venv\Scripts\python.exe -c 'import secrets; print(secrets.token_urlsafe(24))')
+docker compose -f ..\compose.postgres-test.yml up -d --wait
+$env:BOOKING_TEST_POSTGRES_URL = "postgresql+psycopg://barbearia_test:$($env:POSTGRES_TEST_PASSWORD)@127.0.0.1:55432/barbearia_test"
+$env:BOOKING_TEST_BACKEND = "postgresql"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_postgres_booking_migration.py" -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_booking_integrity.py" -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_booking_temporal.py" -v
+$env:BOOKING_TEST_BACKEND = "sqlite"
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Com `BOOKING_TEST_BACKEND=postgresql`, os testes de integridade concorrente e temporais executam contra PostgreSQL; cada requisição usa sua própria sessão/conexão. Os testes PostgreSQL de migração exercitam upgrade, preservação de registros, constraints e chaves estrangeiras, downgrade seguro e downgrade incompatível. Defina `BOOKING_TEST_BACKEND=sqlite` para a suíte SQLite, que continua usando arquivo temporário mesmo com a URL PostgreSQL presente. O serviço opcional pode ser encerrado com `docker compose -f ..\compose.postgres-test.yml down`; não remova volumes manualmente.
 
 ### 2. Criar dados locais de demonstração
 
@@ -60,7 +101,7 @@ Esse endpoint cria contas e serviços de demonstração se ainda não existirem.
 | Barbeiro | `barbeiro@barbearia.com` | `barbeiro123` |
 | Cliente | `cliente@barbearia.com` | `cliente123` |
 
-**Uso exclusivamente local:** `/seed` usa credenciais conhecidas e não deve ficar acessível em produção. Troque/remova esse mecanismo e as credenciais antes de publicar a API.
+**Uso exclusivamente local:** `/seed` só é registrado quando `APP_ENV=development` estiver definido explicitamente. Configure essa variável antes de iniciar a API local; sem ela, a rota não fica disponível. A resposta confirma a criação dos dados, mas não retorna credenciais. Não habilite o endpoint em ambientes publicados.
 
 ### 3. Servir o frontend
 
@@ -79,12 +120,21 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | Variável | Finalidade | Padrão local |
 | --- | --- | --- |
 | `DATABASE_URL` | URL de conexão SQLAlchemy | `sqlite:///./barbearia.db` |
-| `SECRET_KEY` | Chave de assinatura JWT | Chave de desenvolvimento insegura |
+| `CORS_ALLOWED_ORIGINS` | Origens web explicitamente autorizadas, separadas por vírgula | `http://127.0.0.1:5500` em desenvolvimento; obrigatória em produção, com uma ou mais origens HTTPS reais do frontend |
+| `SECRET_KEY` | Chave privada de assinatura JWT, com pelo menos 32 bytes UTF-8 | Obrigatória; não há valor padrão |
 | `ALGORITHM` | Algoritmo JWT | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos | `1440` (24 horas) |
-| `APP_ENV` | Ambiente de execução | `development` |
+| `APP_ENV` | Ambiente de execução; `/seed` só é habilitado com o valor explícito `development` | `development` no `backend/.env.example` para uso local; ausente, a rota fica desabilitada |
 
-Em produção, defina uma `SECRET_KEY` aleatória e privada, configure HTTPS, restringa CORS e nunca use as credenciais de demonstração. Não envie o arquivo `.env` ao Git.
+O envio de redefinição de senha usa SMTP com STARTTLS, configurado por `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` e `PASSWORD_RESET_URL`; o último deve apontar para `frontend/pages/reset.html`. Não há credenciais SMTP fornecidas pelo projeto. Em desenvolvimento explicitamente configurado e sem SMTP, o token fica disponível somente no log local do backend. Fora de desenvolvimento, configuração ausente ou falha de envio não deixa um token utilizável e a API mantém a resposta genérica. Defina `APP_ENV=production` em implantações publicadas; o `.env.example` é para desenvolvimento local.
+
+Gere uma chave uma única vez e guarde-a em `backend/.env` (não gere uma chave nova a cada inicialização):
+
+```powershell
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao iniciar se a chave estiver ausente, vazia, curta ou parecer um valor de exemplo. O `.env.example` deixa essa variável vazia intencionalmente. Use uma chave persistente e privada por ambiente; não envie `.env` ao Git. Em produção, configure também HTTPS, restrinja CORS e não use as credenciais de demonstração.
 
 Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco e instale o driver PostgreSQL compatível com essa URL. O `requirements.txt` atual não instala um driver PostgreSQL.
 
@@ -235,15 +285,25 @@ Os schemas validam os dados HTTP; não são tabelas do banco. `ORMModel` configu
 - `barbeiro_servico.py`: associações entre profissionais e serviços.
 - `institucional.py`: informações públicas e gestão institucional.
 
+## Fuso horário da agenda
+
+A agenda usa SCHEDULING_TIMEZONE (padrão America/Sao_Paulo). Datas sem offset na API continuam sendo horários locais da barbearia, como os valores datetime-local enviados pelo frontend. Datas recebidas com offset são convertidas para esse fuso antes de serem armazenadas no formato local sem fuso que o schema atual já utiliza. Respostas e parâmetros existentes permanecem compatíveis.
+
+As colunas DateTime atuais não armazenam fuso horário; esta configuração não reinterpreta nem converte registros existentes. O sistema os continua tratando como horário local. Se houver suspeita de que dados históricos foram gravados como UTC ingênuo, faça inventário separado antes de qualquer conversão.
+
 ## Testes e validações
 
-Não há atualmente uma suíte automatizada de integração (`test_integration.py` ou `test_integration_final.py`) no repositório. Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados de demonstração. Antes de produção, crie testes automatizados para regras de horário, concorrência, autorização por perfil, redefinição de senha e migrações.
+A suíte automatizada usa `unittest` e fica em `backend/tests`. Por padrão, ela executa com SQLite temporário e cobre configuração da aplicação, autenticação e autorização, recuperação de senha, regras temporais e integridade dos agendamentos, além da migração SQLite. Os testes específicos de PostgreSQL são ignorados quando o backend PostgreSQL não está explicitamente configurado.
+
+Para validar também o PostgreSQL, configure `BOOKING_TEST_BACKEND=postgresql` e `BOOKING_TEST_POSTGRES_URL` para um banco exclusivo de testes, conforme as instruções acima. Nesse modo, os testes de integridade, concorrência, regras temporais e migração usam PostgreSQL; a suíte padrão não valida PostgreSQL quando essa configuração está ausente.
+
+Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados locais de demonstração.
 
 ## Limitações e cuidados antes de produção
 
-- O token de redefinição só é devolvido como `dev_token` quando `APP_ENV=development`; configure um provedor de e-mail para entregar o link em produção.
-- O endpoint `GET /seed` contém contas e senhas públicas de demonstração e deve ser removido ou protegido no ambiente publicado.
-- O CORS atualmente aceita qualquer origem; restrinja `allow_origins` antes de publicar.
+- O token de redefinição nunca é devolvido pela API. Em desenvolvimento explicitamente configurado, sem SMTP, ele aparece somente no log local; em outros ambientes, configure a entrega SMTP descrita acima.
+- O endpoint `GET /seed` só existe com `APP_ENV=development`; sem essa configuração explícita, inclusive quando `APP_ENV` está ausente, a rota não é registrada. A resposta não divulga credenciais.
+- O CORS aceita apenas as origens normalizadas listadas em `CORS_ALLOWED_ORIGINS`. Em desenvolvimento, se a variável estiver ausente, é permitida a origem documentada `http://127.0.0.1:5500`. Em produção, a variável é obrigatória e deve conter uma ou mais origens HTTPS exatas do frontend publicado, incluindo a porta não padrão quando aplicável. Não use `*` nem inclua caminhos.
 - A atualização de schema em `database.py` cobre colunas específicas, mas não substitui migrações versionadas para evolução contínua do banco.
 - Consentimento e anonimização implementados são controles técnicos; não substituem avaliação jurídica e operacional de conformidade com a LGPD.
 
