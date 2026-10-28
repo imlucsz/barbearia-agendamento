@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Depuração da Estrelinha barbeiro</title>
+  <link rel="stylesheet" href="../assets/css/debug-estrelinha.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <main class="estrela-debug">
+    <header class="estrela-debug__header">
+      <p>FERRAMENTA DE AJUSTE DO MODELO</p>
+      <h1>Estrelinha barbeiro</h1>
+      <span>Vistas sincronizadas. Clique em um modelo para acenar; use os controles para isolar acessórios.</span>
+    </header>
+    <section class="estrela-debug__views" aria-label="Comparação visual">
+      <article class="estrela-debug__panel"><h2>Frente</h2><canvas data-view="frente" aria-label="Estrelinha vista de frente"></canvas></article>
+      <article class="estrela-debug__panel"><h2>3/4</h2><canvas data-view="tres-quartos" aria-label="Estrelinha em vista de três quartos"></canvas></article>
+      <article class="estrela-debug__panel"><h2>Lado</h2><canvas data-view="lado" aria-label="Estrelinha vista de lado"></canvas></article>
+      <article class="estrela-debug__panel estrela-debug__reference"><h2>Referência</h2><img src="../../Gemini_Generated_Image_9vyv929vyv929vyv.jpg" alt="Imagem de referência da Estrelinha barbeiro"></article>
+    </section>
+    <section class="estrela-debug__controls" aria-label="Mostrar e ocultar partes">
+      <h2>Itens para depuração</h2>
+      <div class="estrela-debug__buttons">
+        <button type="button" data-item="navalha" aria-pressed="true">Navalha 2D</button>
+        <button type="button" data-item="maquininha" aria-pressed="true">Maquininha 2D</button>
+        <button type="button" data-item="avental" aria-pressed="true">Avental 2D</button>
+      </div>
+    </section>
+    <p class="estrela-debug__note">Three.js é carregado via CDN. Esta página exige HTTP/HTTPS e conexão com a internet.</p>
+  </main>
+  <script type="module" src="../assets/js/estrelinha/debug.js"></script>
+</body>
+</html>

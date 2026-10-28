@@ -8,6 +8,10 @@
   <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/home.css">
+  <link rel="stylesheet" href="../assets/css/estrelinha.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
+  </script>
 </head>
 <body>
   <header class="site-header">
@@ -50,9 +54,13 @@
       <div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
         <div class="art-frame">
           <div class="art-glow"></div>
-          <div class="barber-pole" aria-hidden="true"><span></span></div>
+          <img class="hero-pole" data-barber-pole
+            src="../assets/images/barbershopPole-recortado.gif"
+            data-animated-src="../assets/images/barbershopPole-recortado.gif"
+            data-still-src="../assets/images/barbershopPole-primeiro-frame.png"
+            alt="" aria-hidden="true">
+          <div class="estrela-mount" data-estrelinha-barbeiro></div>
           <div class="art-copy"><span>DESDE O PRIMEIRO CORTE</span><strong>TRADIÇÃO<br>NO SEU ESTILO.</strong></div>
-          <div class="art-stamp" aria-hidden="true"><span>✦</span><small>BARBER<br>SHOP</small></div>
           <div class="art-bottom-line" aria-hidden="true"></div>
         </div>
         <span class="art-caption">Técnica, personalidade e aquele acabamento impecável.</span>
@@ -144,5 +152,6 @@
     </div>
   </footer>
   <script type="module" src="../assets/js/home.js"></script>
+  <script type="module" src="../assets/js/estrelinha/widget.js"></script>
 </body>
 </html>
