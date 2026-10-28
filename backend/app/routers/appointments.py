@@ -10,6 +10,7 @@ from app.booking import (
     SLOT_INTERVAL_MINUTES,
     lock_barber_for_booking,
     normalize_datetime,
+    now_local,
     validate_booking_slot,
 )
 from app.database import get_db
@@ -103,8 +104,9 @@ def get_available_slots(
     if service is None:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    today = datetime.utcnow().date()
-    if data < today or data > (datetime.utcnow() + timedelta(days=BOOKING_WINDOW_DAYS)).date():
+    now = now_local()
+    today = now.date()
+    if data < today or data > (now + timedelta(days=BOOKING_WINDOW_DAYS)).date():
         raise HTTPException(
             status_code=400,
             detail=f"Escolha uma data entre hoje e os próximos {BOOKING_WINDOW_DAYS} dias",
@@ -197,7 +199,7 @@ def update_appointment(
     if appointment is None:
         raise HTTPException(status_code=404, detail="Agendamento não encontrado")
 
-    update_data = appointment_update.dict(exclude_unset=True)
+    update_data = appointment_update.model_dump(exclude_unset=True)
     if any(value is None for value in update_data.values()):
         raise HTTPException(status_code=400, detail="Os campos enviados não podem ser nulos")
     if current_user.role == RoleEnum.CLIENTE and "status" in update_data and "data_hora" in update_data:
@@ -219,7 +221,7 @@ def update_appointment(
         if new_status == AppointmentStatusEnum.CANCELADO and not (is_admin or is_assigned_barber):
             if appointment.status not in (AppointmentStatusEnum.PENDENTE, AppointmentStatusEnum.CONFIRMADO):
                 raise HTTPException(status_code=400, detail="Este agendamento não pode mais ser cancelado")
-            if appointment.data_hora - datetime.utcnow() < timedelta(hours=24):
+            if appointment.data_hora - now_local() < timedelta(hours=24):
                 raise HTTPException(status_code=400, detail="Cancelamentos exigem 24 horas de antecedência")
         appointment.status = new_status
         if new_status == AppointmentStatusEnum.CONCLUIDO and "valor_cobrado" not in update_data:
@@ -235,7 +237,7 @@ def update_appointment(
             raise HTTPException(status_code=403, detail="Somente o cliente ou administrador pode reagendar")
         if is_owner and appointment.status not in (AppointmentStatusEnum.PENDENTE, AppointmentStatusEnum.CONFIRMADO):
             raise HTTPException(status_code=400, detail="Este agendamento não pode ser reagendado")
-        if is_owner and appointment.data_hora - datetime.utcnow() < timedelta(hours=24):
+        if is_owner and appointment.data_hora - now_local() < timedelta(hours=24):
             raise HTTPException(status_code=400, detail="Reagendamentos exigem 24 horas de antecedência")
         if is_owner and appointment.reschedule_count >= 2:
             raise HTTPException(status_code=400, detail="Limite máximo de 2 reagendamentos atingido")
@@ -249,6 +251,7 @@ def update_appointment(
             appointment.barbeiro_id,
             update_data["data_hora"],
             exclude_appointment_id=appointment.id,
+            duration_minutes=appointment.duracao_minutos,
         )
         if new_start != appointment.data_hora and is_owner:
             appointment.reschedule_count += 1

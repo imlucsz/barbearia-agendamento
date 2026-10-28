@@ -1,13 +1,17 @@
+import hashlib
+import secrets
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+from app.core.email import send_password_reset_email
+from app.core.clock import utc_now_naive
+from app.core.security import verify_password, get_password_hash, create_access_token
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User, RoleEnum, PasswordResetToken
 from app.schemas.user import UserCreate, UserLogin, UserResponse, UserTokenResponse, EsqueciSenhaRequest, RedefinirSenhaRequest
-from app.core.security import verify_password, get_password_hash, create_access_token
-import secrets
-import os
-from datetime import datetime, timedelta
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -33,7 +37,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
         senha_hash=hashed_password,
         role=RoleEnum.CLIENTE,
         consentimento_lgpd=True,
-        consentimento_em=datetime.utcnow(),
+        consentimento_em=utc_now_naive(),
     )
     db.add(db_user)
     db.commit()
@@ -79,35 +83,75 @@ def read_current_user(current_user: User = Depends(get_current_user)):
 @router.post("/esqueci-senha")
 def esqueci_senha(payload: EsqueciSenhaRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
-    # Sempre retorna a mesma mensagem, exista ou não o email (evita enumeração de usuários)
     if user:
         token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
         reset = PasswordResetToken(
             user_id=user.id,
-            token=token,
-            expires_at=datetime.utcnow() + timedelta(hours=1),
+            token=token_hash,
+            expires_at=utc_now_naive() + timedelta(hours=1),
         )
-        db.add(reset)
-        db.commit()
-        response = {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
-        if os.getenv("APP_ENV", "development").lower() == "development":
-            response["dev_token"] = token
-        return response
+        try:
+            # Only the newest outstanding token for this account remains usable.
+            db.query(PasswordResetToken).filter(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.used.is_(False),
+            ).update({PasswordResetToken.used: True}, synchronize_session=False)
+            db.add(reset)
+            db.flush()
+        except Exception:
+            db.rollback()
+            raise
+
+        try:
+            send_password_reset_email(user.email, token)
+        except Exception:
+            # A failed delivery must not leave an undisclosed usable token behind.
+            db.rollback()
+            return {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
+
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
+
+    # Same status and body for known/unknown addresses and delivery failures.
     return {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
 
 
 @router.post("/redefinir-senha")
 def redefinir_senha(payload: RedefinirSenhaRequest, db: Session = Depends(get_db)):
+    token_hash = hashlib.sha256(payload.token.encode("utf-8")).hexdigest()
+    now = utc_now_naive()
     reset = db.query(PasswordResetToken).filter(
-        PasswordResetToken.token == payload.token,
-        PasswordResetToken.used == False,
+        PasswordResetToken.token == token_hash,
+        PasswordResetToken.used.is_(False),
+        PasswordResetToken.expires_at > now,
     ).first()
+    if not reset:
+        raise HTTPException(status_code=400, detail="Token inválido ou expirado")
 
-    if not reset or reset.expires_at < datetime.utcnow():
+    # Conditional update makes token consumption atomic and prevents reuse.
+    consumed = db.query(PasswordResetToken).filter(
+        PasswordResetToken.id == reset.id,
+        PasswordResetToken.used.is_(False),
+        PasswordResetToken.expires_at > now,
+    ).update({PasswordResetToken.used: True}, synchronize_session=False)
+    if consumed != 1:
+        db.rollback()
         raise HTTPException(status_code=400, detail="Token inválido ou expirado")
 
     user = db.query(User).filter(User.id == reset.user_id).first()
-    user.senha_hash = get_password_hash(payload.nova_senha)  # usa a função de hash já existente
-    reset.used = True
+    if not user:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Token inválido ou expirado")
+
+    user.senha_hash = get_password_hash(payload.nova_senha)
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.id != reset.id,
+        PasswordResetToken.used.is_(False),
+    ).update({PasswordResetToken.used: True}, synchronize_session=False)
     db.commit()
     return {"mensagem": "Senha redefinida com sucesso"}

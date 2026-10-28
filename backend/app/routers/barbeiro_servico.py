@@ -100,7 +100,7 @@ def assign_servico_barbeiro(
             detail="Este serviço já está atribuído a este barbeiro"
         )
 
-    db_barbeiro_servico = BarbearioServico(**barbeiro_servico.dict())
+    db_barbeiro_servico = BarbearioServico(**barbeiro_servico.model_dump())
     db.add(db_barbeiro_servico)
     db.commit()
     db.refresh(db_barbeiro_servico)

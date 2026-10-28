@@ -4,6 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
+APP_ENV = os.getenv("APP_ENV", "").strip().lower()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,65 +51,59 @@ def health():
     return {"status": "ok"}
 
 
-@app.get("/seed")
-def seed_demo():
-    """Seed initial data for testing"""
-    db = SessionLocal()
-    try:
-        admin_email = "admin@barbearia.com"
-        admin_user = db.query(User).filter(User.email == admin_email).first()
-        if not admin_user:
-            admin_user = User(
-                nome="Administrador",
-                email=admin_email,
-                senha_hash=get_password_hash("admin123"),
-                role=RoleEnum.ADMIN
-            )
-            db.add(admin_user)
+if APP_ENV == "development":
+    @app.get("/seed")
+    def seed_demo():
+        """Create local demonstration users and services."""
+        db = SessionLocal()
+        try:
+            admin_email = "admin@barbearia.com"
+            admin_user = db.query(User).filter(User.email == admin_email).first()
+            if not admin_user:
+                admin_user = User(
+                    nome="Administrador",
+                    email=admin_email,
+                    senha_hash=get_password_hash("admin123"),
+                    role=RoleEnum.ADMIN
+                )
+                db.add(admin_user)
 
-        barbeiro_email = "barbeiro@barbearia.com"
-        barbeiro = db.query(User).filter(User.email == barbeiro_email).first()
-        if not barbeiro:
-            barbeiro = User(
-                nome="Barbeiro João",
-                email=barbeiro_email,
-                senha_hash=get_password_hash("barbeiro123"),
-                role=RoleEnum.BARBEIRO
-            )
-            db.add(barbeiro)
+            barbeiro_email = "barbeiro@barbearia.com"
+            barbeiro = db.query(User).filter(User.email == barbeiro_email).first()
+            if not barbeiro:
+                barbeiro = User(
+                    nome="Barbeiro João",
+                    email=barbeiro_email,
+                    senha_hash=get_password_hash("barbeiro123"),
+                    role=RoleEnum.BARBEIRO
+                )
+                db.add(barbeiro)
 
-        client_email = "cliente@barbearia.com"
-        client = db.query(User).filter(User.email == client_email).first()
-        if not client:
-            client = User(
-                nome="Cliente Maria",
-                email=client_email,
-                senha_hash=get_password_hash("cliente123"),
-                role=RoleEnum.CLIENTE
-            )
-            db.add(client)
+            client_email = "cliente@barbearia.com"
+            client = db.query(User).filter(User.email == client_email).first()
+            if not client:
+                client = User(
+                    nome="Cliente Maria",
+                    email=client_email,
+                    senha_hash=get_password_hash("cliente123"),
+                    role=RoleEnum.CLIENTE
+                )
+                db.add(client)
 
-        services_data = [
-            ("Corte", 35.00, 40),
-            ("Barba", 25.00, 30),
-            ("Corte + Barba", 55.00, 60),
-            ("Tratamento Capilar", 45.00, 50),
-            ("Sobrancelha", 15.00, 20)
-        ]
-        for nome, preco, duracao in services_data:
-            service = db.query(Service).filter(Service.nome == nome).first()
-            if not service:
-                db.add(Service(nome=nome, preco=preco, duracao_minutos=duracao))
+            services_data = [
+                ("Corte", 35.00, 40),
+                ("Barba", 25.00, 30),
+                ("Corte + Barba", 55.00, 60),
+                ("Tratamento Capilar", 45.00, 50),
+                ("Sobrancelha", 15.00, 20)
+            ]
+            for nome, preco, duracao in services_data:
+                service = db.query(Service).filter(Service.nome == nome).first()
+                if not service:
+                    db.add(Service(nome=nome, preco=preco, duracao_minutos=duracao))
 
-        db.commit()
+            db.commit()
 
-        return {
-            "message": "Dados de demonstração criados com sucesso",
-            "usuarios": {
-                "admin": {"email": admin_email, "senha": "admin123"},
-                "barbeiro": {"email": barbeiro_email, "senha": "barbeiro123"},
-                "cliente": {"email": client_email, "senha": "cliente123"}
-            }
-        }
-    finally:
-        db.close()
+            return {"message": "Dados de demonstração criados com sucesso"}
+        finally:
+            db.close()

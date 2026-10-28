@@ -1,4 +1,6 @@
-from datetime import date, datetime, time, timedelta, timezone
+import os
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -17,6 +19,8 @@ from app.models.user import (
 
 BOOKING_WINDOW_DAYS = 14
 SLOT_INTERVAL_MINUTES = 30
+SCHEDULING_TIMEZONE_ENV = "SCHEDULING_TIMEZONE"
+DEFAULT_SCHEDULING_TIMEZONE = "America/Sao_Paulo"
 ACTIVE_APPOINTMENT_STATUSES = [
     AppointmentStatusEnum.PENDENTE,
     AppointmentStatusEnum.CONFIRMADO,
@@ -33,8 +37,21 @@ def lock_barber_for_booking(db: Session, barber_id: int) -> None:
 
 def normalize_datetime(value: datetime) -> datetime:
     if value.tzinfo is not None:
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
+        return value.astimezone(scheduling_timezone()).replace(tzinfo=None)
     return value
+
+
+def scheduling_timezone() -> ZoneInfo:
+    name = os.environ.get(SCHEDULING_TIMEZONE_ENV, DEFAULT_SCHEDULING_TIMEZONE)
+    try:
+        return ZoneInfo(name)
+    except ZoneInfoNotFoundError as exc:
+        raise RuntimeError(f"Invalid {SCHEDULING_TIMEZONE_ENV} value: {name!r}") from exc
+
+
+def now_local() -> datetime:
+    """Return barbershop wall time as naive datetime for the existing DB/API contract."""
+    return datetime.now(scheduling_timezone()).replace(tzinfo=None)
 
 
 def validate_booking_slot(
@@ -43,12 +60,13 @@ def validate_booking_slot(
     barber_id: int,
     start: datetime,
     exclude_appointment_id: int | None = None,
+    duration_minutes: int | None = None,
 ) -> datetime:
     start = normalize_datetime(start)
-    now = datetime.utcnow()
+    now = now_local()
     if start < now:
         raise HTTPException(status_code=400, detail="Não é possível agendar em um horário passado")
-    if start.date() > (now + timedelta(days=BOOKING_WINDOW_DAYS)).date():
+    if start > now + timedelta(days=BOOKING_WINDOW_DAYS):
         raise HTTPException(
             status_code=400,
             detail=f"Os agendamentos podem ser feitos com até {BOOKING_WINDOW_DAYS} dias de antecedência",
@@ -80,7 +98,8 @@ def validate_booking_slot(
     except ValueError as exc:
         raise HTTPException(status_code=500, detail="Jornada do barbeiro possui horário inválido") from exc
 
-    end = start + timedelta(minutes=service.duracao_minutos)
+    duration = service.duracao_minutos if duration_minutes is None else duration_minutes
+    end = start + timedelta(minutes=duration)
     if start < opening or end > closing:
         raise HTTPException(status_code=400, detail="O horário não comporta a duração do serviço dentro da jornada")
 

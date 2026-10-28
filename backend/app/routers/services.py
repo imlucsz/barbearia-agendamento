@@ -33,7 +33,7 @@ def create_service(
             detail="Acesso negado"
         )
 
-    db_service = Service(**service.dict())
+    db_service = Service(**service.model_dump())
     db.add(db_service)
     db.commit()
     db.refresh(db_service)
@@ -69,7 +69,7 @@ def update_service(
     if db_service is None:
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
-    update_data = service_update.dict(exclude_unset=True)
+    update_data = service_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(db_service, key, value)
 
