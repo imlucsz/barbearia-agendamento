@@ -62,6 +62,35 @@ class TestDatabaseSelectionTests(unittest.TestCase):
         self.assertIn("explicit BOOKING_TEST_POSTGRES_URL", result.stderr)
         self.assertNotIn("fake:fake", result.stderr)
 
+    def test_postgres_host_allowlist_accepts_localhost_and_loopback_addresses(self):
+        result = self._run_import(
+            backend="sqlite",
+            code=(
+                "import sys; sys.path.insert(0, 'tests'); import support; "
+                "[support._validate_postgres_test_host(host) for host in "
+                "('localhost', 'LOCALHOST', '127.0.0.1', '::1')]; "
+                "print('loopback hosts accepted')"
+            ),
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("loopback hosts accepted", result.stdout)
+
+    def test_external_postgres_host_is_rejected_before_engine_creation(self):
+        result = self._run_import(
+            backend="postgresql",
+            postgres_url="postgresql+psycopg://test_user@db.internal/barbearia_test",
+            code=(
+                "import sqlalchemy, sys; sys.path.insert(0, 'tests'); "
+                "sqlalchemy.create_engine=lambda *args, **kwargs: "
+                "print('ENGINE_CREATION_ATTEMPTED'); import support"
+            ),
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("PostgreSQL test URL host must be", result.stderr)
+        self.assertNotIn("ENGINE_CREATION_ATTEMPTED", result.stdout)
+
     def test_schema_scoped_url_preserves_explicit_connection_fields(self):
         result = self._run_import(
             backend="sqlite",

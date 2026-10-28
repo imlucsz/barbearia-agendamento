@@ -42,7 +42,7 @@ source .venv/bin/activate
 
 A API fica em `http://127.0.0.1:8000`. A documentação interativa do FastAPI fica em `http://127.0.0.1:8000/docs`; o schema OpenAPI está em `/openapi.json`.
 
-O banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. A aplicação ainda cria tabelas ausentes com `Base.metadata.create_all()` e aplica atualizações aditivas específicas ao iniciar. As mudanças versionadas de schema devem ser aplicadas explicitamente pelo Alembic antes de disponibilizar a nova versão da API.
+No ambiente local (`APP_ENV=development`), o banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. Nos demais ambientes, `DATABASE_URL` deve ser configurada explicitamente; a API falha ao iniciar se estiver ausente. A aplicação ainda cria tabelas ausentes com `Base.metadata.create_all()` e aplica atualizações aditivas específicas ao iniciar. As mudanças versionadas de schema devem ser aplicadas explicitamente pelo Alembic antes de disponibilizar a nova versão da API.
 
 ### Migrações de banco com Alembic
 
@@ -120,6 +120,7 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | Variável | Finalidade | Padrão local |
 | --- | --- | --- |
 | `DATABASE_URL` | URL de conexão SQLAlchemy | `sqlite:///./barbearia.db` |
+| `CORS_ALLOWED_ORIGINS` | Origens web explicitamente autorizadas, separadas por vírgula | `http://127.0.0.1:5500` em desenvolvimento; obrigatória em produção, com uma ou mais origens HTTPS reais do frontend |
 | `SECRET_KEY` | Chave privada de assinatura JWT, com pelo menos 32 bytes UTF-8 | Obrigatória; não há valor padrão |
 | `ALGORITHM` | Algoritmo JWT | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos | `1440` (24 horas) |
@@ -292,13 +293,17 @@ As colunas DateTime atuais não armazenam fuso horário; esta configuração nã
 
 ## Testes e validações
 
-Não há atualmente uma suíte automatizada de integração (`test_integration.py` ou `test_integration_final.py`) no repositório. Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados de demonstração. Antes de produção, crie testes automatizados para regras de horário, concorrência, autorização por perfil, redefinição de senha e migrações.
+A suíte automatizada usa `unittest` e fica em `backend/tests`. Por padrão, ela executa com SQLite temporário e cobre configuração da aplicação, autenticação e autorização, recuperação de senha, regras temporais e integridade dos agendamentos, além da migração SQLite. Os testes específicos de PostgreSQL são ignorados quando o backend PostgreSQL não está explicitamente configurado.
+
+Para validar também o PostgreSQL, configure `BOOKING_TEST_BACKEND=postgresql` e `BOOKING_TEST_POSTGRES_URL` para um banco exclusivo de testes, conforme as instruções acima. Nesse modo, os testes de integridade, concorrência, regras temporais e migração usam PostgreSQL; a suíte padrão não valida PostgreSQL quando essa configuração está ausente.
+
+Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados locais de demonstração.
 
 ## Limitações e cuidados antes de produção
 
 - O token de redefinição nunca é devolvido pela API. Em desenvolvimento explicitamente configurado, sem SMTP, ele aparece somente no log local; em outros ambientes, configure a entrega SMTP descrita acima.
 - O endpoint `GET /seed` só existe com `APP_ENV=development`; sem essa configuração explícita, inclusive quando `APP_ENV` está ausente, a rota não é registrada. A resposta não divulga credenciais.
-- O CORS atualmente aceita qualquer origem; restrinja `allow_origins` antes de publicar.
+- O CORS aceita apenas as origens normalizadas listadas em `CORS_ALLOWED_ORIGINS`. Em desenvolvimento, se a variável estiver ausente, é permitida a origem documentada `http://127.0.0.1:5500`. Em produção, a variável é obrigatória e deve conter uma ou mais origens HTTPS exatas do frontend publicado, incluindo a porta não padrão quando aplicável. Não use `*` nem inclua caminhos.
 - A atualização de schema em `database.py` cobre colunas específicas, mas não substitui migrações versionadas para evolução contínua do banco.
 - Consentimento e anonimização implementados são controles técnicos; não substituem avaliação jurídica e operacional de conformidade com a LGPD.
 

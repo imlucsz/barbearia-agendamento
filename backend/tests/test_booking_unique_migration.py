@@ -1,6 +1,8 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from sqlalchemy import create_engine, inspect, text
 
@@ -25,6 +27,16 @@ class BookingUniqueMigrationTests(unittest.TestCase):
         self.db_path = Path(self._tempdir.name) / "migration-test.db"
         self.engine = create_engine(f"sqlite:///{self.db_path.as_posix()}")
         self.config_path = Path(__file__).resolve().parents[1] / "alembic.ini"
+        self._environment = patch.dict(
+            os.environ,
+            {
+                "APP_ENV": "development",
+                "DATABASE_URL": f"sqlite:///{self.db_path.as_posix()}",
+                "PYTHON_DOTENV_DISABLED": "1",
+            },
+        )
+        self._environment.start()
+        self.addCleanup(self._environment.stop)
 
     def tearDown(self):
         self.engine.dispose()

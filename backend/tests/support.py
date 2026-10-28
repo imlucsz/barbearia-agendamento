@@ -21,6 +21,7 @@ _TEST_DB_DIR = tempfile.TemporaryDirectory(prefix="barbearia-tests-")
 _TEST_DB_PATH = Path(_TEST_DB_DIR.name) / "tests.db"
 os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 os.environ["SECRET_KEY"] = TEST_SECRET_KEY
+os.environ["CORS_ALLOWED_ORIGINS"] = "https://frontend.test.invalid"
 os.environ.pop("APP_ENV", None)
 
 _TEST_BACKEND = os.environ.get("BOOKING_TEST_BACKEND", "sqlite").strip().lower()
@@ -63,6 +64,16 @@ def _assert_test_database(engine, expected_url, expected_schema=None):
         raise RuntimeError("Application engine did not select its isolated PostgreSQL test schema")
 
 
+def _validate_postgres_test_host(host):
+    normalized_host = (host or "").lower()
+    if normalized_host.startswith("[") and normalized_host.endswith("]"):
+        normalized_host = normalized_host[1:-1]
+    if normalized_host not in {"localhost", "127.0.0.1", "::1"}:
+        raise RuntimeError(
+            "PostgreSQL test URL host must be localhost, 127.0.0.1, or ::1"
+        )
+
+
 def _create_postgres_schema(schema_name):
     with _POSTGRES_ADMIN_ENGINE.begin() as connection:
         connection.execute(text(f'CREATE SCHEMA "{schema_name}"'))
@@ -92,6 +103,7 @@ if _POSTGRES_TEST_URL:
         raise RuntimeError(
             "BOOKING_TEST_POSTGRES_URL must use postgresql+psycopg:// and target a dedicated test database"
         )
+    _validate_postgres_test_host(_test_url.host)
     if not (_test_url.database or "").lower().endswith("_test"):
         raise RuntimeError("Refusing PostgreSQL tests unless the database name ends with '_test'")
     if not _test_url.password:

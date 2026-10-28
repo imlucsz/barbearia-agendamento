@@ -1,10 +1,110 @@
+import ipaddress
 import os
+import re
 from datetime import datetime
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
 load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
 APP_ENV = os.getenv("APP_ENV", "").strip().lower()
+_CORS_ORIGIN_ERROR = (
+    "CORS_ALLOWED_ORIGINS entries must be valid HTTP(S) origins without wildcards, "
+    "credentials, paths, queries, or fragments"
+)
+_DNS_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+
+
+def _normalize_cors_hostname(hostname: str) -> str:
+    if "*" in hostname:
+        raise RuntimeError(_CORS_ORIGIN_ERROR)
+
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        if not hostname or any(character.isspace() for character in hostname):
+            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
+        if all(character in "0123456789." for character in hostname):
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+
+        try:
+            dns_name = hostname.encode("idna").decode("ascii").lower()
+        except UnicodeError:
+            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
+        labels = dns_name[:-1].split(".") if dns_name.endswith(".") else dns_name.split(".")
+        if (
+            len(dns_name) > 254
+            or any(not label or len(label) > 63 or _DNS_LABEL.fullmatch(label) is None for label in labels)
+        ):
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+        return dns_name
+
+    if isinstance(address, ipaddress.IPv6Address):
+        if address.scope_id is not None:
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+        return f"[{address.compressed.lower()}]"
+    return str(address)
+
+
+def _configured_cors_origins(app_env: str | None = None) -> list[str]:
+    environment = APP_ENV if app_env is None else app_env.strip().lower()
+    configured = os.getenv("CORS_ALLOWED_ORIGINS")
+    if configured is None:
+        if environment == "production":
+            raise RuntimeError(
+                "CORS_ALLOWED_ORIGINS must be explicitly configured in production"
+            )
+        return ["http://127.0.0.1:5500"] if environment == "development" else []
+
+    origins = []
+    seen = set()
+    for origin in (value.strip() for value in configured.split(",")):
+        if not origin:
+            continue
+        if any(character.isspace() for character in origin) or "?" in origin or "#" in origin:
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+        try:
+            parsed = urlsplit(origin)
+        except ValueError:
+            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
+
+        scheme = parsed.scheme.lower()
+        hostname = parsed.hostname
+        if (
+            scheme not in {"http", "https"}
+            or not parsed.netloc
+            or hostname is None
+            or parsed.path not in {"", "/"}
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+        if environment == "production" and scheme != "https":
+            raise RuntimeError("Production CORS origins must use HTTPS")
+
+        try:
+            port = parsed.port
+        except ValueError:
+            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
+        if parsed.netloc.endswith(":") or (port is not None and not 1 <= port <= 65535):
+            raise RuntimeError(_CORS_ORIGIN_ERROR)
+
+        normalized_host = _normalize_cors_hostname(hostname)
+        default_port = 80 if scheme == "http" else 443
+        normalized = f"{scheme}://{normalized_host}"
+        if port is not None and port != default_port:
+            normalized += f":{port}"
+        if normalized not in seen:
+            seen.add(normalized)
+            origins.append(normalized)
+    if environment == "production" and not origins:
+        raise RuntimeError(
+            "CORS_ALLOWED_ORIGINS must contain at least one HTTPS origin in production"
+        )
+    return origins
+
+
+CORS_ALLOWED_ORIGINS = _configured_cors_origins()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,7 +124,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

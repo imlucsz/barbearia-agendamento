@@ -19,17 +19,24 @@ _BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 def run_app_import(secret_key=_UNSET, app_env="production"):
     with tempfile.TemporaryDirectory(prefix="barbearia-jwt-config-") as temp_dir:
-        database_path = (Path(temp_dir) / "startup-test.db").as_posix()
         env = os.environ.copy()
         env["APP_ENV"] = app_env
-        env["DATABASE_URL"] = f"sqlite:///{database_path}"
+        env["DATABASE_URL"] = "postgresql+psycopg://unit_test:unit_test@127.0.0.1:55432/barbearia_test"
+        env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
         env["PYTHON_DOTENV_DISABLED"] = "1"
         env.pop("SECRET_KEY", None)
         if secret_key is not _UNSET:
             env["SECRET_KEY"] = secret_key
 
         return subprocess.run(
-            [sys.executable, "-c", "import app.main"],
+            [
+                sys.executable,
+                "-c",
+                "import app.database as database; "
+                "database.Base.metadata.create_all = lambda **kwargs: None; "
+                "database.ensure_schema_updates = lambda: None; "
+                "import app.main",
+            ],
             cwd=_BACKEND_DIR,
             env=env,
             capture_output=True,
@@ -97,7 +104,15 @@ class JwtConfigurationTests(unittest.TestCase):
             decode_access_token(wrong_token)
 
     def test_invalid_signature_error_response_does_not_reveal_either_key(self):
-        application = load_app_for_environment("production").app
+        previous_cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS")
+        os.environ["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+        try:
+            application = load_app_for_environment("production").app
+        finally:
+            if previous_cors_origins is None:
+                os.environ.pop("CORS_ALLOWED_ORIGINS", None)
+            else:
+                os.environ["CORS_ALLOWED_ORIGINS"] = previous_cors_origins
         wrong_key = "different-test-signing-key-that-is-not-configured"
         wrong_token = jwt.encode(
             {
