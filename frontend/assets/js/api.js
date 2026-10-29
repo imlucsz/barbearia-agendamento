@@ -1,4 +1,11 @@
-const API_BASE_URL = (window.BARBEARIA_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+import { expireSessionOnUnauthorized } from "./session.mjs";
+import { formatApiError } from "./api-errors.mjs";
+import { INSTALLATION_CONFIG } from "./installation-config.mjs";
+import { applyInstallationBrand } from "./installation-brand.mjs";
+
+applyInstallationBrand();
+
+const API_BASE_URL = (window.BARBEARIA_API_URL || INSTALLATION_CONFIG.apiBaseUrl).replace(/\/+$/, "");
 
 export function getToken() {
   return localStorage.getItem("token");
@@ -56,15 +63,9 @@ async function request(endpoint, options = {}) {
   });
 
   if (!response.ok) {
+    expireSessionOnUnauthorized(response.status, auth, localStorage, window.location);
     const responseText = await response.text();
-    let detail = "";
-    try {
-      const data = JSON.parse(responseText);
-      detail = data.detail || data.message || "";
-    } catch {
-      detail = responseText.trim();
-    }
-    const error = new Error(detail ? `Erro ${response.status}: ${detail}` : `Erro ${response.status}`);
+    const error = formatApiError(response.status, responseText);
     error.status = response.status;
     throw error;
   }

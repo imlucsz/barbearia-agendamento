@@ -1,0 +1,26 @@
+/* Per-install visual tokens: customize this file without changing app logic. */
+:root {
+  color-scheme: dark;
+  --color-bg: #15120f;
+  --color-surface: #201b17;
+  --color-surface-raised: #29221c;
+  --color-text: #f5efe6;
+  --color-muted: #b9aa98;
+  --color-primary: #d7ac58;
+  --color-primary-strong: #f0c875;
+  --color-border: rgba(234, 207, 155, .18);
+  --color-danger: #ef8e7e;
+  --color-success: #8dca9f;
+  --color-info: #92c9d0;
+  --color-warning: #f0c875;
+  --color-hero-glow: #81572f;
+  --color-hero-mid: #3c2b20;
+  --color-hero-deep: #201913;
+  --font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-display: Georgia, "Times New Roman", serif;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --shadow-card: 0 18px 45px rgba(0, 0, 0, .2);
+  --content-width: 1180px;
+}
