@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: python -m pip install -r backend/requirements.txt
+      - run: python -m unittest discover -s tests
+        working-directory: backend
+
+  python-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: barbearia_test
+          POSTGRES_PASSWORD: ci-test-password-only
+          POSTGRES_DB: barbearia_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U barbearia_test -d barbearia_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      BOOKING_TEST_BACKEND: postgresql
+      BOOKING_TEST_POSTGRES_URL: postgresql+psycopg://barbearia_test:ci-test-password-only@127.0.0.1:5432/barbearia_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: python -m pip install -r backend/requirements.txt
+      - run: python -m unittest discover -s tests
+        working-directory: backend
+
+  javascript-and-audits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test frontend/tests/*.test.mjs
+      - run: npm audit --audit-level=low
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: python -m pip install pip-audit
+      - run: pip-audit -r backend/requirements.txt
+
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: npm ci
+      - run: python -m pip install -r backend/requirements.txt
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npx playwright test --config frontend/e2e/playwright.config.mjs
