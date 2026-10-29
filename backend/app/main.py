@@ -1,5 +1,9 @@
 import logging
 import os
+import uuid
+import asyncio
+import hmac
+from types import SimpleNamespace
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -8,6 +12,18 @@ load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
 from app.config import get_app_environment, parse_cors_origins
 
 APP_ENV = get_app_environment()
+INSTALLATION_NAME = os.environ.get("INSTALLATION_NAME", "Barbearia").strip() or "Barbearia"
+def _security_settings():
+    raw = os.environ.get("FORCE_HTTPS", "true" if APP_ENV == "production" else "false").strip().lower()
+    force_https = raw in {"true", "1", "yes"}
+    try:
+        trusted_proxy_count = int(os.environ.get("TRUSTED_PROXY_COUNT", "0"))
+    except ValueError:
+        trusted_proxy_count = 0
+    return SimpleNamespace(app_env=APP_ENV, force_https=force_https, trusted_proxy_count=trusted_proxy_count)
+
+
+SECURITY_SETTINGS = _security_settings()
 
 
 def _configured_cors_origins(app_env: str | None = None) -> list[str]:
@@ -16,16 +32,20 @@ def _configured_cors_origins(app_env: str | None = None) -> list[str]:
 
 
 CORS_ALLOWED_ORIGINS = _configured_cors_origins()
+METRICS_TOKEN = os.environ.get("METRICS_TOKEN", "").strip()
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.database import check_schema_revision, engine, SessionLocal
 from app.routers import auth, services, appointments, admin, institucional, users, horario, barbeiro_servico
 from app.models.user import User, Service, RoleEnum
 from app.core.security import get_password_hash
+from app.core.rate_limit import AuthRateLimitMiddleware
+from app.core.observability import RequestObservabilityMiddleware, metrics_text
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +66,50 @@ async def lifespan(_app):
 
 
 app = FastAPI(
-    title="API Barbearia Agendamento",
+    title=f"API {INSTALLATION_NAME}",
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        incoming_request_id = request.headers.get("x-request-id", "")
+        request.state.request_id = incoming_request_id if incoming_request_id and len(incoming_request_id) <= 64 and incoming_request_id.isascii() and incoming_request_id.replace("-", "").isalnum() else str(uuid.uuid4())
+        configured = SECURITY_SETTINGS
+        if configured.force_https:
+            scheme = request.url.scheme
+            if configured.trusted_proxy_count > 0:
+                forwarded = request.headers.get("x-forwarded-proto", "").split(",")
+                if forwarded:
+                    candidate = forwarded[-1].strip().lower()
+                    if candidate in {"http", "https"}:
+                        scheme = candidate
+            if scheme == "http":
+                target = request.url.replace(scheme="https")
+                response = RedirectResponse(str(target), status_code=307)
+                response.headers["X-Request-ID"] = request.state.request_id
+                response.headers["X-Content-Type-Options"] = "nosniff"
+                response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+                response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+                response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+                response.headers["X-Frame-Options"] = "DENY"
+                if configured.app_env == "production":
+                    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+                return response
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request.state.request_id
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["X-Frame-Options"] = "DENY"
+        if configured.app_env == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+app.add_middleware(AuthRateLimitMiddleware)
 
 
 @app.exception_handler(RequestValidationError)
@@ -65,9 +125,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestObservabilityMiddleware)
 
 # Routers
 app.include_router(auth.router)
@@ -82,12 +144,39 @@ app.include_router(barbeiro_servico.router)
 
 @app.get("/")
 def root():
-    return {"status": "Backend da Barbearia operando perfeitamente!"}
+    return {"status": "Backend da instalação operando perfeitamente!"}
 
 
 @app.get("/health")
-def health():
+async def health():
+    """Liveness plus a bounded database connectivity check (SELECT 1)."""
+    try:
+        await asyncio.wait_for(asyncio.to_thread(_ping_database), timeout=1.0)
+    except Exception:
+        raise HTTPException(status_code=503, detail="Application unavailable") from None
     return {"status": "ok"}
+
+
+def _ping_database():
+    from sqlalchemy import text
+
+    with engine.connect() as connection:
+        return connection.execute(text("SELECT 1")).scalar_one() == 1
+
+
+@app.get("/metrics", include_in_schema=False)
+def prometheus_metrics(request: Request):
+    if not METRICS_TOKEN:
+        raise HTTPException(status_code=404, detail="Not Found")
+    authorization = request.headers.get("authorization", "")
+    scheme, separator, supplied_token = authorization.partition(" ")
+    if (
+        not separator
+        or scheme.lower() != "bearer"
+        or not hmac.compare_digest(supplied_token.encode("utf-8"), METRICS_TOKEN.encode("utf-8"))
+    ):
+        raise HTTPException(status_code=401, detail="Invalid metrics credentials")
+    return Response(content=metrics_text(), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 
 @app.get("/ready")

@@ -107,6 +107,21 @@ class ApplicationConfigurationTests(unittest.TestCase):
         self.assertEqual(headers.get("access-control-allow-origin"), "http://frontend.test")
         self.assertIn("GET", headers.get("access-control-allow-methods", ""))
 
+    def test_preflight_rejects_unlisted_origin_method_and_header(self):
+        cases = (
+            {"origin": "http://other.test", "access-control-request-method": "GET"},
+            {"origin": "http://frontend.test", "access-control-request-method": "TRACE"},
+            {"origin": "http://frontend.test", "access-control-request-method": "GET", "access-control-request-headers": "x-unlisted"},
+        )
+        for headers in cases:
+            with self.subTest(headers=headers):
+                status, response_headers = _asgi_exchange(self.application, "OPTIONS", headers)
+                self.assertEqual(status, 400)
+                if headers["origin"] == "http://other.test":
+                    self.assertNotIn("access-control-allow-origin", response_headers)
+                else:
+                    self.assertEqual(response_headers.get("access-control-allow-origin"), "http://frontend.test")
+
     def test_development_defaults_to_the_documented_local_frontend_origin(self):
         os.environ.pop("CORS_ALLOWED_ORIGINS", None)
         application = importlib.reload(main).app

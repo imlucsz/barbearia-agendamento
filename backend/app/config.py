@@ -35,11 +35,17 @@ _SECURE_SSL_MODES = {"require", "verify-ca", "verify-full"}
 @dataclass(frozen=True)
 class Settings:
     app_env: str
+    installation_name: str
     database_url: str = field(repr=False)
     database_backend: str
     secret_key: str = field(repr=False)
     jwt_algorithm: str
     access_token_expire_minutes: int
+    terms_version: str
+    trusted_proxy_count: int
+    rate_limit_max_attempts: int
+    rate_limit_block_minutes: int
+    force_https: bool
     cors_allowed_origins: tuple[str, ...]
     scheduling_timezone: str
     smtp_host: str
@@ -49,6 +55,8 @@ class Settings:
     smtp_from: str
     smtp_timeout_seconds: float
     password_reset_url: str = field(repr=False)
+    retention_days: int = 365
+    metrics_token: str = field(default="", repr=False)
 
 
 def _get(source: Mapping[str, str], name: str, default: str = "") -> str:
@@ -290,6 +298,12 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
     """Read and validate the complete configuration without echoing values."""
     source = os.environ if source is None else source
     environment = get_app_environment(source)
+    installation_name = _get(source, "INSTALLATION_NAME", "Barbearia")
+    if (
+        not installation_name or len(installation_name) > 80
+        or any(ord(character) < 32 or ord(character) == 127 for character in installation_name)
+    ):
+        raise RuntimeError("INSTALLATION_NAME must contain between 1 and 80 printable characters")
 
     database_url = _get(source, "DATABASE_URL")
     if not database_url:
@@ -304,11 +318,44 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
     if algorithm not in _SUPPORTED_JWT_ALGORITHMS:
         raise RuntimeError("ALGORITHM must be one of HS256, HS384, or HS512")
     try:
-        token_minutes = int(_get(source, "ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+        token_minutes = int(_get(source, "ACCESS_TOKEN_EXPIRE_MINUTES", "15"))
     except ValueError:
         raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES must be a positive integer") from None
-    if not 1 <= token_minutes <= 525600:
-        raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES must be between 1 and 525600")
+    if not 5 <= token_minutes <= 60:
+        raise RuntimeError("ACCESS_TOKEN_EXPIRE_MINUTES must be between 5 and 60")
+
+    terms_version = _get(source, "TERMS_VERSION", "1.0")
+    if not terms_version or len(terms_version) > 100:
+        raise RuntimeError("TERMS_VERSION must contain between 1 and 100 characters")
+    try:
+        trusted_proxy_count = int(_get(source, "TRUSTED_PROXY_COUNT", "0"))
+    except ValueError:
+        raise RuntimeError("TRUSTED_PROXY_COUNT must be a non-negative integer") from None
+    if not 0 <= trusted_proxy_count <= 32:
+        raise RuntimeError("TRUSTED_PROXY_COUNT must be between 0 and 32")
+
+    try:
+        rate_limit_max_attempts = int(_get(source, "RATE_LIMIT_MAX_ATTEMPTS", "5"))
+        rate_limit_block_minutes = int(_get(source, "RATE_LIMIT_BLOCK_MINUTES", "15"))
+    except ValueError:
+        raise RuntimeError("Rate limit settings must be positive integers") from None
+    if not 1 <= rate_limit_max_attempts <= 100:
+        raise RuntimeError("RATE_LIMIT_MAX_ATTEMPTS must be between 1 and 100")
+    if not 1 <= rate_limit_block_minutes <= 1440:
+        raise RuntimeError("RATE_LIMIT_BLOCK_MINUTES must be between 1 and 1440")
+    try:
+        retention_days = int(_get(source, "RETENTION_DAYS", "365"))
+    except ValueError:
+        raise RuntimeError("RETENTION_DAYS must be a positive integer") from None
+    if not 1 <= retention_days <= 36500:
+        raise RuntimeError("RETENTION_DAYS must be between 1 and 36500")
+    metrics_token = _get(source, "METRICS_TOKEN")
+    if metrics_token and (len(metrics_token.encode("utf-8")) < 32 or any(char.isspace() or ord(char) < 32 for char in metrics_token)):
+        raise RuntimeError("METRICS_TOKEN must contain at least 32 non-whitespace characters")
+    raw_force_https = _get(source, "FORCE_HTTPS", "true" if environment == "production" else "false").lower()
+    if raw_force_https not in {"true", "false", "1", "0", "yes", "no"}:
+        raise RuntimeError("FORCE_HTTPS must be a boolean")
+    force_https = raw_force_https in {"true", "1", "yes"}
 
     cors_origins = parse_cors_origins(source.get("CORS_ALLOWED_ORIGINS"), environment)
     timezone_value = _get(source, "SCHEDULING_TIMEZONE")
@@ -353,11 +400,17 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
 
     return Settings(
         app_env=environment,
+        installation_name=installation_name,
         database_url=database_url,
         database_backend=database_backend,
         secret_key=secret_key,
         jwt_algorithm=algorithm,
         access_token_expire_minutes=token_minutes,
+        terms_version=terms_version,
+        trusted_proxy_count=trusted_proxy_count,
+        rate_limit_max_attempts=rate_limit_max_attempts,
+        rate_limit_block_minutes=rate_limit_block_minutes,
+        force_https=force_https,
         cors_allowed_origins=cors_origins,
         scheduling_timezone=scheduling_timezone,
         smtp_host=smtp_host,
@@ -367,6 +420,8 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         smtp_from=smtp_from,
         smtp_timeout_seconds=smtp_timeout,
         password_reset_url=password_reset_url,
+        retention_days=retention_days,
+        metrics_token=metrics_token,
     )
 
 

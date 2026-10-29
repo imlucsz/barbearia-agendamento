@@ -7,6 +7,9 @@ from app.core.security import create_access_token, get_password_hash
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
+    BarbearioServico,
+    BloqueioHorario,
+    JornadaTrabalho,
     RoleEnum,
     Service,
     User,
@@ -149,7 +152,88 @@ class AuthorizationTests(unittest.TestCase):
         self.assertEqual(get_status, 403)
         self.assertEqual(put_status, 403)
         self.assertEqual(delete_status, 403)
+        reschedule_status, _ = self.request(
+            "PUT", f"/appointments/{appointment_id}",
+            {"data_hora": (self.appointment_time + timedelta(days=2)).isoformat()},
+            principal="client_a",
+        )
+        review_status, _ = self.request(
+            "POST", f"/appointments/{appointment_id}/avaliacao",
+            {"nota": 5, "comentario": "tentativa cruzada"}, principal="client_a",
+        )
+        self.assertEqual(reschedule_status, 403)
+        self.assertEqual(review_status, 403)
         self.assertEqual(self.appointment_snapshot(), before)
+
+    def test_client_history_includes_past_and_future_records_beyond_default_page(self):
+        db = main.SessionLocal()
+        try:
+            for offset in range(-1, 101):
+                self.create_appointment(
+                    db, self.users["client_a"], self.users["barber_a"], self.service,
+                    self.appointment_time + timedelta(minutes=offset),
+                )
+            db.commit()
+        finally:
+            db.close()
+
+        status, rows = self.request("GET", "/appointments/", principal="client_a")
+        self.assertEqual(status, 200)
+        self.assertEqual(len(rows), 103)  # 102 inserted plus the original appointment
+        self.assertTrue(all(row["user_id"] == self.user_ids["client_a"] for row in rows))
+        dates = [row["data_hora"] for row in rows]
+        self.assertEqual(dates, sorted(dates, reverse=True))
+        self.assertTrue(any(row["data_hora"] < self.appointment_time.isoformat() for row in rows))
+        self.assertTrue(any(row["data_hora"] > self.appointment_time.isoformat() for row in rows))
+
+    def test_client_appointment_list_contains_only_the_authenticated_clients_rows(self):
+        status, rows = self.request("GET", "/appointments/", principal="client_a")
+        self.assertEqual(status, 200)
+        self.assertEqual({row["id"] for row in rows}, {self.appointment_ids["client_a"]})
+
+    def test_client_and_other_barber_cannot_access_cross_owned_schedule_or_block(self):
+        db = main.SessionLocal()
+        try:
+            other_schedule = JornadaTrabalho(
+                barbeiro_id=self.user_ids["barber_b"],
+                dia_semana=(self.appointment_time.weekday() + 1) % 7,
+                hora_inicio="08:00", hora_fim="18:00", ativo=True,
+            )
+            other_block = BloqueioHorario(
+                barbeiro_id=self.user_ids["barber_b"],
+                inicio=self.appointment_time + timedelta(hours=2),
+                fim=self.appointment_time + timedelta(hours=3),
+                motivo="teste", tipo="folga", ativo=True,
+            )
+            db.add_all([other_schedule, other_block])
+            db.commit()
+            schedule_id, block_id = other_schedule.id, other_block.id
+        finally:
+            db.close()
+
+        calls = (
+            ("GET", f"/horario/jornadas/{self.user_ids['barber_b']}", None),
+            ("POST", "/horario/jornadas", {
+                "barbeiro_id": self.user_ids["barber_b"], "dia_semana": 1,
+                "hora_inicio": "09:00", "hora_fim": "17:00", "ativo": True,
+            }),
+            ("PUT", f"/horario/jornadas/{schedule_id}", {"hora_inicio": "09:00"}),
+            ("GET", f"/horario/bloqueios/{self.user_ids['barber_b']}", None),
+            ("POST", "/horario/bloqueios", {
+                "barbeiro_id": self.user_ids["barber_b"],
+                "inicio": (self.appointment_time + timedelta(days=2)).isoformat(),
+                "fim": (self.appointment_time + timedelta(days=2, hours=1)).isoformat(),
+                "motivo": "teste", "tipo": "folga", "ativo": True,
+            }),
+            ("PUT", f"/horario/bloqueios/{block_id}", {"motivo": "alterado"}),
+            ("DELETE", f"/horario/bloqueios/{block_id}", None),
+            ("GET", f"/barbeiro-servico/barbeiro/{self.user_ids['barber_b']}", None),
+        )
+        for principal in ("client_a", "barber_a"):
+            for method, path, payload in calls:
+                with self.subTest(principal=principal, method=method, path=path):
+                    status, _ = self.request(method, path, payload, principal)
+                    self.assertEqual(status, 403)
 
     def test_owner_can_read_and_cancel_own_appointment(self):
         appointment_id = self.appointment_ids["client_a"]
@@ -198,8 +282,29 @@ class AuthorizationTests(unittest.TestCase):
             "GET", f"/appointments/{self.appointment_ids['client_b']}",
             principal="barber_a",
         )
+        other_appointment_id = self.appointment_ids["client_b"]
+        other_cancel_status, _ = self.request(
+            "PUT", f"/appointments/{other_appointment_id}",
+            {"status": "cancelado"}, principal="barber_a",
+        )
+        other_reschedule_status, _ = self.request(
+            "PUT", f"/appointments/{other_appointment_id}",
+            {"data_hora": (self.appointment_time + timedelta(days=2)).isoformat()},
+            principal="barber_a",
+        )
+        other_delete_status, _ = self.request(
+            "DELETE", f"/appointments/{other_appointment_id}", principal="barber_a",
+        )
+        other_review_status, _ = self.request(
+            "POST", f"/appointments/{other_appointment_id}/avaliacao",
+            {"nota": 5, "comentario": "tentativa cruzada"}, principal="barber_a",
+        )
         self.assertEqual(full_status, 403)
         self.assertEqual(other_status, 403)
+        self.assertEqual(other_cancel_status, 403)
+        self.assertEqual(other_reschedule_status, 403)
+        self.assertEqual(other_delete_status, 403)
+        self.assertEqual(other_review_status, 403)
         self.assertEqual(self.appointment_snapshot(), before)
 
     def test_client_cannot_execute_admin_operations_or_change_data(self):
@@ -234,20 +339,47 @@ class AuthorizationTests(unittest.TestCase):
         self.assertEqual(self.client_name(self.user_ids["client_b"]), old_name)
 
     def test_barber_cannot_execute_admin_only_operations(self):
-        before = self.appointment_snapshot()
+        db = main.SessionLocal()
+        try:
+            db.add(BarbearioServico(barbeiro_id=self.user_ids["barber_a"], service_id=self.service_id))
+            for weekday in range(7):
+                db.add(JornadaTrabalho(
+                    barbeiro_id=self.user_ids["barber_a"], dia_semana=weekday,
+                    hora_inicio="08:00", hora_fim="20:00", ativo=True,
+                ))
+            db.commit()
+        finally:
+            db.close()
+
         old_name = self.client_name(self.user_ids["client_b"])
         date_param = self.appointment_time.date().isoformat()
         manual_appointment = {
             "user_id": self.user_ids["client_a"],
             "service_id": self.service_id,
-            "barbeiro_id": self.user_ids["barber_a"],
+            "barbeiro_id": self.user_ids["barber_b"],
             "data_hora": (self.appointment_time + timedelta(days=1)).isoformat(),
         }
 
-        create_status, _ = self.request(
+        create_status, created = self.request(
             "POST", "/admin/agendamentos", manual_appointment,
             principal="barber_a",
         )
+        self.assertEqual(create_status, 201)
+        self.assertEqual(created["barbeiro_id"], self.user_ids["barber_a"])
+        walk_in_status, walk_in = self.request(
+            "POST", "/admin/agendamentos",
+            {
+                "nome_cliente": "Cliente avulso do barbeiro",
+                "service_id": self.service_id,
+                "barbeiro_id": self.user_ids["barber_b"],
+                "data_hora": (self.appointment_time + timedelta(days=2)).isoformat(),
+            },
+            principal="barber_a",
+        )
+        self.assertEqual(walk_in_status, 201)
+        self.assertIsNone(walk_in["user_id"])
+        self.assertEqual(walk_in["barbeiro_id"], self.user_ids["barber_a"])
+        before_forbidden_changes = self.appointment_snapshot()
         update_status, _ = self.request(
             "PUT", f"/users/{self.user_ids['client_b']}",
             {"nome": "Alteração indevida"}, principal="barber_a",
@@ -257,10 +389,9 @@ class AuthorizationTests(unittest.TestCase):
             principal="barber_a",
         )
 
-        self.assertEqual(create_status, 403)
         self.assertEqual(update_status, 403)
         self.assertEqual(report_status, 403)
-        self.assertEqual(self.appointment_snapshot(), before)
+        self.assertEqual(self.appointment_snapshot(), before_forbidden_changes)
         self.assertEqual(self.client_name(self.user_ids["client_b"]), old_name)
 
     def test_client_and_barber_cannot_call_remaining_admin_write_operations(self):

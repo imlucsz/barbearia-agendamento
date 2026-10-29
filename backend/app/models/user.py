@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, Index, JSON
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.core.clock import utc_now_naive
@@ -47,6 +47,7 @@ class Service(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
+    descricao = Column(String(500), nullable=True)
     preco = Column(Float, nullable=False)
     duracao_minutos = Column(Integer, default=30)
 
@@ -55,6 +56,7 @@ class Service(Base):
 
 class Appointment(Base):
     __tablename__ = "appointments"
+    __table_args__ = (Index("ix_appointments_barbeiro_data_hora", "barbeiro_id", "data_hora"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -110,6 +112,7 @@ class InformacaoInstitucional(Base):
 
 class JornadaTrabalho(Base):
     __tablename__ = "jornadas_trabalho"
+    __table_args__ = (Index("ix_jornadas_barbeiro_dia_ativo", "barbeiro_id", "dia_semana", "ativo"),)
 
     id = Column(Integer, primary_key=True, index=True)
     barbeiro_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -123,6 +126,7 @@ class JornadaTrabalho(Base):
 
 class BloqueioHorario(Base):
     __tablename__ = "bloqueios_horario"
+    __table_args__ = (Index("ix_bloqueios_barbeiro_inicio_fim_ativo", "barbeiro_id", "inicio", "fim", "ativo"),)
 
     id = Column(Integer, primary_key=True, index=True)
     barbeiro_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -154,3 +158,62 @@ class PasswordResetToken(Base):
     token = Column(String, unique=True, index=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
+
+
+class ConsentimentoLGPD(Base):
+    __tablename__ = "consentimentos_lgpd"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    versao_termos = Column(String(100), nullable=False)
+    aceito_em = Column(DateTime, nullable=False, default=utc_now_naive)
+    ip_origem = Column(String(45), nullable=True)
+    origem = Column(String(255), nullable=False)
+
+    user = relationship("User")
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    family_id = Column(String(36), nullable=False, index=True)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    replaced_by_id = Column(Integer, ForeignKey("refresh_tokens.id"), nullable=True)
+    criado_em = Column(DateTime, nullable=False, default=utc_now_naive)
+
+    user = relationship("User")
+    replaced_by = relationship("RefreshToken", remote_side="RefreshToken.id", uselist=False)
+
+
+class LoginAttempt(Base):
+    __tablename__ = "login_attempts"
+    __table_args__ = (Index("ix_login_attempts_ip_rota_ocorrido_em", "ip", "rota", "ocorrido_em"),)
+
+    id = Column(Integer, primary_key=True)
+    ip = Column(String(45), nullable=False, index=True)
+    rota = Column(String(80), nullable=False)
+    sucesso = Column(Boolean, nullable=False)
+    ocorrido_em = Column(DateTime, nullable=False, default=utc_now_naive, index=True)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    __table_args__ = (
+        Index("ix_audit_logs_usuario_ocorrido", "usuario_id", "ocorrido_em"),
+        Index("ix_audit_logs_acao_ocorrido", "acao", "ocorrido_em"),
+    )
+
+    id = Column(Integer, primary_key=True)
+    usuario_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    ator_role = Column(String(32), nullable=True)
+    acao = Column(String(100), nullable=False, index=True)
+    entidade = Column(String(100), nullable=False)
+    entidade_id = Column(String(100), nullable=True)
+    ip = Column(String(45), nullable=True)
+    resultado = Column(String(32), nullable=False)
+    detalhes = Column(JSON, nullable=False, default=dict)
+    ocorrido_em = Column(DateTime, nullable=False, default=utc_now_naive, index=True)

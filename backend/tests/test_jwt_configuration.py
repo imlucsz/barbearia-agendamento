@@ -11,7 +11,7 @@ from pathlib import Path
 from support import TEST_SECRET_KEY, asgi_request, load_app_for_environment
 from app.core.security import ALGORITHM, create_access_token, decode_access_token
 from app.core.clock import utc_now
-from jose import jwt
+import jwt
 
 
 _UNSET = object()
