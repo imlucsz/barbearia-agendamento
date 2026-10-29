@@ -1,6 +1,6 @@
 import unittest
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.models.user import Service, User
+from app.models.user import RoleEnum, Service, User
 
 
 class SeedEndpointTests(unittest.TestCase):
@@ -17,10 +17,10 @@ class SeedEndpointTests(unittest.TestCase):
         finally:
             db.close()
 
-    def test_seed_route_is_not_registered_when_app_env_is_missing(self):
+    def test_seed_route_is_not_registered_in_test_environment(self):
         application = load_app_for_environment(None)
 
-        self.assertEqual(application.APP_ENV, "")
+        self.assertEqual(application.APP_ENV, "test")
         status, _ = asgi_request(application.app, "GET", "/seed")
         self.assertEqual(status, 404)
         self.assertEqual(self.demo_data_counts(application), (0, 0))
@@ -44,10 +44,17 @@ class SeedEndpointTests(unittest.TestCase):
             response,
             {"message": "Dados de demonstração criados com sucesso"},
         )
-        self.assertEqual(self.demo_data_counts(application), (3, 5))
+        self.assertEqual(self.demo_data_counts(application), (2, 5))
         self.assertNotIn("admin123", str(response))
         self.assertNotIn("barbeiro123", str(response))
         self.assertNotIn("cliente123", str(response))
+        db = application.SessionLocal()
+        try:
+            self.assertEqual(db.query(User).filter(User.role == RoleEnum.ADMIN).count(), 0)
+            self.assertEqual(db.query(User).filter(User.role == RoleEnum.BARBEIRO).count(), 1)
+            self.assertEqual(db.query(User).filter(User.role == RoleEnum.CLIENTE).count(), 1)
+        finally:
+            db.close()
 
 
 if __name__ == "__main__":

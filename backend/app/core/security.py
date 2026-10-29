@@ -1,53 +1,15 @@
-import os
-import re
 from datetime import timedelta
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from app.core.clock import utc_now
+from app.config import settings as load_app_settings
 
-_MIN_SECRET_KEY_BYTES = 32
-_INSECURE_SECRET_MARKERS = (
-    "replace",
-    "placeholder",
-    "example",
-    "yoursecret",
-    "changeme",
-    "defaultsecret",
-    "insecure",
-    "developmentsecret",
-)
-
-
-def _load_secret_key(value: str | None) -> str:
-    secret_key = (value or "").strip()
-    normalized = re.sub(r"[^a-z0-9]", "", secret_key.lower())
-    has_short_repeating_pattern = any(
-        len(secret_key) % period == 0
-        and secret_key == secret_key[:period] * (len(secret_key) // period)
-        for period in range(1, min(16, len(secret_key) // 2 + 1))
-    )
-
-    if (
-        len(secret_key.encode("utf-8")) < _MIN_SECRET_KEY_BYTES
-        or len(set(secret_key)) < 8
-        or secret_key.isdigit()
-        or has_short_repeating_pattern
-        or any(marker in normalized for marker in _INSECURE_SECRET_MARKERS)
-        or normalized in {"secret", "secretkey", "password", "barbeariadevsecretkey"}
-    ):
-        raise RuntimeError(
-            "SECRET_KEY must be explicitly configured with a strong, non-placeholder value "
-            "of at least 32 UTF-8 bytes."
-        )
-
-    return secret_key
-
-
-SECRET_KEY = _load_secret_key(os.getenv("SECRET_KEY"))
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+_settings = load_app_settings()
+SECRET_KEY = _settings.secret_key
+ALGORITHM = _settings.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = _settings.access_token_expire_minutes
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -65,7 +27,12 @@ def create_access_token(data: dict) -> str:
 
 def decode_access_token(token: str) -> dict:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            options={"require_exp": True},
+        )
         return payload
     except JWTError as exc:
         raise ValueError("Token inválido ou expirado") from exc

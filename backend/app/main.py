@@ -1,126 +1,65 @@
-import ipaddress
+import logging
 import os
-import re
-from datetime import datetime
-from urllib.parse import urlsplit
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
 load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
-APP_ENV = os.getenv("APP_ENV", "").strip().lower()
-_CORS_ORIGIN_ERROR = (
-    "CORS_ALLOWED_ORIGINS entries must be valid HTTP(S) origins without wildcards, "
-    "credentials, paths, queries, or fragments"
-)
-_DNS_LABEL = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z")
+from app.config import get_app_environment, parse_cors_origins
 
-
-def _normalize_cors_hostname(hostname: str) -> str:
-    if "*" in hostname:
-        raise RuntimeError(_CORS_ORIGIN_ERROR)
-
-    try:
-        address = ipaddress.ip_address(hostname)
-    except ValueError:
-        if not hostname or any(character.isspace() for character in hostname):
-            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
-        if all(character in "0123456789." for character in hostname):
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-
-        try:
-            dns_name = hostname.encode("idna").decode("ascii").lower()
-        except UnicodeError:
-            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
-        labels = dns_name[:-1].split(".") if dns_name.endswith(".") else dns_name.split(".")
-        if (
-            len(dns_name) > 254
-            or any(not label or len(label) > 63 or _DNS_LABEL.fullmatch(label) is None for label in labels)
-        ):
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-        return dns_name
-
-    if isinstance(address, ipaddress.IPv6Address):
-        if address.scope_id is not None:
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-        return f"[{address.compressed.lower()}]"
-    return str(address)
+APP_ENV = get_app_environment()
 
 
 def _configured_cors_origins(app_env: str | None = None) -> list[str]:
     environment = APP_ENV if app_env is None else app_env.strip().lower()
-    configured = os.getenv("CORS_ALLOWED_ORIGINS")
-    if configured is None:
-        if environment == "production":
-            raise RuntimeError(
-                "CORS_ALLOWED_ORIGINS must be explicitly configured in production"
-            )
-        return ["http://127.0.0.1:5500"] if environment == "development" else []
-
-    origins = []
-    seen = set()
-    for origin in (value.strip() for value in configured.split(",")):
-        if not origin:
-            continue
-        if any(character.isspace() for character in origin) or "?" in origin or "#" in origin:
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-        try:
-            parsed = urlsplit(origin)
-        except ValueError:
-            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
-
-        scheme = parsed.scheme.lower()
-        hostname = parsed.hostname
-        if (
-            scheme not in {"http", "https"}
-            or not parsed.netloc
-            or hostname is None
-            or parsed.path not in {"", "/"}
-            or parsed.username is not None
-            or parsed.password is not None
-        ):
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-        if environment == "production" and scheme != "https":
-            raise RuntimeError("Production CORS origins must use HTTPS")
-
-        try:
-            port = parsed.port
-        except ValueError:
-            raise RuntimeError(_CORS_ORIGIN_ERROR) from None
-        if parsed.netloc.endswith(":") or (port is not None and not 1 <= port <= 65535):
-            raise RuntimeError(_CORS_ORIGIN_ERROR)
-
-        normalized_host = _normalize_cors_hostname(hostname)
-        default_port = 80 if scheme == "http" else 443
-        normalized = f"{scheme}://{normalized_host}"
-        if port is not None and port != default_port:
-            normalized += f":{port}"
-        if normalized not in seen:
-            seen.add(normalized)
-            origins.append(normalized)
-    if environment == "production" and not origins:
-        raise RuntimeError(
-            "CORS_ALLOWED_ORIGINS must contain at least one HTTPS origin in production"
-        )
-    return origins
+    return list(parse_cors_origins(os.getenv("CORS_ALLOWED_ORIGINS"), environment))
 
 
 CORS_ALLOWED_ORIGINS = _configured_cors_origins()
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from app.database import engine, Base, SessionLocal, ensure_schema_updates
+from app.database import check_schema_revision, engine, SessionLocal
 from app.routers import auth, services, appointments, admin, institucional, users, horario, barbeiro_servico
 from app.models.user import User, Service, RoleEnum
 from app.core.security import get_password_hash
 
-Base.metadata.create_all(bind=engine)
-ensure_schema_updates()
+logger = logging.getLogger(__name__)
+
+
+def verify_database_migrations():
+    current, _revision = check_schema_revision(engine)
+    if not current:
+        logger.warning(
+            "Banco indisponível ou fora da revisão Alembic esperada; "
+            "execute `python -m alembic upgrade head` antes de servir requisições.",
+        )
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    verify_database_migrations()
+    yield
+
 
 app = FastAPI(
     title="API Barbearia Agendamento",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
+
+
+@app.exception_handler(RequestValidationError)
+async def sanitized_validation_error(request: Request, exc: RequestValidationError):
+    """Keep validation details useful without echoing submitted secrets or PII."""
+    details = [
+        {key: error[key] for key in ("loc", "msg", "type") if key in error}
+        for error in exc.errors()
+    ]
+    return JSONResponse(status_code=422, content={"detail": details})
 
 app.add_middleware(
     CORSMiddleware,
@@ -151,23 +90,21 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/ready")
+def readiness():
+    """Readiness requires the expected Alembic schema revision."""
+    current, _revision = check_schema_revision(engine)
+    if not current:
+        raise HTTPException(status_code=503, detail="Application unavailable") from None
+    return {"status": "ready"}
+
+
 if APP_ENV == "development":
     @app.get("/seed")
     def seed_demo():
         """Create local demonstration users and services."""
         db = SessionLocal()
         try:
-            admin_email = "admin@barbearia.com"
-            admin_user = db.query(User).filter(User.email == admin_email).first()
-            if not admin_user:
-                admin_user = User(
-                    nome="Administrador",
-                    email=admin_email,
-                    senha_hash=get_password_hash("admin123"),
-                    role=RoleEnum.ADMIN
-                )
-                db.add(admin_user)
-
             barbeiro_email = "barbeiro@barbearia.com"
             barbeiro = db.query(User).filter(User.email == barbeiro_email).first()
             if not barbeiro:
