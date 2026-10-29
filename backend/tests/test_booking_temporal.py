@@ -137,6 +137,117 @@ class BookingTemporalTests(unittest.TestCase):
         self.assertEqual(second_status, 201)
         self.assertEqual(datetime.fromisoformat(second_response["data_hora"]), second_start)
 
+    def test_offset_block_is_normalized_to_barbershop_local_time(self):
+        local_start = datetime(2032, 5, 17, 9, 0)
+        status, block = asgi_request(
+            self.application, "POST", "/horario/bloqueios",
+            {"barbeiro_id": self.barber_id,
+             "inicio": "2032-05-17T14:30:00+02:00",
+             "fim": "2032-05-17T15:00:00+02:00",
+             "tipo": "feriado", "ativo": True},
+            headers={"Authorization": f"Bearer {self._token('barber')}"},
+        )
+        self.assertEqual(status, 201)
+        self.assertEqual(datetime.fromisoformat(block["inicio"]), datetime(2032, 5, 17, 9, 30))
+        booking_status, _ = self._book(local_start)
+        self.assertEqual(booking_status, 409)
+        self.assertEqual(self._appointment_count(), 0)
+
+    def test_booking_ending_at_block_start_is_allowed(self):
+        block_start = datetime(2032, 5, 17, 10, 30)
+        status, _ = asgi_request(
+            self.application, "POST", "/horario/bloqueios",
+            {"barbeiro_id": self.barber_id,
+             "inicio": block_start.isoformat(),
+             "fim": (block_start + timedelta(minutes=30)).isoformat(),
+             "tipo": "bloqueio_ad_hoc", "ativo": True},
+            headers={"Authorization": f"Bearer {self._token('barber')}"},
+        )
+        self.assertEqual(status, 201)
+
+        booking_status, _ = self._book(block_start - timedelta(minutes=60))
+        self.assertEqual(booking_status, 201)
+        self.assertEqual(self._appointment_count(), 1)
+
+    def test_jornada_rejects_invalid_day_time_format_and_reversed_interval(self):
+        invalid_jornadas = (
+            {"dia_semana": 7, "hora_inicio": "09:00", "hora_fim": "18:00"},
+            {"dia_semana": 1, "hora_inicio": "9:00", "hora_fim": "18:00"},
+            {"dia_semana": 1, "hora_inicio": "18:00", "hora_fim": "09:00"},
+        )
+        for values in invalid_jornadas:
+            with self.subTest(values=values):
+                status, _ = asgi_request(
+                    self.application, "POST", "/horario/jornadas",
+                    {"barbeiro_id": self.barber_id, "ativo": True, **values},
+                    headers={"Authorization": f"Bearer {self._token('barber')}"},
+                )
+                self.assertEqual(status, 422)
+
+        db = main.SessionLocal()
+        try:
+            self.assertEqual(
+                db.query(JornadaTrabalho).filter_by(barbeiro_id=self.barber_id).count(), 7
+            )
+        finally:
+            db.close()
+
+    def test_jornada_update_cannot_invert_existing_interval(self):
+        db = main.SessionLocal()
+        try:
+            jornada_id = db.query(JornadaTrabalho).filter_by(
+                barbeiro_id=self.barber_id, dia_semana=1
+            ).one().id
+        finally:
+            db.close()
+
+        status, _ = asgi_request(
+            self.application, "PUT", f"/horario/jornadas/{jornada_id}",
+            {"hora_inicio": "19:00"},
+            headers={"Authorization": f"Bearer {self._token('barber')}"},
+        )
+        self.assertEqual(status, 400)
+        null_status, _ = asgi_request(
+            self.application, "PUT", f"/horario/jornadas/{jornada_id}",
+            {"hora_inicio": None},
+            headers={"Authorization": f"Bearer {self._token('barber')}"},
+        )
+        self.assertEqual(null_status, 400)
+        db = main.SessionLocal()
+        try:
+            jornada = db.query(JornadaTrabalho).filter_by(id=jornada_id).one()
+            self.assertEqual((jornada.hora_inicio, jornada.hora_fim), ("09:00", "18:00"))
+        finally:
+            db.close()
+
+    def test_service_api_rejects_nonpositive_duration_on_create_and_update(self):
+        headers = {"Authorization": f"Bearer {self._token('admin')}"}
+        for duration in (0, -1):
+            with self.subTest(duration=duration):
+                status, _ = asgi_request(
+                    self.application, "POST", "/services/",
+                    {"nome": "Duração inválida", "preco": 10, "duracao_minutos": duration},
+                    headers=headers,
+                )
+                self.assertEqual(status, 422)
+
+        status, _ = asgi_request(
+            self.application, "PUT", f"/services/{self.service_id}",
+            {"duracao_minutos": 0}, headers=headers,
+        )
+        self.assertEqual(status, 422)
+        null_status, _ = asgi_request(
+            self.application, "PUT", f"/services/{self.service_id}",
+            {"duracao_minutos": None}, headers=headers,
+        )
+        self.assertEqual(null_status, 422)
+        db = main.SessionLocal()
+        try:
+            service = db.query(Service).filter_by(id=self.service_id).one()
+            self.assertEqual(service.duracao_minutos, 60)
+        finally:
+            db.close()
+
     def test_booking_rejects_past_and_enforces_exact_fourteen_day_instant_boundary(self):
         past_status, _ = self._book(self.fixed_now - timedelta(microseconds=1))
         self.assertEqual(past_status, 400)

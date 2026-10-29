@@ -77,6 +77,12 @@ def update_jornada(
         )
 
     update_data = jornada_update.model_dump(exclude_unset=True)
+    if any(value is None for value in update_data.values()):
+        raise HTTPException(status_code=400, detail="Os campos enviados não podem ser nulos")
+    hora_inicio = update_data.get("hora_inicio", jornada.hora_inicio)
+    hora_fim = update_data.get("hora_fim", jornada.hora_fim)
+    if hora_inicio >= hora_fim:
+        raise HTTPException(status_code=400, detail="O fim da jornada deve ser posterior ao início")
     for key, value in update_data.items():
         setattr(jornada, key, value)
 

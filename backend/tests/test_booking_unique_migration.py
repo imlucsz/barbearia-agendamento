@@ -105,7 +105,7 @@ class BookingUniqueMigrationTests(unittest.TestCase):
 
     def _upgrade(self):
         with self.engine.connect() as connection:
-            self._command.upgrade(self._config(connection), "head")
+            self._command.upgrade(self._config(connection), "20261027_01")
 
     def test_unnamed_legacy_constraint_is_removed_and_other_schema_data_is_preserved(self):
         self._create_schema(legacy_unique=True, named_legacy=False)
@@ -161,7 +161,13 @@ class BookingUniqueMigrationTests(unittest.TestCase):
             with empty_engine.connect() as connection:
                 config = self._config_class(str(self.config_path))
                 config.attributes["connection"] = connection
-                self._command.upgrade(config, "head")
+                self._command.upgrade(config, "20261027_01")
+            self.assertEqual(inspect(empty_engine).get_table_names(), ["alembic_version"])
+            with empty_engine.connect() as connection:
+                self.assertEqual(
+                    connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
+                    "20261027_01",
+                )
         finally:
             empty_engine.dispose()
 
