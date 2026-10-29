@@ -37,11 +37,18 @@ export default defineConfig({
     {
       name: "desktop-1280x800",
       use: { viewport: { width: 1280, height: 800 } },
+      testMatch: "**/essential-flows.spec.mjs",
     },
     {
       name: "mobile-390x844",
       use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+      testMatch: "**/essential-flows.spec.mjs",
     },
+    ...["chromium", "firefox", "webkit"].flatMap((browserName) => [
+      { name: `${browserName}-320x568`, use: { browserName, viewport: { width: 320, height: 568 } }, testMatch: "**/responsive-a11y.spec.mjs" },
+      { name: `${browserName}-390x844`, use: { browserName, viewport: { width: 390, height: 844 } }, testMatch: "**/responsive-a11y.spec.mjs" },
+      { name: `${browserName}-1280x800`, use: { browserName, viewport: { width: 1280, height: 800 } }, testMatch: "**/responsive-a11y.spec.mjs" },
+    ]),
   ],
   globalSetup: projectRoot + "frontend/e2e/start-test-environment.mjs",
 });

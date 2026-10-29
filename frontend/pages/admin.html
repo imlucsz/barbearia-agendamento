@@ -28,6 +28,7 @@
       <a href="#institucional" data-admin-only>Institucional</a>
       <a href="#financeiro" data-admin-only>Financeiro</a>
       <a href="#avaliacoes" data-admin-only>Avaliações</a>
+      <a href="#auditoria" data-admin-only>Auditoria</a>
     </nav>
   </header>
 
@@ -63,6 +64,7 @@
       <form id="service-form" class="management-form form-grid">
         <input type="hidden" name="id">
         <div class="form-field"><label for="service-name" class="form-label">Nome</label><input id="service-name" name="nome" required></div>
+        <div class="form-field form-field--full"><label for="service-description" class="form-label">Descrição pública</label><textarea id="service-description" name="descricao" maxlength="500" rows="3"></textarea></div>
         <div class="form-field"><label for="service-price" class="form-label">Preço (R$)</label><input id="service-price" name="preco" type="number" min="0" step="0.01" required></div>
         <div class="form-field"><label for="service-duration" class="form-label">Duração (minutos)</label><input id="service-duration" name="duracao_minutos" type="number" min="1" required></div>
         <div class="form-field form-field--full"><button class="btn" type="submit">Salvar serviço</button><button class="btn btn-ghost" id="service-cancel-edit" type="button" hidden>Cancelar edição</button></div>
@@ -89,15 +91,18 @@
       <div class="admin-section-heading"><div><span class="eyebrow">DISPONIBILIDADE DA EQUIPE</span><h2>Jornadas e bloqueios</h2></div><p>Configure dias de atendimento, folgas, feriados e bloqueios pontuais.</p></div>
       <div class="management-columns">
         <form id="schedule-form" class="management-form form-grid">
+          <input type="hidden" name="id">
           <h3 class="form-field--full">Nova jornada semanal</h3>
           <div class="form-field"><label for="schedule-barber" class="form-label">Barbeiro</label><select id="schedule-barber" name="barbeiro_id" required></select></div>
           <div class="form-field"><label for="schedule-day" class="form-label">Dia da semana</label><select id="schedule-day" name="dia_semana" required><option value="1">Segunda</option><option value="2">Terça</option><option value="3">Quarta</option><option value="4">Quinta</option><option value="5">Sexta</option><option value="6">Sábado</option><option value="0">Domingo</option></select></div>
           <div class="form-field"><label for="schedule-start" class="form-label">Início</label><input id="schedule-start" name="hora_inicio" type="time" required></div>
           <div class="form-field"><label for="schedule-end" class="form-label">Fim</label><input id="schedule-end" name="hora_fim" type="time" required></div>
           <button class="btn form-field--full" type="submit">Adicionar jornada</button>
+          <button class="btn btn-ghost form-field--full" id="schedule-cancel-edit" type="button" hidden>Cancelar edição</button>
           <div id="schedules-list" class="management-list form-field--full"></div>
         </form>
         <form id="block-form" class="management-form form-grid">
+          <input type="hidden" name="id">
           <h3 class="form-field--full">Bloquear período</h3>
           <div class="form-field form-field--full"><label for="block-barber" class="form-label">Barbeiro</label><select id="block-barber" name="barbeiro_id" required></select></div>
           <div class="form-field"><label for="block-start" class="form-label">Início</label><input id="block-start" name="inicio" type="datetime-local" required></div>
@@ -105,6 +110,7 @@
           <div class="form-field"><label for="block-type" class="form-label">Tipo</label><select id="block-type" name="tipo"><option value="folga">Folga</option><option value="feriado">Feriado</option><option value="bloqueio_ad_hoc">Outro bloqueio</option></select></div>
           <div class="form-field"><label for="block-reason" class="form-label">Motivo</label><input id="block-reason" name="motivo"></div>
           <button class="btn form-field--full" type="submit">Salvar bloqueio</button>
+          <button class="btn btn-ghost form-field--full" id="block-cancel-edit" type="button" hidden>Cancelar edição</button>
           <div id="blocks-list" class="management-list form-field--full"></div>
         </form>
       </div>
@@ -130,7 +136,7 @@
       <form id="finance-form" class="management-form form-grid">
         <div class="form-field"><label for="finance-start" class="form-label">De</label><input id="finance-start" name="inicio" type="date" required></div>
         <div class="form-field"><label for="finance-end" class="form-label">Até</label><input id="finance-end" name="fim" type="date" required></div>
-        <div class="form-field form-field--full"><button class="btn" type="submit">Gerar relatório</button></div>
+        <div class="form-field form-field--full"><button class="btn" type="submit">Gerar relatório</button><button class="btn btn-ghost" id="finance-export" type="button" disabled>Exportar CSV</button></div>
       </form>
       <div id="finance-result" class="finance-result" aria-live="polite"></div>
     </section>
@@ -138,6 +144,21 @@
     <section id="avaliacoes" class="admin-section admin-only">
       <div class="admin-section-heading"><div><span class="eyebrow">RF22 · MODERAÇÃO</span><h2>Avaliações</h2></div><p>Oculte avaliações inadequadas. Conteúdo oculto não é exibido ao público.</p></div>
       <div id="reviews-admin-list" class="management-list" aria-live="polite"></div>
+    </section>
+
+    <section id="auditoria" class="admin-section admin-only">
+      <div class="admin-section-heading"><div><span class="eyebrow">SEGURANÇA</span><h2>Auditoria</h2></div><p>Eventos administrativos e de segurança registrados.</p></div>
+      <form id="audit-filter" class="management-form form-grid">
+        <div class="form-field"><label for="audit-user" class="form-label">ID do usuário</label><input id="audit-user" name="usuario" type="number" min="1"></div>
+        <div class="form-field"><label for="audit-action" class="form-label">Ação</label><input id="audit-action" name="acao" maxlength="100"></div>
+        <div class="form-field"><label for="audit-entity" class="form-label">Entidade</label><input id="audit-entity" name="entidade" maxlength="100"></div>
+        <div class="form-field"><label for="audit-from" class="form-label">De</label><input id="audit-from" name="de" type="date"></div>
+        <div class="form-field"><label for="audit-to" class="form-label">Até</label><input id="audit-to" name="ate" type="date"></div>
+        <div class="form-field"><button class="btn" type="submit">Filtrar</button></div>
+      </form>
+      <p id="audit-count" aria-live="polite"></p>
+      <div class="management-list"><table><thead><tr><th>Data</th><th>Ator</th><th>Ação</th><th>Entidade</th><th>Resultado</th><th>IP</th></tr></thead><tbody id="audit-list"></tbody></table></div>
+      <button id="audit-next" class="btn" type="button">Próxima página</button>
     </section>
   </main>
 </body>

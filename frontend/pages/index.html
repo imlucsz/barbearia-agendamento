@@ -8,7 +8,6 @@
   <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/home.css">
-  <link rel="stylesheet" href="../assets/css/estrelinha.css">
   <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
   </script>
@@ -39,12 +38,12 @@
   <main>
     <section class="hero container" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> Seu próximo visual começa aqui</span>
-        <h1 id="hero-title" class="hero-title">O clássico nunca sai de <em>cena.</em></h1>
-        <p class="hero-text">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
+        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> <span data-installation-copy="homeHeroEyebrow">Seu próximo visual começa aqui</span></span>
+        <h1 id="hero-title" class="hero-title"><span data-installation-copy="homeHeroTitleLead">O clássico nunca sai de</span> <em data-installation-copy="homeHeroTitleAccent">cena.</em></h1>
+        <p class="hero-text" data-installation-copy="homeHeroDescription">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
         <div class="hero-actions">
-          <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large">Escolher meu horário <span aria-hidden="true">↗</span></a>
-          <a href="#services" class="btn btn-large btn-ghost">Explorar serviços</a>
+          <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large"><span data-installation-copy="homePrimaryAction">Escolher meu horário</span> <span aria-hidden="true">↗</span></a>
+          <a href="#services" class="btn btn-large btn-ghost" data-installation-copy="homeSecondaryAction">Explorar serviços</a>
         </div>
         <div class="hero-proof">
           <span class="proof-stars" aria-label="Avaliações dos clientes">★★★★★</span>
@@ -147,11 +146,11 @@
   <footer class="site-footer">
     <div class="container footer-inner">
       <a class="brand-lockup" href="index.html"><span class="brand-mark" aria-hidden="true">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a>
-      <p>Um bom corte muda o dia. <span>© <span id="current-year"></span> Barbearia Agendamento.</span></p>
+      <p><span data-installation-copy="homeFooterMessage">Um bom corte muda o dia.</span> <span>© <span id="current-year"></span> Barbearia Agendamento.</span></p>
       <a href="client-services.html">Agende sua visita <span aria-hidden="true">↗</span></a>
     </div>
   </footer>
   <script type="module" src="../assets/js/home.js"></script>
-  <script type="module" src="../assets/js/estrelinha/widget.js"></script>
+  <script type="module" src="../assets/js/optional-features.mjs"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
 // Este arquivo não conhece API_BASE nem faz fetch() diretamente.
 
 import { api, getCurrentUser, getToken, logout } from "./api.js";
+import { escapeHtml } from "./escape-html.mjs";
 
 const USER_KEY = "user";
 
@@ -76,15 +77,6 @@ function toTitleCase(value) {
         .trim()
         .replace(/\s+/g, " ")
         .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#039;");
 }
 
 function clearSession() {
@@ -243,7 +235,7 @@ function renderizarAgendamentos(agendamentos) {
                 <td data-label="Cliente">${escapeHtml(item.cliente)}</td>
                 <td data-label="Serviço">${escapeHtml(item.servico)}</td>
                 <td data-label="Profissional">${escapeHtml(item.profissional)}</td>
-                <td data-label="Status"><span class="status-badge status-${statusKey}">${escapeHtml(statusLabel)}</span></td>
+                <td data-label="Status"><span class="status-badge status-${escapeHtml(statusKey)}">${escapeHtml(statusLabel)}</span></td>
                 <td data-label="Ações">${actions}</td>
             </tr>
         `;
