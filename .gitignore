@@ -1,9 +1,12 @@
 __pycache__/
 *.pyc
 .env
+.env.*
+!.env.example
 venv/
 .vscode/
 *.db
 *.sqlite3
 .github/
 barbearia.db
+test-results/
