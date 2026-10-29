@@ -7,11 +7,13 @@ Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM)
 - **Frontend:** HTML5, CSS3 responsivo e JavaScript ES Modules (Vanilla).
 - **Backend:** Python, FastAPI, Pydantic e SQLAlchemy.
 - **Banco de dados:** SQLite por padrão; PostgreSQL pode ser usado configurando a URL e instalando o driver correspondente.
-- **Autenticação:** JWT Bearer e senha com hash bcrypt.
+- **Autenticação:** JWT Bearer (PyJWT); senhas novas com Argon2id e verificação compatível com hashes bcrypt existentes.
 
 ## Implantação por instalação
 
-Para preparar uma barbearia com domínio, banco e configuração próprios, consulte [Implantação e reutilização](docs/IMPLANTACAO_E_REUTILIZACAO.md). O procedimento não copia dados de clientes nem configura multi-tenancy.
+Para preparar uma barbearia com domínio, banco e configuração próprios, consulte [Implantação e reutilização](docs/IMPLANTACAO_E_REUTILIZACAO.md). O procedimento não copia dados de clientes nem configura multi-tenancy. O [inventário LGPD](docs/LGPD.md) descreve exportação, exclusão e retenção implementadas; revise as bases legais com assessoria jurídica.
+
+Para criar um checkout limpo por barbearia, mapear personalizações e aplicar atualizações do núcleo, siga o [guia de reutilização e atualização](docs/REUTILIZACAO_E_ATUALIZACAO.md) e use os scripts em `tools/new-installation/`.
 
 ## Requisitos
 
@@ -19,6 +21,12 @@ Para preparar uma barbearia com domínio, banco e configuração próprios, cons
 - Navegador moderno.
 - Git, para clonar o repositório.
 - Opcional: PostgreSQL instalado e seu driver Python, caso não use SQLite.
+
+O frontend usa ES Modules nativos sem transpilação; veja [compatibilidade de navegadores](docs/COMPATIBILIDADE.md). O GitHub Actions executa testes Python, Node, auditorias de dependências e Playwright; confira `.github/workflows/ci.yml`.
+
+Para backup diário criptografado, teste trimestral de restauração e recuperação de desastres, consulte [o plano operacional](docs/PLANO_RECUPERACAO_DESASTRES.md). A instalação e o armazenamento externo são configurados pelo operador.
+
+Para consultar o andamento dos requisitos, veja a [auditoria de implementação](docs/REQUISITOS_STATUS.md) e a [matriz de rastreabilidade entre requisitos, código, rotas e testes](docs/RASTREABILIDADE.md). Antes da publicação, use também o [checklist de prontidão para produção](docs/CHECKLIST_PRODUCAO.md). A matriz identifica lacunas que ainda dependem de infraestrutura externa ou validação adicional.
 
 ## Executar localmente
 
@@ -58,11 +66,11 @@ O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambi
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01`, encadeada depois dela, cria as nove tabelas e seus índices, chaves estrangeiras e unicidades em banco vazio. Em banco existente, ela só reconhece o schema completo compatível com o antigo `create_all() + ensure_schema_updates()`; schemas parciais ou inesperados falham sem apagar tabelas ou registros. Não há `stamp` automático.
+`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descricao publica dos servicos; `20261029_06` adiciona indices para consultas de disponibilidade. O schema atual tem treze tabelas. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
 
 Procedimento de adoção:
 
-- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema integralmente.
+- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas e `20261029_01` completa o schema atual com as duas tabelas de sessão/consentimento.
 - **Banco local de desenvolvimento SQLite existente:** pare a API e, no diretório `backend`, faça backup e prepare um novo arquivo sem apagar o antigo:
 
   ```powershell
@@ -137,7 +145,14 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `CORS_ALLOWED_ORIGINS` | Origens web explicitamente autorizadas, separadas por vírgula | `http://127.0.0.1:5500` em desenvolvimento; obrigatória em produção, com uma ou mais origens HTTPS reais do frontend |
 | `SECRET_KEY` | Chave privada de assinatura JWT, com pelo menos 32 bytes UTF-8 | Obrigatória; não há valor padrão |
 | `ALGORITHM` | Algoritmo JWT | `HS256` |
-| `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos | `1440` (24 horas) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos (faixa 5–60) | `15` minutos |
+| `TERMS_VERSION` | Versão dos termos de consentimento LGPD registrada no cadastro | `1.0` |
+| `TRUSTED_PROXY_COUNT` | Quantidade de proxies reversos confiáveis para interpretar `X-Forwarded-For` | `0` (ignora o cabeçalho) |
+| `RATE_LIMIT_MAX_ATTEMPTS` | Falhas consecutivas por IP e rota antes do bloqueio | `5` |
+| `RATE_LIMIT_BLOCK_MINUTES` | Duração do bloqueio das rotas de autenticação | `15` minutos |
+| `RETENTION_DAYS` | Retenção de eventos de auditoria antes de expurgo | `365` dias |
+| `METRICS_TOKEN` | Token bearer de pelo menos 32 caracteres aleatorios para scraping Prometheus | Vazio (desabilita `/metrics`) |
+| `FORCE_HTTPS` | Redireciona requisições HTTP; padrão ligado em produção e desligado em desenvolvimento/teste | Derivado de `APP_ENV` |
 | `APP_ENV` | Ambiente de execução | Obrigatória: use `development`, `test` ou `production`; implantações devem usar exatamente `production` |
 | `SCHEDULING_TIMEZONE` | Fuso IANA da instalação | `America/Sao_Paulo` local; obrigatório em produção |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Transporte e remetente para redefinição de senha | O host e remetente são obrigatórios em produção; usuário/senha devem ser fornecidos juntos e podem ficar vazios para relay sem autenticação |
@@ -156,54 +171,83 @@ Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao in
 
 Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Produção exige `postgresql+psycopg`, nome do banco, host e usuário; conexões para hosts remotos devem usar `sslmode=require`, `verify-ca` ou `verify-full`. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
 
+O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 60) e permanece em `localStorage` para a navegação entre páginas; JavaScript injetado na origem, como em um XSS, pode lê-lo. O refresh token aleatório é armazenado no servidor somente como SHA-256 e enviado ao frontend em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção. As chamadas usam `credentials: include`; em produção, site e API precisam compartilhar o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). `/auth/refresh` e `/auth/logout` aceitam somente `Origin` listado em `CORS_ALLOWED_ORIGINS`.
+
 ## Funcionalidades e requisitos
 
-### Requisitos funcionais (RF01–RF22)
+## Requisitos funcionais (RF)
 
-| Código | Requisito |
-| --- | --- |
-| **RF01** | Exibir catálogo público de serviços, com preço e duração. |
-| **RF02** | Exibir informações institucionais: endereço, mapa e horário de funcionamento. |
-| **RF03** | Exibir a nota média das avaliações públicas. |
-| **RF04** | Cadastrar conta de cliente. |
-| **RF05** | Autenticar clientes, barbeiros e administradores, com controle por perfil. |
-| **RF06** | Solicitar redefinição de senha. O envio de e-mail ainda depende de integração com um provedor. |
-| **RF07** | Consultar horários por serviço, profissional e data, respeitando RN-01. |
-| **RF08** | Agendar serviço, profissional, data e horário. |
-| **RF09** | Cancelar agendamento conforme RN-02. |
-| **RF10** | Reagendar agendamento conforme RN-02. |
-| **RF11** | Consultar histórico de agendamentos do cliente. |
-| **RF12** | Avaliar atendimento concluído conforme RN-04. |
-| **RF13** | Consultar agenda do dia: barbeiro vê a própria; administrador vê a agenda geral. |
-| **RF14** | Registrar atendimento concluído, cancelado ou falta e o valor cobrado ao concluir. |
-| **RF15** | Criar agendamento manual, vinculando cliente cadastrado ou informando o nome de cliente avulso. |
-| **RF16** | Criar, editar e excluir serviços, com preço e duração. |
-| **RF17** | Associar serviços a barbeiros e remover associações. |
-| **RF18** | Configurar jornadas, folgas, feriados e bloqueios de horário. |
-| **RF19** | Consultar, editar e bloquear/desbloquear clientes. |
-| **RF20** | Consultar e gerenciar informações institucionais. |
-| **RF21** | Emitir relatório financeiro por período, com base nos atendimentos concluídos/avaliados. |
-| **RF22** | Moderar avaliações, ocultando ou reexibindo avaliações. |
+A Tabela 1 detalha os 24 requisitos funcionais que compõem o escopo de funcionalidades do sistema de agendamento para barbearias. Os requisitos RF23 e RF24 foram incluídos para atender, respectivamente, às necessidades de auditoria e aos direitos do titular de dados previstos na LGPD.
 
-### Regras de negócio
+**Tabela 1 – Requisitos funcionais (RF)**
 
-| Código | Regra |
-| --- | --- |
-| **RN-01** | Um horário disponível deve estar dentro da jornada, sem bloqueio ou conflito e comportar a duração do serviço. |
-| **RN-02** | Cliente precisa cancelar/reagendar com pelo menos 24 horas de antecedência. Cada agendamento permite até 2 reagendamentos. |
-| **RN-03** | Agendamentos podem ser feitos com até 14 dias de antecedência. |
-| **RN-04** | Apenas o dono de um agendamento concluído pode avaliá-lo, uma única vez. |
-| **RN-05** | O agendamento mantém snapshot de preço e duração do serviço no momento da criação. |
+| **Código** | **Requisito Funcional** | **Descrição Detalhada** | **Perfil / Módulo** |
+| --- | --- | --- | --- |
+| RF01 | Catálogo Público | Exibir catálogo público de serviços oferecidos com preço, descrição e duração estimada. | Público |
+| RF02 | Informações Institucionais | Exibir endereço, mapa interativo, formas de contato e horário de funcionamento. | Público |
+| RF03 | Nota Média de Avaliações | Exibir a nota média pública calculada a partir das avaliações aprovadas. | Público |
+| RF04 | Cadastro de Cliente | Permitir a criação de conta de cliente com coleta explícita e registro do consentimento LGPD (versão dos termos, data/hora, IP de origem e origem do consentimento). | Cliente |
+| RF05 | Autenticação e Autorização | Autenticar usuários (Cliente, Barbeiro, Admin) via JWT com controle RBAC, incluindo access token curto, renovação por refresh token revogável e encerramento de sessão (logout). | Geral |
+| RF06 | Recuperação de Senha | Solicitar e processar a redefinição de senha por token de uso único e tempo limite. A resposta é idêntica exista ou não o e-mail; o envio depende de integração com provedor de e-mail. | Geral |
+| RF07 | Consulta de Horários | Consultar horários livres filtrando por serviço, profissional e data (RN-01). | Cliente / Admin |
+| RF08 | Agendamento de Serviço | Permitir a reserva de serviço, profissional, data e horário específico. | Cliente / Admin |
+| RF09 | Cancelamento de Reserva | Permitir o cancelamento de agendamentos respeitando a antecedência mínima de 24h (RN-02). | Cliente / Admin |
+| RF10 | Reagendamento de Reserva | Permitir a alteração de data/horário respeitando limites de até 2 reagendamentos (RN-02). | Cliente / Admin |
+| RF11 | Histórico do Cliente | Exibir o histórico completo de agendamentos passados e futuros do cliente. | Cliente |
+| RF12 | Avaliação do Atendimento | Permitir que o cliente avalie com nota e comentário atendimentos concluídos (RN-04). | Cliente |
+| RF13 | Consulta de Agenda | Exibir agenda diária: o barbeiro visualiza a sua própria e o admin visualiza a geral. | Barbeiro / Admin |
+| RF14 | Registro de Atendimento | Registrar status do agendamento (Concluído, Cancelado, Falta) e o valor final cobrado. | Barbeiro / Admin |
+| RF15 | Agendamento Manual/Avulso | Permitir ao admin/barbeiro realizar agendamentos manuais para clientes sem cadastro. | Admin / Barbeiro |
+| RF16 | Gestão de Serviços | Permitir cadastrar, editar, listar e remover serviços, preços e durações. | Admin |
+| RF17 | Associação Barbeiro-Serviço | Vincular ou remover a capacitação de um barbeiro para realizar determinados serviços. | Admin |
+| RF18 | Jornadas e Bloqueios | Configurar jornadas semanais de trabalho, folgas, feriados e bloqueios temporários. | Admin / Barbeiro |
+| RF19 | Gestão de Clientes | Consultar, editar perfil, bloquear e desbloquear contas de clientes; o bloqueio invalida as sessões ativas. | Admin |
+| RF20 | Gestão Institucional | Atualizar endereço, horário de funcionamento e informações gerais da barbearia. | Admin |
+| RF21 | Relatório Financeiro | Emitir relatórios de faturamento por período com base nos atendimentos concluídos. | Admin |
+| RF22 | Moderação de Avaliações | Ocultar ou reexibir avaliações públicas com conteúdo inadequado. | Admin |
+| RF23 | Auditoria de Eventos | Consultar os registros de auditoria (autenticação, cancelamentos e ações administrativas), filtrando por usuário, ação e período. | Admin |
+| RF24 | Exportação de Dados Pessoais | Permitir ao cliente exportar seus dados cadastrais e de agendamentos em formato estruturado (portabilidade, LGPD art. 18). | Cliente |
 
-### Requisitos não funcionais
+## Requisitos não funcionais (RNF)
 
-| Código | Requisito |
-| --- | --- |
-| **RNF-01** | Serializar reservas e reagendamentos por barbeiro antes de verificar conflitos. |
-| **RNF-02** | Senhas com hash bcrypt e tokens JWT com expiração configurável. |
-| **RNF-03** | Interface responsiva, priorizando dispositivos móveis. |
-| **RNF-04** | Registrar consentimento no cadastro e permitir desativação/anônimização da conta. A adequação legal deve ser revisada para o contexto real. |
-| **RNF-05** | Restringir operações administrativas a usuários autenticados e perfis autorizados. |
+A Tabela 2 apresenta os 18 Requisitos Não-Funcionais, organizados por categoria. Os requisitos RNF-01 a RNF-10 compõem a especificação original e foram detalhados quanto à segurança; os requisitos RNF-11 a RNF-18 foram acrescentados para cobrir validação de entradas, CORS, gestão de segredos, auditoria, backup, dependências, monitoramento e recuperação de desastres, conforme práticas recomendadas por OWASP (2021) e pela norma ABNT NBR ISO/IEC 27002 (ABNT, 2022).
+
+**Tabela 2 – Requisitos não-funcionais (RNF)**
+
+| **Código** | **Categoria** | **Requisito Não-Funcional** | **Detalhamento Técnico** |
+| --- | --- | --- | --- |
+| RNF-01 | Desempenho | Serialização e Isolamento de Agendamentos | Garantir a atomicidade na reserva/reagendamento utilizando locks de software na aplicação (booking.py) ou transações isoladas no banco, eliminando o double booking. |
+| RNF-02 | Segurança | Proteção Criptográfica de Credenciais | Hash de senhas via bcrypt antes da persistência. Tokens de acesso JWT assinados com HS256, com expiração curta e configurável (ACCESS_TOKEN_EXPIRE_MINUTES, padrão 15 minutos, faixa de 5 a 60) e renovação por refresh token opaco, aleatório, rotativo e revogável (persistir somente SHA-256; detectar reuso e revogar a família). O refresh token deve ser enviado em cookie HttpOnly, SameSite=Lax e Secure em produção; refresh/logout validam Origin contra CORS. A SECRET_KEY não possui valor padrão: a aplicação não inicia sem ela em produção. |
+| RNF-03 | Usabilidade | Responsividade Mobile-First | Interface desenvolvida em HTML5/CSS3 Vanilla responsiva com Media Queries, sem quebras de layout em telas a partir de 320px de largura. |
+| RNF-04 | Confiabilidade | Conformidade Técnica com LGPD | Registro explícito do consentimento no cadastro (versão dos termos, data/hora, IP e origem) e endpoint DELETE /users/me para anonimização irreversível dos dados pessoais do cliente, preservando os registros financeiros sem identificação. Exportação dos dados do titular (RF24). |
+| RNF-05 | Segurança | Controle de Acesso por Perfis (RBAC) | Interceptação das requisições privadas no FastAPI validando o perfil (RoleEnum: CLIENTE, BARBEIRO, ADMIN) por dependência centralizada e a propriedade do recurso: o cliente acessa apenas os próprios agendamentos e o barbeiro, apenas a própria agenda. |
+| RNF-06 | Segurança | Comunicação Criptografada | Toda comunicação entre o frontend JavaScript e a API FastAPI deve utilizar obrigatoriamente HTTPS/TLS 1.3 em produção, com cabeçalho HSTS, redirecionamento de HTTP para HTTPS e cabeçalhos de segurança (CSP e X-Content-Type-Options). |
+| RNF-07 | Segurança | Proteção contra Força Bruta | Rate Limiting nas rotas /auth/login, /auth/register, /auth/esqueci-senha e /auth/redefinir-senha, bloqueando requisições do IP por período configurável após 5 tentativas incorretas consecutivas. |
+| RNF-08 | Desempenho | Tempo de Resposta da API | Endpoint GET /appointments/disponiveis deve processar e responder em tempo máximo de 500ms em condições normais de rede. |
+| RNF-09 | Compatibilidade | Compatibilidade de Navegadores | Frontend construído com ES Modules nativos, executando sem necessidade de transpilação nas versões estáveis de Chrome, Firefox, Safari e Edge. |
+| RNF-10 | Arquitetura | Persistência e Migração Transparente | Abstração ORM via SQLAlchemy permitindo transição transparente entre SQLite (desenvolvimento) e PostgreSQL (produção). Evolução do esquema por migrations versionadas (Alembic), com scripts de upgrade e downgrade que permitam rollback. |
+| RNF-11 | Segurança | Validação e Sanitização de Entradas | Validação de tipos, formatos e tamanhos de todos os campos por schemas Pydantic; escape do conteúdo enviado por usuários (ex.: comentários de avaliações) na saída do frontend; consultas exclusivamente parametrizadas via ORM, sem concatenação de SQL, prevenindo SQL Injection e XSS. |
+| RNF-12 | Segurança | Política de CORS Restrita | A API aceita requisições apenas das origens listadas em ALLOWED_ORIGINS, sem uso de curinga (*) em produção, com métodos e cabeçalhos explicitamente permitidos. |
+| RNF-13 | Segurança | Gestão de Segredos | Segredos (SECRET_KEY, DATABASE_URL, credenciais de e-mail) mantidos somente em variáveis de ambiente, fora do repositório, com valores distintos por ambiente, validação na inicialização e rotação periódica. Dados de demonstração (seed) desabilitados em produção. |
+| RNF-14 | Confiabilidade | Registro de Logs e Auditoria | Registro estruturado de eventos de autenticação (sucesso e falha), cancelamentos e ações administrativas, com usuário, ação, entidade, IP e data/hora, sem armazenar senhas ou tokens, e com período de retenção definido. |
+| RNF-15 | Confiabilidade | Backup e Retenção de Dados | Backup automático diário do banco de dados, com retenção mínima de 30 dias, armazenamento em local distinto do servidor de aplicação e teste periódico de restauração. |
+| RNF-16 | Manutenibilidade | Gestão de Dependências | Versões fixadas em requirements.txt, auditoria periódica de vulnerabilidades (pip-audit) e atualização automatizada de dependências (Dependabot). |
+| RNF-17 | Operação | Monitoramento e Observabilidade | Endpoint /health com verificação de conectividade do banco, coleta de métricas básicas (latência e taxa de erros 5xx) e alertas em caso de indisponibilidade. |
+| RNF-18 | Confiabilidade | Plano de Recuperação de Desastres | Plano documentado de recuperação com RPO máximo de 24 horas e RTO máximo de 4 horas, incluindo procedimento de restauração passo a passo e responsáveis. |
+
+## Regras de negócio (RN)
+
+As regras de negócio definem restrições do domínio que os requisitos funcionais devem respeitar. A Tabela 3 apresenta as cinco regras vigentes, os requisitos que as utilizam e o ponto do código em que são aplicadas.
+
+**Tabela 3 – Regras de negócio (RN)**
+
+| **Código** | **Regra de negócio** | **RF relacionados** | **Implementação** |
+| --- | --- | --- | --- |
+| **RN-01** | Um horário disponível deve estar dentro da jornada, sem bloqueio ou conflito e comportar a duração do serviço. | RF07, RF08, RF15 | validate_booking_slot (booking.py) |
+| **RN-02** | O cliente precisa cancelar ou reagendar com pelo menos 24 horas de antecedência. Cada agendamento permite até 2 reagendamentos. | RF09, RF10 | appointments.py; Appointment.reschedule_count |
+| **RN-03** | Agendamentos podem ser feitos com até 14 dias de antecedência. | RF08 | BOOKING_WINDOW_DAYS = 14 |
+| **RN-04** | Apenas o dono de um agendamento concluído pode avaliá-lo, uma única vez. | RF12 | Avaliacao.appointment_id (único) |
+| **RN-05** | O agendamento mantém um instantâneo do preço e da duração do serviço no momento da criação. | RF08, RF21 | Appointment.preco e duracao_minutos |
 
 ## Telas do frontend
 
@@ -233,6 +277,8 @@ Todos os endpoints são servidos pelo FastAPI na porta `8000`. Rotas protegidas 
 | Jornadas/bloqueios | `/horario/jornadas`, `/horario/bloqueios` | Administrador ou barbeiro dono |
 | Serviços por barbeiro | `/barbeiro-servico/`, `/barbeiro-servico/barbeiro/{barbeiro_id}`, `/barbeiro-servico/servico/{service_id}/barbeiros` | Conforme perfil |
 | Demonstração | `GET /seed` | Somente desenvolvimento |
+
+`GET /admin/relatorio` retorna totais, quebras por barbeiro/serviço/dia e contagens de status; `GET /admin/relatorio/csv` exporta os atendimentos do período com neutralização de fórmulas em células CSV. Jornadas podem ser editadas, desativadas ou removidas por `PUT/DELETE /horario/jornadas/{jornada_id}`.
 
 Consulte `/docs` para parâmetros, corpos de requisição e respostas completos.
 
@@ -316,6 +362,10 @@ A suíte automatizada usa `unittest` e fica em `backend/tests`. Por padrão, ela
 Para validar também o PostgreSQL, configure `BOOKING_TEST_BACKEND=postgresql` e `BOOKING_TEST_POSTGRES_URL` para um banco exclusivo de testes, conforme as instruções acima. Nesse modo, os testes de integridade, concorrência, regras temporais e migração usam PostgreSQL; a suíte padrão não valida PostgreSQL quando essa configuração está ausente.
 
 Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados locais de demonstração.
+
+### Resultado da última validação local
+
+Registro de 2026-10-29: a suíte Python com SQLite temporário executou 185 testes (179 passaram e 6 testes PostgreSQL foram ignorados); os testes Node tiveram 20 aprovações. Playwright teve 51 aprovações; 6 casos não iniciaram porque Firefox e WebKit não estavam instalados. O `pip-audit` não encontrou vulnerabilidades conhecidas. PostgreSQL descartável e CI remota não foram executados nesta rodada. Consulte `docs/REQUISITOS_STATUS.md` para detalhes e pendências; esses resultados não substituem a validação no ambiente de implantação.
 
 ## Limitações e cuidados antes de produção
 
