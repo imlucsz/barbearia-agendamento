@@ -101,7 +101,7 @@ class PostgresBookingMigrationTests(unittest.TestCase):
 
     def _upgrade(self):
         with self.engine.connect() as connection:
-            _alembic_command.upgrade(self._config(connection), "head")
+            _alembic_command.upgrade(self._config(connection), "20261027_01")
 
     def test_upgrade_preserves_data_foreign_keys_and_other_constraints(self):
         self._upgrade()

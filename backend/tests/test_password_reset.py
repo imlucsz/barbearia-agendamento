@@ -10,6 +10,7 @@ from fastapi import FastAPI
 from app.core.security import get_password_hash, verify_password
 from app.models.user import PasswordResetToken, User
 from app.core.clock import utc_now_naive
+from app.core.email import send_password_reset_email
 
 
 def asgi_post(application, path, payload):
@@ -152,7 +153,7 @@ class PasswordResetTests(unittest.TestCase):
         self.assertEqual(body, {"mensagem": "Se o email existir, um link de redefinição foi gerado."})
         self.assertEqual(self.reset_token_count(user_id), 0)
 
-    def test_missing_or_production_environment_has_no_local_fallback(self):
+    def test_test_or_production_environment_has_no_local_email_fallback(self):
         user_id = self.create_user("known@example.com")
         for app_env in (None, "production"):
             with self.subTest(app_env=app_env):
@@ -160,8 +161,8 @@ class PasswordResetTests(unittest.TestCase):
                 application = app_module.app
                 self.assertIsInstance(application, FastAPI)
                 self.assertIs(application, app_module.app)
-                self.assertEqual(app_module.APP_ENV, app_env or "")
-                with patch("app.core.email.logger.info") as logger_info:
+                self.assertEqual(app_module.APP_ENV, app_env or "test")
+                with patch("logging.Logger.info") as logger_info:
                     status, body = asgi_post(
                         application, "/auth/esqueci-senha",
                         {"email": "known@example.com"},
@@ -171,18 +172,54 @@ class PasswordResetTests(unittest.TestCase):
                 self.assertEqual(self.reset_token_count(user_id), 0)
                 logger_info.assert_not_called()
 
-    def test_explicit_development_fallback_logs_token_but_never_returns_it(self):
-        self.create_user("local@example.com")
-        with self.assertLogs("app.core.email", level="INFO") as captured:
+    def test_validation_errors_do_not_echo_password_or_reset_token(self):
+        secret_input = "xP@ss"
+        status, body = asgi_post(
+            self.application,
+            "/auth/redefinir-senha",
+            {"token": "private-reset-token", "nova_senha": secret_input},
+        )
+
+        self.assertEqual(status, 422)
+        serialized = json.dumps(body)
+        self.assertNotIn(secret_input, serialized)
+        self.assertNotIn("private-reset-token", serialized)
+        self.assertNotIn('"input"', serialized)
+        self.assertNotIn('"ctx"', serialized)
+        self.assertIn("loc", body["detail"][0])
+
+    def test_password_reset_link_keeps_token_in_fragment_not_query(self):
+        settings = {
+            "APP_ENV": "development",
+            "SMTP_HOST": "smtp.example.test",
+            "SMTP_PORT": "587",
+            "SMTP_FROM": "barbearia@example.test",
+            "PASSWORD_RESET_URL": "https://frontend.example/reset.html?campaign=dev&token=old#previous",
+            "SMTP_USERNAME": "",
+            "SMTP_PASSWORD": "",
+        }
+        with patch.dict(os.environ, settings), patch("app.core.email.smtplib.SMTP") as smtp_factory:
+            send_password_reset_email("client@example.test", "test-reset-token")
+
+        smtp = smtp_factory.return_value.__enter__.return_value
+        message = smtp.send_message.call_args.args[0]
+        body = message.get_content()
+        link = next(line for line in body.splitlines() if line.startswith("https://"))
+        self.assertIn("?campaign=dev#token=test-reset-token", link)
+        self.assertNotIn("token=old", link)
+        self.assertNotIn("&token=test-reset-token", link)
+
+    def test_explicit_development_without_smtp_does_not_log_or_persist_token(self):
+        user_id = self.create_user("local@example.com")
+        with patch("logging.Logger.info") as logger_info:
             status, body = asgi_post(
                 self.application, "/auth/esqueci-senha", {"email": "local@example.com"}
             )
 
-        logged_line = "\n".join(captured.output)
-        raw_token = logged_line.split(": ")[-1]
         self.assertEqual(status, 200)
-        self.assertNotIn(raw_token, str(body))
         self.assertNotIn("dev_token", body)
+        self.assertEqual(self.reset_token_count(user_id), 0)
+        logger_info.assert_not_called()
 
 
 if __name__ == "__main__":

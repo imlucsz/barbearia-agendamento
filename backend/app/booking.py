@@ -1,10 +1,11 @@
 import os
 from datetime import date, datetime, time, timedelta
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.config import validate_scheduling_timezone
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -27,6 +28,29 @@ ACTIVE_APPOINTMENT_STATUSES = [
 ]
 
 
+def schedule_bounds(day: date, schedule: JornadaTrabalho) -> tuple[datetime, datetime]:
+    try:
+        opening_time = time.fromisoformat(schedule.hora_inicio)
+        closing_time = time.fromisoformat(schedule.hora_fim)
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail="Jornada do barbeiro possui horário inválido") from exc
+
+    if (
+        opening_time.tzinfo is not None
+        or closing_time.tzinfo is not None
+        or opening_time.second
+        or opening_time.microsecond
+        or closing_time.second
+        or closing_time.microsecond
+    ):
+        raise HTTPException(status_code=500, detail="Jornada do barbeiro possui horário inválido")
+    opening = datetime.combine(day, opening_time)
+    closing = datetime.combine(day, closing_time)
+    if closing <= opening:
+        raise HTTPException(status_code=500, detail="Jornada do barbeiro possui intervalo inválido")
+    return opening, closing
+
+
 def lock_barber_for_booking(db: Session, barber_id: int) -> None:
     if db.get_bind().dialect.name == "sqlite":
         db.connection().exec_driver_sql("BEGIN IMMEDIATE")
@@ -43,10 +67,7 @@ def normalize_datetime(value: datetime) -> datetime:
 
 def scheduling_timezone() -> ZoneInfo:
     name = os.environ.get(SCHEDULING_TIMEZONE_ENV, DEFAULT_SCHEDULING_TIMEZONE)
-    try:
-        return ZoneInfo(name)
-    except ZoneInfoNotFoundError as exc:
-        raise RuntimeError(f"Invalid {SCHEDULING_TIMEZONE_ENV} value: {name!r}") from exc
+    return validate_scheduling_timezone(name)
 
 
 def now_local() -> datetime:
@@ -92,13 +113,11 @@ def validate_booking_slot(
     if schedule is None:
         raise HTTPException(status_code=400, detail="O barbeiro não atende nesta data")
 
-    try:
-        opening = datetime.combine(start.date(), time.fromisoformat(schedule.hora_inicio))
-        closing = datetime.combine(start.date(), time.fromisoformat(schedule.hora_fim))
-    except ValueError as exc:
-        raise HTTPException(status_code=500, detail="Jornada do barbeiro possui horário inválido") from exc
+    opening, closing = schedule_bounds(start.date(), schedule)
 
     duration = service.duracao_minutos if duration_minutes is None else duration_minutes
+    if not isinstance(duration, int) or duration <= 0:
+        raise HTTPException(status_code=500, detail="O serviço possui duração inválida")
     end = start + timedelta(minutes=duration)
     if start < opening or end > closing:
         raise HTTPException(status_code=400, detail="O horário não comporta a duração do serviço dentro da jornada")

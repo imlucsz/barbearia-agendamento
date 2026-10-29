@@ -263,6 +263,53 @@ class AuthorizationTests(unittest.TestCase):
         self.assertEqual(self.appointment_snapshot(), before)
         self.assertEqual(self.client_name(self.user_ids["client_b"]), old_name)
 
+    def test_client_and_barber_cannot_call_remaining_admin_write_operations(self):
+        date_param = self.appointment_time.date().isoformat()
+        institutional = {
+            "nome": "Barbearia",
+            "endereco": "Rua de teste, 1",
+            "telefone": "11999999999",
+            "horario_funcionamento": "09:00-18:00",
+            "dias_atendimento": "Segunda a sábado",
+        }
+        forbidden_calls = (
+            ("POST", "/services/", {"nome": "Corte novo", "preco": 10, "duracao_minutos": 30}),
+            ("PUT", f"/services/{self.service_id}", {"nome": "Corte alterado"}),
+            ("DELETE", f"/services/{self.service_id}", None),
+            ("GET", "/admin/avaliacoes", None),
+            ("PATCH", "/admin/avaliacoes/999/ocultar?ocultar=true", None),
+            ("POST", "/informacoes/", institutional),
+            ("PUT", "/informacoes/", institutional),
+            ("POST", "/barbeiro-servico/", {
+                "barbeiro_id": self.user_ids["barber_a"], "service_id": self.service_id,
+            }),
+            ("DELETE", f"/barbeiro-servico/?barbeiro_id={self.user_ids['barber_a']}&service_id={self.service_id}", None),
+            ("GET", "/users/barbeiros", None),
+            ("GET", f"/users/{self.user_ids['client_b']}", None),
+            ("GET", f"/admin/relatorio?inicio={date_param}&fim={date_param}", None),
+        )
+        for principal in ("client_a", "barber_a"):
+            for method, path, payload in forbidden_calls:
+                with self.subTest(principal=principal, method=method, path=path):
+                    status, _ = self.request(method, path, payload, principal)
+                    self.assertEqual(status, 403)
+
+    def test_user_responses_do_not_expose_password_hash_or_consent_metadata(self):
+        token = create_access_token({"sub": self.emails["client_a"]})
+        status, user = asgi_request(
+            self.application,
+            "GET",
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            set(user), {"email", "nome", "id", "role", "bloqueado"}
+        )
+        for private_field in ("senha_hash", "consentimento_lgpd", "consentimento_em", "ativo"):
+            self.assertNotIn(private_field, user)
+
     def test_admin_can_read_full_agenda_and_update_authorized_client_data(self):
         date_param = self.appointment_time.date().isoformat()
         agenda_status, agenda = self.request(

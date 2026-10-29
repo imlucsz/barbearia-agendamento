@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -23,8 +24,15 @@ def run_app_import(secret_key=_UNSET, app_env="production"):
         env["APP_ENV"] = app_env
         env["DATABASE_URL"] = "postgresql+psycopg://unit_test:unit_test@127.0.0.1:55432/barbearia_test"
         env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+        env["SMTP_HOST"] = "smtp.example.test"
+        env["SMTP_FROM"] = "no-reply@example.test"
+        env["PASSWORD_RESET_URL"] = "https://unit-test.example/frontend/pages/reset.html"
+        env["SCHEDULING_TIMEZONE"] = "America/Sao_Paulo"
+        env["SMTP_USERNAME"] = ""
+        env["SMTP_PASSWORD"] = ""
         env["PYTHON_DOTENV_DISABLED"] = "1"
         env.pop("SECRET_KEY", None)
+        env["DATABASE_URL"] += "?sslmode=require"
         if secret_key is not _UNSET:
             env["SECRET_KEY"] = secret_key
 
@@ -32,9 +40,6 @@ def run_app_import(secret_key=_UNSET, app_env="production"):
             [
                 sys.executable,
                 "-c",
-                "import app.database as database; "
-                "database.Base.metadata.create_all = lambda **kwargs: None; "
-                "database.ensure_schema_updates = lambda: None; "
                 "import app.main",
             ],
             cwd=_BACKEND_DIR,
@@ -48,10 +53,11 @@ def run_app_import(secret_key=_UNSET, app_env="production"):
 
 class JwtConfigurationTests(unittest.TestCase):
     def test_valid_explicit_key_allows_production_application_initialization(self):
-        result = run_app_import(TEST_SECRET_KEY)
+        production_key = secrets.token_urlsafe(48)
+        result = run_app_import(production_key)
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn(TEST_SECRET_KEY, result.stdout + result.stderr)
+        self.assertNotIn(production_key, result.stdout + result.stderr)
 
     def test_missing_and_empty_key_are_rejected_without_revealing_a_value(self):
         for candidate in (_UNSET, ""):
@@ -102,6 +108,26 @@ class JwtConfigurationTests(unittest.TestCase):
         )
         with self.assertRaises(ValueError):
             decode_access_token(wrong_token)
+
+    def test_signed_token_without_expiration_is_rejected_by_decoder_and_endpoint(self):
+        token_without_exp = jwt.encode(
+            {"sub": "qa-user@example.test"},
+            TEST_SECRET_KEY,
+            algorithm=ALGORITHM,
+        )
+
+        with self.assertRaises(ValueError):
+            decode_access_token(token_without_exp)
+
+        application = load_app_for_environment("production").app
+        status, body = asgi_request(
+            application,
+            "GET",
+            "/auth/me",
+            headers={"Authorization": f"Bearer {token_without_exp}"},
+        )
+        self.assertEqual(status, 401)
+        self.assertIn("Token", body["detail"])
 
     def test_invalid_signature_error_response_does_not_reveal_either_key(self):
         previous_cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS")

@@ -1,4 +1,5 @@
 import { api, setToken } from "./api.js";
+import { readPasswordResetToken } from "./reset-token.mjs";
 
 const moneySafeDestinations = {
   cliente: "client-dashboard.html",
@@ -68,12 +69,6 @@ async function forgotPassword(event) {
       email: form.elements.email.value.trim(),
     }, { auth: false });
     showMessage(result.mensagem || "Se o e-mail estiver cadastrado, as instruções serão enviadas.", "success");
-    if (result.dev_token) {
-      const link = document.createElement("a");
-      link.href = `reset.html?token=${encodeURIComponent(result.dev_token)}`;
-      link.textContent = " Redefinir senha (link de desenvolvimento)";
-      document.getElementById("form-message").append(link);
-    }
   } catch (error) {
     showMessage(error.message, "danger");
   } finally {
@@ -84,7 +79,7 @@ async function forgotPassword(event) {
 async function resetPassword(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const token = new URLSearchParams(window.location.search).get("token");
+  const token = readPasswordResetToken(window.location);
   if (!token) {
     showMessage("O link de redefinição está incompleto. Solicite um novo link.", "danger");
     return;

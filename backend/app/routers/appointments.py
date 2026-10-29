@@ -143,6 +143,8 @@ def get_available_slots(
 
         day_start = datetime.combine(data, start_time)
         day_end = datetime.combine(data, end_time)
+        if day_end <= day_start:
+            raise HTTPException(status_code=500, detail="Jornada do barbeiro possui intervalo inválido")
         slot_start = day_start
         while slot_start + timedelta(minutes=service.duracao_minutos) <= day_end:
             try:

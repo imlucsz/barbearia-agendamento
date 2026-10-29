@@ -9,6 +9,10 @@ Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM)
 - **Banco de dados:** SQLite por padrão; PostgreSQL pode ser usado configurando a URL e instalando o driver correspondente.
 - **Autenticação:** JWT Bearer e senha com hash bcrypt.
 
+## Implantação por instalação
+
+Para preparar uma barbearia com domínio, banco e configuração próprios, consulte [Implantação e reutilização](docs/IMPLANTACAO_E_REUTILIZACAO.md). O procedimento não copia dados de clientes nem configura multi-tenancy.
+
 ## Requisitos
 
 - Python 3.10 ou superior (recomendado Python 3.11+).
@@ -42,7 +46,7 @@ source .venv/bin/activate
 
 A API fica em `http://127.0.0.1:8000`. A documentação interativa do FastAPI fica em `http://127.0.0.1:8000/docs`; o schema OpenAPI está em `/openapi.json`.
 
-No ambiente local (`APP_ENV=development`), o banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. Nos demais ambientes, `DATABASE_URL` deve ser configurada explicitamente; a API falha ao iniciar se estiver ausente. A aplicação ainda cria tabelas ausentes com `Base.metadata.create_all()` e aplica atualizações aditivas específicas ao iniciar. As mudanças versionadas de schema devem ser aplicadas explicitamente pelo Alembic antes de disponibilizar a nova versão da API.
+No ambiente local (`APP_ENV=development`), o banco padrão é `sqlite:///./barbearia.db`, relativo ao diretório `backend`. Nos demais ambientes, `DATABASE_URL` deve ser configurada explicitamente; a API falha ao iniciar se estiver ausente. A aplicação não cria nem altera tabelas no startup: aplique as migrações Alembic antes de iniciar a API. Se a revisão instalada não for a atual, o startup registra um aviso sem incluir a URL do banco.
 
 ### Migrações de banco com Alembic
 
@@ -54,16 +58,24 @@ O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambi
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-Esta primeira revisão **não é uma migração de criação de schema**: ela só procura e remove a restrição única antiga de `appointments(service_id, data_hora)`. Se a tabela não existir, a revisão não cria tabelas e registra a versão; a inicialização da aplicação continua responsável pela criação do schema novo. Também não há `stamp` automático.
+`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01`, encadeada depois dela, cria as nove tabelas e seus índices, chaves estrangeiras e unicidades em banco vazio. Em banco existente, ela só reconhece o schema completo compatível com o antigo `create_all() + ensure_schema_updates()`; schemas parciais ou inesperados falham sem apagar tabelas ou registros. Não há `stamp` automático.
 
 Procedimento de adoção:
 
-- **Banco existente com a restrição antiga:** faça backup, pare a API, confirme que `DATABASE_URL` aponta para esse banco e execute `python -m alembic upgrade head`. A revisão remove somente a restrição cujas colunas são `service_id` e `data_hora`, sem depender do nome. Depois, inicie a API. A validação por intervalo e barbeiro continua no backend.
-- **Banco existente sem essa restrição:** execute o mesmo `upgrade head`. A revisão não altera a tabela e registra a versão do Alembic.
-- **Banco novo:** pode executar `upgrade head` antes da primeira inicialização (a revisão não cria tabelas) e depois iniciar a API para `create_all()`, ou iniciar a API primeiro e executar a migração em seguida. Em ambos os casos, o modelo atual cria `appointments` sem a unicidade global.
-- **Banco com `alembic_version` preexistente ou schema inesperado:** interrompa a adoção e compare o histórico e o schema antes de aplicar ou marcar revisões. Não use `stamp` para contornar divergências sem uma inspeção e backup.
+- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema integralmente.
+- **Banco local de desenvolvimento SQLite existente:** pare a API e, no diretório `backend`, faça backup e prepare um novo arquivo sem apagar o antigo:
 
-Para reverter a revisão, primeiro pare a API e avalie os dados. `python -m alembic downgrade -1` só recria a unicidade antiga se não houver duas linhas com o mesmo serviço e início. Se houver duplicatas, o downgrade falha claramente e preserva as reservas; resolva os registros de forma explícita e faça backup antes de tentar novamente. Não apague nem altere reservas automaticamente para forçar a reversão.
+  ```powershell
+  Copy-Item .\barbearia.db .\barbearia.pre-alembic-backup.db
+  $env:DATABASE_URL = "sqlite:///./barbearia-alembic.db"
+  .\.venv\Scripts\python.exe -m alembic upgrade head
+  .\.venv\Scripts\python.exe -m alembic current
+  ```
+
+  Mantenha `DATABASE_URL` apontando para o novo arquivo ao iniciar a API e validar o resultado. Preserve o arquivo original e o backup até confirmar que não precisa dos dados antigos. Não use `stamp` nem tente completar schemas parciais automaticamente.
+- **Schema incompatível ou versão desconhecida:** a migração falha e o startup avisa que a revisão precisa ser aplicada. Preserve o banco, faça backup e investigue separadamente; não remova tabelas/dados para forçar a atualização.
+
+O downgrade da revisão baseline está desabilitado porque retornar a um schema sem as tabelas da aplicação apagaria dados. Para desenvolvimento, restaure o backup ou crie outro banco vazio e reaplique `upgrade head`; downgrade não substitui backup.
 
 #### Testes de integração PostgreSQL
 
@@ -77,6 +89,7 @@ docker compose -f ..\compose.postgres-test.yml up -d --wait
 $env:BOOKING_TEST_POSTGRES_URL = "postgresql+psycopg://barbearia_test:$($env:POSTGRES_TEST_PASSWORD)@127.0.0.1:55432/barbearia_test"
 $env:BOOKING_TEST_BACKEND = "postgresql"
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_postgres_booking_migration.py" -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_schema_migrations.py" -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_booking_integrity.py" -v
 .\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_booking_temporal.py" -v
 $env:BOOKING_TEST_BACKEND = "sqlite"
@@ -97,11 +110,12 @@ Esse endpoint cria contas e serviços de demonstração se ainda não existirem.
 
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
-| Administrador | `admin@barbearia.com` | `admin123` |
 | Barbeiro | `barbeiro@barbearia.com` | `barbeiro123` |
 | Cliente | `cliente@barbearia.com` | `cliente123` |
 
-**Uso exclusivamente local:** `/seed` só é registrado quando `APP_ENV=development` estiver definido explicitamente. Configure essa variável antes de iniciar a API local; sem ela, a rota não fica disponível. A resposta confirma a criação dos dados, mas não retorna credenciais. Não habilite o endpoint em ambientes publicados.
+**Uso exclusivamente local:** `/seed` so e registrado com `APP_ENV=development`. Cria apenas barbeiro, cliente e servicos de demonstracao; nao cria administrador. As contas demo nao devem ser usadas em producao.
+
+Crie o primeiro administrador manualmente depois de aplicar as migracoes: no diretorio `backend`, execute `python -m app.initial_admin` com `APP_ENV=development` para a instalacao SQLite local. O comando exige schema Alembic atualizado, pede nome/e-mail e solicita a senha sem eco. Em producao use `APP_ENV=production` e PostgreSQL. O processo permite somente um administrador inicial.
 
 ### 3. Servir o frontend
 
@@ -124,9 +138,13 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `SECRET_KEY` | Chave privada de assinatura JWT, com pelo menos 32 bytes UTF-8 | Obrigatória; não há valor padrão |
 | `ALGORITHM` | Algoritmo JWT | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos | `1440` (24 horas) |
-| `APP_ENV` | Ambiente de execução; `/seed` só é habilitado com o valor explícito `development` | `development` no `backend/.env.example` para uso local; ausente, a rota fica desabilitada |
+| `APP_ENV` | Ambiente de execução | Obrigatória: use `development`, `test` ou `production`; implantações devem usar exatamente `production` |
+| `SCHEDULING_TIMEZONE` | Fuso IANA da instalação | `America/Sao_Paulo` local; obrigatório em produção |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Transporte e remetente para redefinição de senha | O host e remetente são obrigatórios em produção; usuário/senha devem ser fornecidos juntos e podem ficar vazios para relay sem autenticação |
+| `SMTP_TIMEOUT_SECONDS` | Timeout da conexão SMTP | `10` segundos |
+| `PASSWORD_RESET_URL` | URL pública da página `reset.html` | Opcional em desenvolvimento; obrigatória em produção, HTTPS e na origem listada em CORS |
 
-O envio de redefinição de senha usa SMTP com STARTTLS, configurado por `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` e `PASSWORD_RESET_URL`; o último deve apontar para `frontend/pages/reset.html`. Não há credenciais SMTP fornecidas pelo projeto. Em desenvolvimento explicitamente configurado e sem SMTP, o token fica disponível somente no log local do backend. Fora de desenvolvimento, configuração ausente ou falha de envio não deixa um token utilizável e a API mantém a resposta genérica. Defina `APP_ENV=production` em implantações publicadas; o `.env.example` é para desenvolvimento local.
+O envio de redefinição usa SMTP com STARTTLS. Em produção, a API não inicia sem host, remetente e URL HTTPS válida da página de redefinição. Configure usuário e senha SMTP em conjunto quando o relay exigir autenticação. Em desenvolvimento, SMTP é opcional; sem ele, a resposta de recuperação continua genérica e nenhum token utilizável é persistido. Os links colocam o token no fragmento da URL, que não é enviado na requisição HTTP da página. O `.env.example` contém somente opções locais e valores fictícios.
 
 Gere uma chave uma única vez e guarde-a em `backend/.env` (não gere uma chave nova a cada inicialização):
 
@@ -134,9 +152,9 @@ Gere uma chave uma única vez e guarde-a em `backend/.env` (não gere uma chave 
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao iniciar se a chave estiver ausente, vazia, curta ou parecer um valor de exemplo. O `.env.example` deixa essa variável vazia intencionalmente. Use uma chave persistente e privada por ambiente; não envie `.env` ao Git. Em produção, configure também HTTPS, restrinja CORS e não use as credenciais de demonstração.
+Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao iniciar se a chave estiver ausente, curta, de baixa diversidade ou parecer um valor de exemplo/desenvolvimento/teste. O `.env.example` deixa essa variável vazia intencionalmente. Use uma chave persistente e privada por ambiente; não envie `.env` ao Git. Em produção, configure também HTTPS, restrinja CORS e não use as credenciais de demonstração.
 
-Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco e instale o driver PostgreSQL compatível com essa URL. O `requirements.txt` atual não instala um driver PostgreSQL.
+Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Produção exige `postgresql+psycopg`, nome do banco, host e usuário; conexões para hosts remotos devem usar `sslmode=require`, `verify-ca` ou `verify-full`. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
 
 ## Funcionalidades e requisitos
 
@@ -202,7 +220,7 @@ Todos os endpoints são servidos pelo FastAPI na porta `8000`. Rotas protegidas 
 
 | Grupo | Rotas principais | Acesso |
 | --- | --- | --- |
-| Saúde | `GET /`, `GET /health` | Público |
+| Saude | `GET /`, `GET /health`, `GET /ready` | Publico; `/health` verifica o processo e `/ready` exige banco e revisao Alembic atual |
 | Autenticação | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/esqueci-senha`, `POST /auth/redefinir-senha` | Conforme operação |
 | Serviços | `GET /services/`, `GET /services/{service_id}` | Público |
 | Serviços (gestão) | `POST /services/`, `PUT /services/{service_id}`, `DELETE /services/{service_id}` | Administrador |
@@ -301,10 +319,10 @@ Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados loca
 
 ## Limitações e cuidados antes de produção
 
-- O token de redefinição nunca é devolvido pela API. Em desenvolvimento explicitamente configurado, sem SMTP, ele aparece somente no log local; em outros ambientes, configure a entrega SMTP descrita acima.
-- O endpoint `GET /seed` só existe com `APP_ENV=development`; sem essa configuração explícita, inclusive quando `APP_ENV` está ausente, a rota não é registrada. A resposta não divulga credenciais.
+- O token de redefinição não é devolvido pela API nem gravado em logs da aplicação. Configure SMTP também para testar a recuperação localmente; sem entrega confirmada, o token não fica utilizável.
+- O endpoint `GET /seed` só existe com `APP_ENV=development`; o processo recusa iniciar se `APP_ENV` estiver ausente ou inválido. A resposta não divulga credenciais.
 - O CORS aceita apenas as origens normalizadas listadas em `CORS_ALLOWED_ORIGINS`. Em desenvolvimento, se a variável estiver ausente, é permitida a origem documentada `http://127.0.0.1:5500`. Em produção, a variável é obrigatória e deve conter uma ou mais origens HTTPS exatas do frontend publicado, incluindo a porta não padrão quando aplicável. Não use `*` nem inclua caminhos.
-- A atualização de schema em `database.py` cobre colunas específicas, mas não substitui migrações versionadas para evolução contínua do banco.
+- Novas alterações de schema devem continuar sendo registradas em revisões Alembic e testadas em SQLite e PostgreSQL.
 - Consentimento e anonimização implementados são controles técnicos; não substituem avaliação jurídica e operacional de conformidade com a LGPD.
 
 ## Equipe

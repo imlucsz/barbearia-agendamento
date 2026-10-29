@@ -149,6 +149,33 @@ class BookingIntegrityTests(unittest.TestCase):
         self.assertEqual(status, 400)
         self.assertEqual(self._appointments(), [])
 
+    def test_adjacent_appointments_are_allowed_but_any_overlap_is_rejected(self):
+        first_status, _ = self._post_booking(0, 0, 60, self.start)
+        self.assertEqual(first_status, 201)
+
+        touching_start = self.start + timedelta(minutes=60)
+        touching_status, _ = self._post_booking(1, 0, 30, touching_start)
+        self.assertEqual(touching_status, 201)
+
+        overlapping_status, _ = self._post_booking(
+            0, 0, 30, touching_start - timedelta(microseconds=1)
+        )
+        self.assertEqual(overlapping_status, 409)
+        self.assertEqual(len(self._appointments()), 2)
+
+    def test_invalid_persisted_service_duration_cannot_create_a_booking(self):
+        db = main.SessionLocal()
+        try:
+            service = db.query(Service).filter_by(id=self.service_ids[30]).one()
+            service.duracao_minutos = 0
+            db.commit()
+        finally:
+            db.close()
+
+        status, _ = self._post_booking(0, 0, 30)
+        self.assertEqual(status, 500)
+        self.assertEqual(self._appointments(), [])
+
     def test_canceled_appointment_releases_its_exact_slot(self):
         status, created = self._post_booking(0, 0, 30)
         self.assertEqual(status, 201)

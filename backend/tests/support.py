@@ -14,15 +14,19 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 
-# app.main creates schema during import. Keep every test module on one isolated
-# temporary SQLite file and prevent a local .env from replacing this setup.
+# Keep every test module on one isolated temporary SQLite file and prevent a
+# local .env from replacing this setup. Individual fixtures create their schema.
 TEST_SECRET_KEY = "qa03-test-only-secret-key-not-for-deployment"
 _TEST_DB_DIR = tempfile.TemporaryDirectory(prefix="barbearia-tests-")
 _TEST_DB_PATH = Path(_TEST_DB_DIR.name) / "tests.db"
 os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 os.environ["SECRET_KEY"] = TEST_SECRET_KEY
 os.environ["CORS_ALLOWED_ORIGINS"] = "https://frontend.test.invalid"
-os.environ.pop("APP_ENV", None)
+os.environ["APP_ENV"] = "test"
+for _optional_email_setting in (
+    "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL",
+):
+    os.environ.pop(_optional_email_setting, None)
 
 _TEST_BACKEND = os.environ.get("BOOKING_TEST_BACKEND", "sqlite").strip().lower()
 if _TEST_BACKEND not in {"sqlite", "postgresql"}:
@@ -184,7 +188,7 @@ else:
 
 def load_app_for_environment(app_env):
     if app_env is None:
-        os.environ.pop("APP_ENV", None)
+        os.environ["APP_ENV"] = "test"
     else:
         os.environ["APP_ENV"] = app_env
     return importlib.reload(main)

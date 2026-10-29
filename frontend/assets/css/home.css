@@ -133,7 +133,7 @@
   border-radius: 180px 180px 14px 14px;
   background:
     linear-gradient(145deg, rgba(16, 14, 12, .1), rgba(16, 14, 12, .92)),
-    radial-gradient(ellipse at 50% 24%, #81572f 0, #3c2b20 32%, #201913 68%, #15120f 100%);
+    radial-gradient(ellipse at 50% 24%, var(--color-hero-glow) 0, var(--color-hero-mid) 32%, var(--color-hero-deep) 68%, var(--color-bg) 100%);
   box-shadow: 0 35px 90px rgba(0, 0, 0, .4), inset 0 0 70px rgba(215, 172, 88, .08);
 }
 

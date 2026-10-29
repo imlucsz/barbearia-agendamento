@@ -1,12 +1,9 @@
-import logging
-import os
 import smtplib
 import ssl
 from email.message import EmailMessage
 from urllib.parse import urlencode, urlsplit, urlunsplit, parse_qsl
 
-
-logger = logging.getLogger(__name__)
+from app.config import settings as load_app_settings
 
 
 class EmailDeliveryError(Exception):
@@ -14,14 +11,15 @@ class EmailDeliveryError(Exception):
 
 
 def send_password_reset_email(recipient: str, token: str) -> None:
-    """Send a reset link, or expose the token only to an explicit local dev log."""
-    smtp_host = os.getenv("SMTP_HOST", "").strip()
-    if not smtp_host and os.getenv("APP_ENV", "").strip().lower() == "development":
-        logger.info("Local password reset token for %s: %s", recipient, token)
-        return
+    """Send a password reset link without exposing the token to application logs."""
+    try:
+        configuration = load_app_settings()
+    except RuntimeError:
+        raise EmailDeliveryError("Password reset email configuration is invalid") from None
 
-    reset_url = os.getenv("PASSWORD_RESET_URL", "").strip()
-    sender = os.getenv("SMTP_FROM", "").strip()
+    smtp_host = configuration.smtp_host
+    reset_url = configuration.password_reset_url
+    sender = configuration.smtp_from
     if not smtp_host or not reset_url or not sender:
         raise EmailDeliveryError("Password reset email delivery is not configured")
 
@@ -34,8 +32,7 @@ def send_password_reset_email(recipient: str, token: str) -> None:
         for key, value in parse_qsl(parsed_url.query, keep_blank_values=True)
         if key != "token"
     ]
-    query.append(("token", token))
-    link = urlunsplit(parsed_url._replace(query=urlencode(query)))
+    link = urlunsplit(parsed_url._replace(query=urlencode(query), fragment=urlencode({"token": token})))
 
     message = EmailMessage()
     message["Subject"] = "Redefinição de senha"
@@ -48,14 +45,14 @@ def send_password_reset_email(recipient: str, token: str) -> None:
     )
 
     try:
-        port = int(os.getenv("SMTP_PORT", "587"))
-        timeout = float(os.getenv("SMTP_TIMEOUT_SECONDS", "10"))
-        username = os.getenv("SMTP_USERNAME", "").strip()
-        password = os.getenv("SMTP_PASSWORD", "")
-        with smtplib.SMTP(smtp_host, port, timeout=timeout) as smtp:
+        with smtplib.SMTP(
+            smtp_host,
+            configuration.smtp_port,
+            timeout=configuration.smtp_timeout_seconds,
+        ) as smtp:
             smtp.starttls(context=ssl.create_default_context())
-            if username:
-                smtp.login(username, password)
+            if configuration.smtp_username:
+                smtp.login(configuration.smtp_username, configuration.smtp_password)
             smtp.send_message(message)
     except (OSError, ValueError, smtplib.SMTPException) as exc:
         raise EmailDeliveryError("Password reset email could not be delivered") from exc

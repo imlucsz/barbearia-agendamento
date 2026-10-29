@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import os
+import secrets
 import subprocess
 import sys
 import tempfile
@@ -218,6 +219,14 @@ class ApplicationConfigurationTests(unittest.TestCase):
             env = os.environ.copy()
             env["APP_ENV"] = app_env
             env["PYTHON_DOTENV_DISABLED"] = "1"
+            env["SECRET_KEY"] = secrets.token_urlsafe(48)
+            env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+            env["SMTP_HOST"] = "smtp.example.test"
+            env["SMTP_FROM"] = "no-reply@example.test"
+            env["PASSWORD_RESET_URL"] = "https://unit-test.example/frontend/pages/reset.html"
+            env["SCHEDULING_TIMEZONE"] = "America/Sao_Paulo"
+            env["SMTP_USERNAME"] = ""
+            env["SMTP_PASSWORD"] = ""
             env.pop("DATABASE_URL", None)
             if database_url is not None:
                 env["DATABASE_URL"] = database_url
@@ -225,6 +234,42 @@ class ApplicationConfigurationTests(unittest.TestCase):
             env["PYTHONPATH"] = str(BACKEND_DIR) + (os.pathsep + python_path if python_path else "")
             return subprocess.run(
                 [sys.executable, "-c", "import app.database; print(app.database.engine.dialect.name)"],
+                cwd=temp_dir,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+
+    def _run_production_import(self, overrides=None):
+        with tempfile.TemporaryDirectory(prefix="barbearia-prod-config-") as temp_dir:
+            env = os.environ.copy()
+            env.update({
+                "APP_ENV": "production",
+                "DATABASE_URL": (
+                    "postgresql+psycopg://app_user:fake-production-test-password@"
+                    "127.0.0.1:5432/barbearia_test?sslmode=require"
+                ),
+                "SECRET_KEY": secrets.token_urlsafe(48),
+                "CORS_ALLOWED_ORIGINS": "https://unit-test.example",
+                "SCHEDULING_TIMEZONE": "America/Sao_Paulo",
+                "SMTP_HOST": "smtp.example.test",
+                "SMTP_FROM": "no-reply@example.test",
+                "SMTP_USERNAME": "",
+                "SMTP_PASSWORD": "",
+                "PASSWORD_RESET_URL": "https://unit-test.example/frontend/pages/reset.html",
+                "PYTHON_DOTENV_DISABLED": "1",
+            })
+            for name, value in (overrides or {}).items():
+                if value is None:
+                    env.pop(name, None)
+                else:
+                    env[name] = value
+            python_path = env.get("PYTHONPATH", "")
+            env["PYTHONPATH"] = str(BACKEND_DIR) + (os.pathsep + python_path if python_path else "")
+            return subprocess.run(
+                [sys.executable, "-c", "import app.main"],
                 cwd=temp_dir,
                 env=env,
                 capture_output=True,
@@ -255,12 +300,52 @@ class ApplicationConfigurationTests(unittest.TestCase):
         self.assertNotIn(sqlite_url, result.stdout + result.stderr)
 
     def test_explicit_postgresql_database_url_is_accepted_without_connecting(self):
-        postgres_url = "postgresql+psycopg://unit_test:unit_test@127.0.0.1:55432/barbearia_test"
+        postgres_url = "postgresql+psycopg://unit_test:fake-test-password@127.0.0.1:55432/barbearia_test?sslmode=require"
         result = self._run_database_import("production", postgres_url)
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "postgresql")
         self.assertNotIn(postgres_url, result.stdout + result.stderr)
+
+    def test_production_application_refuses_to_start_without_password_recovery_email(self):
+        result = self._run_production_import({"SMTP_FROM": None})
+        output = result.stdout + result.stderr
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("SMTP_HOST", output)
+        self.assertNotIn("fake-production-test-password", output)
+
+    def test_env_variants_are_ignored_but_example_template_remains_trackable(self):
+        repository_root = Path(__file__).resolve().parents[2]
+        for path in (".env.local", "backend/.env.production"):
+            with self.subTest(path=path):
+                ignored = subprocess.run(
+                    ["git", "check-ignore", "--quiet", "--no-index", path],
+                    cwd=repository_root,
+                    capture_output=True,
+                    check=False,
+                )
+                self.assertEqual(ignored.returncode, 0)
+
+        example = subprocess.run(
+            ["git", "check-ignore", "--quiet", "--no-index", "backend/.env.example"],
+            cwd=repository_root,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(example.returncode, 1)
+
+        tracked = subprocess.run(
+            ["git", "ls-files", "--cached", "-z"],
+            cwd=repository_root,
+            capture_output=True,
+            check=True,
+        ).stdout.decode().split("\0")
+        tracked_env_files = [
+            path for path in tracked
+            if Path(path).name == ".env" or Path(path).name.startswith(".env.")
+        ]
+        self.assertEqual(tracked_env_files, ["backend/.env.example"])
 
 
 if __name__ == "__main__":
