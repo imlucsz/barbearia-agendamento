@@ -1,5 +1,13 @@
 # Status de auditoria dos requisitos
 
+## Overflow administrativo confirmado no Linux — 2026-10-30
+
+- Reproduzidas as duas falhas remotas: Firefox/WebKit 320x568, documento de 349px para viewport de 320px. A imagem Linux Playwright 1.64.1 usava inicialmente WenQuanYi como sans-serif; com DejaVu Sans instalada no ambiente descartável, a falha de 349px apareceu nos dois browsers. Isso explica por que as inspeções anteriores e o Windows não a reproduziram. Nenhuma fonte ou dependência do projeto foi alterada.
+- Origem medida: tabela de auditoria com largura mínima intrínseca de 339,25px (Firefox) / 339,28125px (WebKit), borda direita em 349,25px / 349,28125px. Seu wrapper `.management-list` tinha 300px e `overflow-x: visible`; o excesso propagava-se por `#auditoria`, `main`, `body` e documento. Navegação e date-roll já continham sua rolagem local e não eram a origem.
+- Correção: uma regra em `admin-workspace.css`, `#auditoria > .management-list { overflow-x: auto; }`. Após a correção, `documentElement.clientWidth = scrollWidth = 320` nos dois browsers; wrapper 300px, conteúdo 339px, `scrollLeft` alcança 39px. A tabela permanece acessível por rolagem local; nenhuma assertion ou teste foi alterado.
+- Testes Linux direcionados: Firefox/WebKit 320x568 (2 aprovados), Chromium 320x568 e Chromium/Firefox/WebKit 390x844 (4 aprovados), com `responsive-a11y.spec.mjs` original, sem instrumentação. As medidas de ancestrais foram temporárias e removidas do workspace ao concluir o diagnóstico.
+- Matriz Linux completa após a correção: `npx playwright test --config frontend/e2e/playwright.config.mjs`, 59/59 aprovados (3,9 minutos), com Python 3.14, browsers Playwright 1.64.1 e DejaVu Sans no contêiner descartável. A suíte foi executada pelos mesmos testes/configuração versionados, sem alterações nas assertions. `git diff --check` nos arquivos desta correção aprovado.
+
 ## Correções direcionadas de CI — 2026-10-30
 
 - E2E: `chooseSlot` seleciona os cards pelos títulos exatos `Corte E2E` e `Barbeiro E2E Fictício`, exigindo um único resultado. Os quatro casos de reserva/conflito em desktop/mobile passaram. O serviço longo tem apenas um profissional associado na fixture; seu seletor foi preservado.
