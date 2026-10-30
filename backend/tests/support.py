@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import close_all_sessions
 
 
 # Keep every test module on one isolated temporary SQLite file and prevent a
@@ -275,5 +276,11 @@ def asgi_request(application, method, path, payload=None, headers=None, return_h
 
 def reset_database():
     """Reset only the temporary test database between test cases."""
+    if _POSTGRES_TEST_URL:
+        close_all_sessions()
     Base.metadata.drop_all(bind=main.engine)
     Base.metadata.create_all(bind=main.engine)
+    if _POSTGRES_TEST_URL:
+        # DROP/CREATE replaces ENUM OIDs. Retire pooled connections and their
+        # prepared statements before the next fixture opens a session.
+        main.engine.dispose()

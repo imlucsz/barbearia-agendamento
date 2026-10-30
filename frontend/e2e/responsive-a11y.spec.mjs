@@ -49,8 +49,18 @@ test("public, client and admin screens fit viewport and support labeled keyboard
   await checkPage(page, "/pages/admin.html");
 
   await page.goto("/pages/login.html");
-  for (let index = 0; index < 4; index += 1) {
-    await page.keyboard.press("Tab");
+  // Start at a defined form control: browser defaults differ on whether Tab
+  // includes links. Verify forward and backward traversal, not a fixed count
+  // from the document (which can return to browser chrome in WebKit).
+  await page.getByLabel("E-mail").focus();
+  for (const [key, target] of [
+    ["Tab", page.getByLabel("Senha", { exact: true })],
+    ["Tab", page.getByRole("button", { name: "Entrar na minha conta" })],
+    ["Shift+Tab", page.getByLabel("Senha", { exact: true })],
+    ["Shift+Tab", page.getByLabel("E-mail")],
+  ]) {
+    await page.keyboard.press(key);
+    await expect(target).toBeFocused();
     const focused = await page.evaluate(() => {
       const element = document.activeElement;
       if (!(element instanceof HTMLElement) || element === document.body) return false;

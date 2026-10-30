@@ -37,8 +37,16 @@ async function signIn(page, account) {
 
 async function chooseSlot(page) {
   await page.goto("/pages/client-services.html");
-  await page.getByRole("link", { name: "Escolher profissional" }).first().click();
-  await page.getByRole("link", { name: "Ver horários" }).click();
+  const service = page.locator(".service-selection-card").filter({
+    has: page.getByRole("heading", { name: "Corte E2E", exact: true }),
+  });
+  await expect(service).toHaveCount(1);
+  await service.getByRole("link", { name: "Escolher profissional", exact: true }).click();
+  const professional = page.locator(".professional-card").filter({
+    has: page.getByRole("heading", { name: "Barbeiro E2E Fictício", exact: true }),
+  });
+  await expect(professional).toHaveCount(1);
+  await professional.getByRole("link", { name: "Ver horários", exact: true }).click();
   await page.getByLabel("Selecione a data").fill(bookingDate);
   await expect(page.locator(".slot-button").first()).toBeVisible();
   return page.locator(".slot-button").first();
@@ -619,7 +627,8 @@ test("RF13 agenda diária respeita data, perfil, propriedade e estados em deskto
 
   await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
   await signIn(page, barber);
-  await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem("token")))).toBe(true);
+  await page.waitForURL(/admin\.html$/);
+  await expect(page.locator("#userName")).toHaveText("Barbeiro E2E Fictício");
   await page.goto("/pages/admin.html");
   const barberDate = page.locator(`#dateRoll .date-item[data-date="${agendaDate}"]`);
   await expect(barberDate).toBeVisible();
