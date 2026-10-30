@@ -1,4 +1,4 @@
-import { expireSessionOnUnauthorized } from "./session.mjs";
+import { expireSessionOnUnauthorized, shouldRefreshSession } from "./session.mjs";
 import { formatApiError } from "./api-errors.mjs";
 import { INSTALLATION_CONFIG } from "./installation-config.mjs";
 import { applyInstallationBrand } from "./installation-brand.mjs";
@@ -6,6 +6,7 @@ import { applyInstallationBrand } from "./installation-brand.mjs";
 applyInstallationBrand();
 
 const API_BASE_URL = (window.BARBEARIA_API_URL || INSTALLATION_CONFIG.apiBaseUrl).replace(/\/+$/, "");
+let refreshInFlight = null;
 
 export function getToken() {
   return localStorage.getItem("token");
@@ -32,11 +33,29 @@ export function clearToken() {
 export function logout() {
   clearToken();
   localStorage.removeItem("user");
-  window.location.href = "login.html";
+  fetch(`${API_BASE_URL}/auth/logout`, { method: "POST", credentials: "include", keepalive: true })
+    .catch(() => {})
+    .finally(() => { window.location.href = "login.html"; });
+}
+
+async function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    }).then(async (response) => {
+      if (!response.ok) throw new Error("Sessão expirada");
+      const data = await response.json();
+      if (!data.access_token) throw new Error("Refresh sem access token");
+      setToken(data.access_token);
+      return data.access_token;
+    }).finally(() => { refreshInFlight = null; });
+  }
+  return refreshInFlight;
 }
 
 async function request(endpoint, options = {}) {
-  const { method = "GET", body, auth = true, params, headers = {}, ...rest } = options;
+  const { method = "GET", body, auth = true, params, headers = {}, responseType = "json", ...rest } = options;
   const url = new URL(`${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`);
 
   if (params) {
@@ -55,16 +74,29 @@ async function request(endpoint, options = {}) {
   const token = auth ? getToken() : null;
   if (token) requestHeaders.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(url, {
+  const fetchOptions = {
     method,
     headers: requestHeaders,
     body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     ...rest,
-  });
+    credentials: "include",
+  };
+  let response = await fetch(url, fetchOptions);
+
+  if (shouldRefreshSession(response.status, auth, endpoint)) {
+    try {
+      const refreshedToken = await refreshAccessToken();
+      const retryHeaders = new Headers(requestHeaders);
+      retryHeaders.set("Authorization", `Bearer ${refreshedToken}`);
+      response = await fetch(url, { ...fetchOptions, headers: retryHeaders });
+    } catch {
+      // The regular unauthorized handler below clears local state and redirects.
+    }
+  }
 
   if (!response.ok) {
-    expireSessionOnUnauthorized(response.status, auth, localStorage, window.location);
     const responseText = await response.text();
+    expireSessionOnUnauthorized(response.status, auth, localStorage, window.location, responseText);
     const error = formatApiError(response.status, responseText);
     error.status = response.status;
     throw error;
@@ -72,6 +104,8 @@ async function request(endpoint, options = {}) {
 
   if (response.status === 204) return null;
   if (response.status === 205) return null;
+  if (responseType === "blob") return response.blob();
+  if (responseType === "text") return response.text();
   return response.json();
 }
 

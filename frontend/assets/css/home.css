@@ -177,7 +177,7 @@
 
 .art-copy { position: absolute; z-index: 3; bottom: 16%; left: 12%; display: grid; gap: .65rem; }
 .art-copy span { color: var(--color-primary-strong); font-size: .63rem; font-weight: 800; letter-spacing: .2em; }
-.art-copy strong { color: #fff6e8; font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1.02; }
+.art-copy strong { color: var(--color-hero-text); font-family: var(--font-display); font-size: clamp(1.8rem, 3vw, 3rem); line-height: 1.02; }
 .art-bottom-line { position: absolute; right: 0; bottom: 0; left: 0; z-index: 2; height: 7px; background: linear-gradient(90deg, transparent, var(--color-primary), transparent); }
 .art-caption { display: block; margin-top: 1rem; color: var(--color-muted); font-size: .82rem; text-align: right; }
 
@@ -186,7 +186,7 @@
 
 .home-section { width: 100%; max-width: none; margin: 0; padding: clamp(4.5rem, 9vw, 8rem) 0; }
 .services-section,
-.reviews-section { background: #1b1713; }
+.reviews-section { background: var(--color-review-surface); }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; margin-bottom: 2.4rem; }
 .section-heading h2,
 .location-copy h2 { margin: .35rem 0 0; font-size: clamp(2rem, 4vw, 3.6rem); letter-spacing: -.035em; }
@@ -197,7 +197,7 @@
 .filter-tabs { display: flex; flex-wrap: wrap; gap: .55rem; margin: 0 0 1.4rem; }
 .filter-btn { min-height: 42px; padding: .6rem 1rem; border: 1px solid var(--color-border); border-radius: 999px; background: transparent; color: var(--color-muted); font-weight: 700; cursor: pointer; transition: .18s ease; }
 .filter-btn:hover,
-.filter-btn.active { border-color: var(--color-primary); background: var(--color-primary); color: #21180d; }
+.filter-btn.active { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-action-text); }
 .filter-btn:focus { outline: 3px solid var(--color-primary-strong); outline-offset: 2px; }
 
 .services-grid {
@@ -224,7 +224,7 @@
 .service-card-top,
 .service-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .service-tag { color: var(--color-primary-strong); font-size: .72rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
-.service-index { color: #716455; font-family: Consolas, monospace; font-size: .8rem; }
+.service-index { color: var(--color-index); font-family: Consolas, monospace; font-size: .8rem; }
 .service-card h3 { margin: 1.8rem 0 .55rem; font-size: 1.5rem; }
 .service-details { color: var(--color-muted); font-size: .9rem; }
 .service-card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--color-border); }
@@ -232,7 +232,7 @@
 .service-price { color: var(--color-primary-strong); font-size: 1.1rem; }
 .service-duration { color: var(--color-muted); font-size: .82rem; }
 .service-book { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--color-border); border-radius: 50%; color: var(--color-primary-strong); font-size: 1.2rem; text-decoration: none; }
-.service-book:hover { border-color: var(--color-primary); background: var(--color-primary); color: #21180d; }
+.service-book:hover { border-color: var(--color-primary); background: var(--color-primary); color: var(--color-action-text); }
 .service-empty,
 .services-error { grid-column: 1 / -1; padding: 1.5rem; border: 1px dashed var(--color-border); border-radius: var(--radius-md); color: var(--color-muted); text-align: center; }
 .services-error p { margin: 0; }
@@ -275,7 +275,7 @@
 .review-rating { color: var(--color-primary-strong); letter-spacing: .15em; }
 .reviews-grid > p { grid-column: 1 / -1; }
 
-.site-footer { margin-top: 0; padding-block: 1.5rem; background: #100e0c; }
+.site-footer { margin-top: 0; padding-block: 1.5rem; background: var(--color-surface-deep); }
 .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
 .footer-inner p { margin: 0; color: var(--color-muted); font-size: .83rem; }
 .footer-inner p span { margin-left: .5rem; }

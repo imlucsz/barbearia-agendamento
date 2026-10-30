@@ -2,8 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DEFAULT_BRAND_NAME,
+  DEFAULT_BRAND_MARK,
+  DEFAULT_BRAND_TAGLINE,
   DEFAULT_THEME_COLOR,
   normalizeBrandConfiguration,
+  normalizeInstallationCopy,
   validateBrandLogoUrl,
 } from "../assets/js/installation-brand.mjs";
 
@@ -12,6 +15,8 @@ const pageUrl = "https://barbearia.example/pages/index.html";
 test("uses the current brand and no custom logo when unset", () => {
   assert.deepEqual(normalizeBrandConfiguration({}, pageUrl), {
     name: DEFAULT_BRAND_NAME,
+    mark: DEFAULT_BRAND_MARK,
+    tagline: DEFAULT_BRAND_TAGLINE,
     logoUrl: null,
     themeColor: DEFAULT_THEME_COLOR,
   });
@@ -20,13 +25,23 @@ test("uses the current brand and no custom logo when unset", () => {
 test("accepts a configured name, safe relative raster logo and theme color", () => {
   assert.deepEqual(normalizeBrandConfiguration({
     name: "Barbearia Horizonte",
+    mark: "BH.",
+    tagline: "CORTE COM IDENTIDADE",
     logoUrl: "../assets/branding/horizonte.webp",
     themeColor: "#1677aa",
   }, pageUrl), {
     name: "Barbearia Horizonte",
+    mark: "BH.",
+    tagline: "CORTE COM IDENTIDADE",
     logoUrl: "https://barbearia.example/assets/branding/horizonte.webp",
     themeColor: "#1677aa",
   });
+});
+
+test("uses installation copy with safe text limits and core fallback values", () => {
+  assert.equal(normalizeInstallationCopy({ homeHeroDescription: "Barbearia do Bairro" }).homeHeroDescription, "Barbearia do Bairro");
+  assert.equal(normalizeInstallationCopy({ consentText: "x".repeat(1501) }).consentText.startsWith("Li e aceito"), true);
+  assert.equal(normalizeInstallationCopy({ homeHeroEyebrow: "   " }).homeHeroEyebrow, "Seu próximo visual começa aqui");
 });
 
 test("accepts an HTTPS raster image URL for a separately hosted installation asset", () => {

@@ -21,9 +21,13 @@ function getBookingDate() {
 
 export default async function startTestEnvironment() {
   const testDate = process.env.PW_E2E_BOOKING_DATE || getBookingDate();
+  const agendaDate = process.env.PW_E2E_AGENDA_DATE;
   process.env.PW_E2E_BOOKING_DATE = testDate;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(testDate)) {
     throw new Error("Playwright did not provide a valid isolated test booking date.");
+  }
+  if (!agendaDate || !/^\d{4}-\d{2}-\d{2}$/.test(agendaDate)) {
+    throw new Error("Playwright did not provide a valid isolated daily agenda date.");
   }
 
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "barbearia-e2e-"));
@@ -54,7 +58,7 @@ export default async function startTestEnvironment() {
   const runPython = (args) => {
     const result = spawnSync(python, args, {
       cwd: backendRoot,
-      env: { ...backendEnv, E2E_BOOKING_DATE: testDate },
+      env: { ...backendEnv, E2E_BOOKING_DATE: testDate, E2E_AGENDA_DATE: agendaDate },
       stdio: "inherit",
       windowsHide: true,
     });

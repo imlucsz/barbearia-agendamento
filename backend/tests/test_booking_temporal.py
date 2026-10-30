@@ -2,6 +2,7 @@ import os
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
+from sqlalchemy import event
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.core.security import create_access_token
@@ -282,6 +283,117 @@ class BookingTemporalTests(unittest.TestCase):
             headers={"Authorization": f"Bearer {self._token()}"},
         )
         self.assertEqual(status, 400)
+
+    def test_availability_filters_by_service_barber_and_date_for_client_and_admin(self):
+        day = (self.fixed_now + timedelta(days=1)).date().isoformat()
+        path = f"/appointments/disponiveis?service_id={self.service_id}&barbeiro_id={self.barber_id}&data={day}"
+        for principal in ("client", "admin"):
+            status, slots = asgi_request(
+                self.application, "GET", path,
+                headers={"Authorization": f"Bearer {self._token(principal)}"},
+            )
+            self.assertEqual(status, 200, slots)
+            self.assertTrue(slots)
+            self.assertTrue(all(slot["barbeiro_id"] == self.barber_id for slot in slots))
+            self.assertTrue(all(slot["data_hora"].startswith(day) for slot in slots))
+
+        status, _body = asgi_request(
+            self.application, "GET",
+            f"/appointments/disponiveis?service_id=999999&barbeiro_id={self.barber_id}&data={day}",
+            headers={"Authorization": f"Bearer {self._token()}"},
+        )
+        self.assertEqual(status, 404)
+
+    def test_availability_denies_barber_role(self):
+        day = (self.fixed_now + timedelta(days=1)).date().isoformat()
+        status, _body = asgi_request(
+            self.application, "GET",
+            f"/appointments/disponiveis?service_id={self.service_id}&data={day}",
+            headers={"Authorization": f"Bearer {self._token('barber')}"},
+        )
+        self.assertEqual(status, 403)
+
+    def test_availability_matches_legacy_slot_validation_and_uses_bounded_queries(self):
+        from app.booking import SLOT_INTERVAL_MINUTES, ACTIVE_APPOINTMENT_STATUSES, BOOKING_WINDOW_DAYS
+
+        day = (self.fixed_now + timedelta(days=1)).date()
+        db = main.SessionLocal()
+        try:
+            schedule = db.query(JornadaTrabalho).filter_by(
+                barbeiro_id=self.barber_id, dia_semana=(day.weekday() + 1) % 7,
+            ).first()
+            schedule.hora_inicio = "10:00"
+            schedule.hora_fim = "16:00"
+            db.add(BloqueioHorario(
+                barbeiro_id=self.barber_id,
+                inicio=datetime.combine(day, datetime.min.time()).replace(hour=11),
+                fim=datetime.combine(day, datetime.min.time()).replace(hour=12),
+                tipo="bloqueio_ad_hoc", ativo=True,
+            ))
+            db.add(Appointment(
+                user_id=self.client_id, nome_cliente="Conflito fictício", service_id=self.service_id,
+                barbeiro_id=self.barber_id, data_hora=datetime.combine(day, datetime.min.time()).replace(hour=13),
+                status=AppointmentStatusEnum.CONFIRMADO, preco=50, duracao_minutos=60,
+            ))
+            db.commit()
+
+            for duration, requested_day in ((60, day), (120, day), (30, self.fixed_now.date() + timedelta(days=14))):
+                service = db.query(Service).filter_by(id=self.service_id).one()
+                service.duracao_minutos = duration
+                db.commit()
+                weekday = (requested_day.weekday() + 1) % 7
+                legacy_schedule = db.query(JornadaTrabalho).filter_by(
+                    barbeiro_id=self.barber_id, dia_semana=weekday, ativo=True,
+                ).first()
+                expected = []
+                if legacy_schedule:
+                    start = datetime.combine(requested_day, datetime.strptime(legacy_schedule.hora_inicio, "%H:%M").time())
+                    closing = datetime.combine(requested_day, datetime.strptime(legacy_schedule.hora_fim, "%H:%M").time())
+                    while start + timedelta(minutes=duration) <= closing:
+                        end = start + timedelta(minutes=duration)
+                        is_valid = self.fixed_now <= start <= self.fixed_now + timedelta(days=BOOKING_WINDOW_DAYS)
+                        is_valid = is_valid and start >= datetime.combine(requested_day, datetime.strptime(legacy_schedule.hora_inicio, "%H:%M").time())
+                        is_valid = is_valid and end <= closing
+                        if is_valid:
+                            is_valid = db.query(BloqueioHorario).filter(
+                                BloqueioHorario.barbeiro_id == self.barber_id,
+                                BloqueioHorario.ativo.is_(True), BloqueioHorario.inicio < end,
+                                BloqueioHorario.fim > start,
+                            ).first() is None
+                        if is_valid:
+                            conflicts = db.query(Appointment).filter(
+                                Appointment.barbeiro_id == self.barber_id,
+                                Appointment.status.in_(ACTIVE_APPOINTMENT_STATUSES),
+                                Appointment.data_hora < end,
+                            ).all()
+                            is_valid = not any(
+                                start < item.data_hora + timedelta(minutes=item.duracao_minutos)
+                                and end > item.data_hora for item in conflicts
+                            )
+                        if is_valid:
+                            expected.append({"horario": start.strftime("%H:%M"), "data_hora": start.isoformat(),
+                                             "barbeiro_id": self.barber_id})
+                        start += timedelta(minutes=SLOT_INTERVAL_MINUTES)
+
+                query_count = 0
+                def count_queries(_conn, _cursor, statement, _parameters, _context, _executemany):
+                    nonlocal query_count
+                    if statement.lstrip().upper().startswith(("SELECT", "WITH")):
+                        query_count += 1
+                event.listen(main.engine, "before_cursor_execute", count_queries)
+                try:
+                    status, actual = asgi_request(
+                        self.application, "GET",
+                        f"/appointments/disponiveis?service_id={self.service_id}&barbeiro_id={self.barber_id}&data={requested_day.isoformat()}",
+                        headers={"Authorization": f"Bearer {self._token()}"},
+                    )
+                finally:
+                    event.remove(main.engine, "before_cursor_execute", count_queries)
+                self.assertEqual(status, 200)
+                self.assertEqual(actual, expected)
+                self.assertLessEqual(query_count, 12, f"availability executed {query_count} SELECTs")
+        finally:
+            db.close()
 
     def test_overlapping_holiday_block_rejects_public_and_admin_bookings(self):
         start = self.fixed_now + timedelta(days=2)

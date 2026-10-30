@@ -18,6 +18,7 @@ const barber = {
   password: "E2E-Test-Barber-Only-2026!",
 };
 const bookingDate = process.env.PW_E2E_BOOKING_DATE;
+const agendaDate = process.env.PW_E2E_AGENDA_DATE;
 
 function clientForProject(testInfo) {
   return testInfo.project.name.startsWith("mobile") ? mobileClient : client;
@@ -55,7 +56,7 @@ test.afterEach(async ({ page }, testInfo) => {
   }
 });
 
-test("cadastro, login, logout e reentrada após sessão expirada", async ({ page }) => {
+test("cadastro, login, refresh silencioso após sessão expirada e logout", async ({ page, context }) => {
   const email = `cadastro-${Date.now()}@example.com`;
   await page.goto("/pages/cadastro.html");
   await page.getByLabel("Nome completo").fill("Cliente Cadastro E2E");
@@ -70,17 +71,22 @@ test("cadastro, login, logout e reentrada após sessão expirada", async ({ page
   await page.getByLabel("Senha", { exact: true }).fill("E2E-Registration-Only-2026!");
   await page.getByRole("button", { name: "Entrar na minha conta" }).click();
   await page.waitForURL(/client-dashboard\.html$/);
-  await page.getByRole("link", { name: "Sair" }).click();
-  await page.waitForURL(/login\.html$/);
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("token"))).toBeNull();
+  const refreshCookie = (await context.cookies("http://127.0.0.1:4174/auth/refresh")).find((cookie) => cookie.name === "refresh_token");
+  expect(refreshCookie?.httpOnly).toBe(true);
 
   await page.evaluate(() => {
     localStorage.setItem("token", "expired-e2e-token");
     localStorage.setItem("user", JSON.stringify({ role: "cliente" }));
   });
-  await page.goto("/pages/client-appointments.html", { waitUntil: "commit" });
-  await page.waitForURL(/login\.html\?redirect=client-appointments\.html$/);
+  await page.goto("/pages/client-appointments.html");
+  await expect(page.locator("#appointments-list")).not.toContainText("Carregando");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("token"))).not.toBe("expired-e2e-token");
+  await expect(page).toHaveURL(/client-appointments\.html$/);
+
+  await page.getByRole("link", { name: "Sair" }).click();
+  await page.waitForURL(/login\.html$/);
   await expect.poll(() => page.evaluate(() => localStorage.getItem("token"))).toBeNull();
+  await expect.poll(async () => (await context.cookies("http://127.0.0.1:4174/auth/refresh")).some((cookie) => cookie.name === "refresh_token")).toBe(false);
 });
 
 test("identidade configurada aparece nas páginas sem interpretar conteúdo como HTML", async ({ page }) => {
@@ -132,6 +138,112 @@ test("identidade configurada aparece nas páginas sem interpretar conteúdo como
   await expect(page).toHaveTitle("Barbearia Agendamento | Seu estilo, no seu horário");
 });
 
+test("nota média pública considera somente avaliações visíveis", async ({ page }) => {
+  await page.route("**/appointments/avaliacoes", (route) => route.fulfill({ json: [
+    { nota: 5, comentario: "Avaliação pública", oculta: false, criada_em: "2026-10-01T12:00:00" },
+    { nota: 3, comentario: "Outra pública", oculta: false, criada_em: "2026-10-02T12:00:00" },
+    { nota: 1, comentario: "Avaliação oculta", oculta: true, criada_em: "2026-10-03T12:00:00" },
+  ] }));
+  await page.goto("/pages/index.html");
+  await expect(page.locator("#review-average")).toContainText("4.0 / 5 · 2 avaliações");
+  await expect(page.locator("#reviews-list")).toContainText("Avaliação pública");
+  await expect(page.locator("#reviews-list")).toContainText("Outra pública");
+  await expect(page.locator("#reviews-list")).not.toContainText("Avaliação oculta");
+});
+
+test("Estrelinha pode ser desligada por instalação sem quebrar a home", async ({ page }) => {
+  let requestedMascotModule = false;
+  page.on("request", (request) => {
+    if (request.url().includes("cdn.jsdelivr.net/npm/three")) requestedMascotModule = true;
+  });
+  await page.route("**/assets/js/installation-config.mjs", (route) => route.fulfill({
+    status: 200,
+    contentType: "text/javascript",
+    body: `export const INSTALLATION_CONFIG = Object.freeze(${JSON.stringify({
+      apiBaseUrl: "http://127.0.0.1:4174",
+      brand: { name: "Barbearia Horizonte", mark: "BH.", tagline: "CORTE COM IDENTIDADE", logoUrl: "", themeColor: "#1677aa" },
+      content: { homeHeroEyebrow: "Seu jeito, seu corte", homeHeroTitleLead: "Cuidado de", homeHeroTitleAccent: "verdade.", homeHeroDescription: "Texto desta instalação.", homePrimaryAction: "Ver horários", homeSecondaryAction: "Conheça os serviços", homeFooterMessage: "Uma casa de bairro.", consentText: "Texto próprio do aceite." },
+      features: { estrelinhaWidget: false },
+    })});`,
+  }));
+
+  await page.goto("/pages/index.html");
+  await expect(page.locator(".brand-copy strong").first()).toHaveText("Barbearia Horizonte");
+  await expect(page.locator('[data-installation-copy="homeHeroDescription"]')).toHaveText("Texto desta instalação.");
+  await expect(page.locator("#services-list li").first()).toBeVisible();
+  await expect(page.locator("[data-estrelinha-barbeiro]")).toHaveCount(0);
+  expect(requestedMascotModule).toBe(false);
+});
+
+test("nota média pública mostra estado vazio sem avaliações", async ({ page }) => {
+  await page.route("**/appointments/avaliacoes", (route) => route.fulfill({ json: [] }));
+  await page.goto("/pages/index.html");
+  await expect(page.locator("#review-average")).toHaveText("Ainda sem avaliações");
+  await expect(page.locator("#reviews-list")).toContainText("As primeiras avaliações aparecerão aqui.");
+});
+
+test("comentários, nomes e informações institucionais com XSS permanecem texto nas páginas pública e admin", async ({ page }) => {
+  const payload = '<img src=x onerror="window.__apiXss=true">';
+  await page.addInitScript(() => { window.__apiXss = false; });
+  const institutional = {
+    nome: payload, endereco: payload, telefone: "11999990000", email: "contato@example.com",
+    site: "https://example.com", horario_funcionamento: payload, dias_atendimento: payload,
+    endereco_maps: "javascript:window.__apiXss=true",
+  };
+  const review = { id: 501, appointment_id: 701, nota: 5, comentario: payload, oculta: false, criada_em: "2026-01-01T12:00:00" };
+  await page.route("**/informacoes/", (route) => route.fulfill({ json: institutional }));
+  await page.route("**/appointments/avaliacoes", (route) => route.fulfill({ json: [review] }));
+  await page.goto("/pages/index.html");
+  await expect(page.locator("#address")).toHaveText(payload);
+  await expect(page.locator("#reviews-list")).toContainText(payload);
+  await expect(page.locator("#reviews-list img")).toHaveCount(0);
+  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  await expect(page.locator("#map-link")).toHaveAttribute("hidden", "");
+
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  await page.route("**/users/", (route) => route.fulfill({ json: [
+    { id: 501, nome: payload, email: "xss-fixture@example.com", role: "cliente", bloqueado: false },
+  ] }));
+  await page.route("**/admin/agenda**", (route) => route.fulfill({ json: [
+    { id: 701, user_id: 501, nome_cliente: payload, service_id: 1, barbeiro_id: 1,
+      data_hora: "2026-01-01T12:00:00", status: `pendente"><img src=x onerror="window.__apiXss=true">`, preco: 35, duracao_minutos: 30 },
+  ] }));
+  await page.route("**/admin/avaliacoes", (route) => route.fulfill({ json: [review] }));
+  await page.reload();
+  await expect(page.locator("#clients-list")).toContainText(payload);
+  await expect(page.locator("#agendaList .agenda-row")).toContainText(payload);
+  await expect(page.locator("#reviews-admin-list")).toContainText(payload);
+  await expect(page.locator("#clients-list img, #agendaList img, #reviews-admin-list img")).toHaveCount(0);
+  expect(await page.evaluate(() => window.__apiXss)).toBe(false);
+});
+
+test("conta baixa a exportação JSON e pede a senha atual antes de excluir", async ({ page }, testInfo) => {
+  await signIn(page, clientForProject(testInfo));
+  await page.waitForURL(/client-dashboard\.html$/);
+  await page.goto("/pages/client-account.html");
+  await page.route("**/users/me/exportacao", (route) => route.fulfill({ json: {
+    schema_version: "1.0", exported_at: "2026-01-01T00:00:00", usuario: { nome: "Titular QA" },
+    consentimentos: [], agendamentos: [], avaliacoes: [],
+  } }));
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar meus dados" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^meus-dados-\d{4}-\d{2}-\d{2}\.json$/);
+
+  await page.route("**/users/me", async (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    expect(route.request().postDataJSON()).toEqual({ senha_atual: "current-password-123" });
+    await route.fulfill({ json: { mensagem: "Conta anonimizada" } });
+  });
+  page.on("dialog", async (dialog) => {
+    if (dialog.type() === "prompt") await dialog.accept("current-password-123");
+    else await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Excluir minha conta" }).click();
+  await expect(page).toHaveURL(/index\.html$/);
+});
+
 test("recuperação mantém resposta genérica e redefinição sem token não envia credenciais", async ({ page }, testInfo) => {
   await page.goto("/pages/forgot.html");
   await page.getByLabel("E-mail cadastrado").fill(clientForProject(testInfo).email);
@@ -162,6 +274,23 @@ test("catálogo mostra carregamento e estado vazio", async ({ page }) => {
   await page.goto("/pages/client-services.html");
   await expect(page.locator("#services-list")).toContainText("Carregando serviços");
   await expect(page.locator("#services-list")).toContainText("Nenhum serviço disponível");
+});
+
+test("catálogo público exibe descrição, preço e duração na home e na seleção", async ({ page }) => {
+  await page.route("**/services/", (route) => route.fulfill({ json: [
+    { id: 811, nome: "Corte executivo RF01", descricao: "Acabamento e lavagem incluídos", preco: 42.5, duracao_minutos: 45 },
+  ] }));
+  await page.goto("/pages/index.html");
+  const homeCard = page.locator("#services-list .service-card").filter({ hasText: "Corte executivo RF01" });
+  await expect(homeCard).toContainText("Acabamento e lavagem incluídos");
+  await expect(homeCard).toContainText("R$");
+  await expect(homeCard).toContainText("45 min");
+
+  await page.goto("/pages/client-services.html");
+  const selection = page.locator(".service-selection-card").filter({ hasText: "Corte executivo RF01" });
+  await expect(selection).toContainText("Acabamento e lavagem incluídos");
+  await expect(selection).toContainText("45 minutos");
+  await expect(selection).toContainText("R$");
 });
 
 test("disponibilidade respeita duração longa, jornada e limites do bloqueio", async ({ page }) => {
@@ -277,19 +406,37 @@ test("cliente não lê nem altera agendamento de outra conta", async ({ page }, 
   await expect(page.locator(".appointment-card").filter({ hasText: `Atendimento #${otherAppointmentId}` })).toHaveCount(0);
 });
 
+test("histórico completo mostra agendamentos passados e futuros em ordem", async ({ page }, testInfo) => {
+  await signIn(page, clientForProject(testInfo));
+  await page.waitForURL(/client-dashboard\.html$/);
+  await page.route("**/appointments/", (route) => route.fulfill({ json: [
+    { id: 912, user_id: 1, service_id: 2, barbeiro_id: 3, data_hora: "2032-05-12T12:00:00", status: "pendente", preco: 40, duracao_minutos: 30 },
+    { id: 911, user_id: 1, service_id: 2, barbeiro_id: 3, data_hora: "2032-05-08T12:00:00", status: "concluido", preco: 40, duracao_minutos: 30 },
+  ] }));
+  await page.goto("/pages/client-appointments.html");
+  const cards = page.locator(".appointment-card");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText("#912");
+  await expect(cards.nth(1)).toContainText("#911");
+});
+
 test("histórico e avaliação de atendimento concluído", async ({ page }, testInfo) => {
   await signIn(page, clientForProject(testInfo));
   await page.waitForURL(/client-dashboard\.html$/);
   await page.goto("/pages/client-appointments.html");
   await expect(page.locator(".appointment-card").first()).toBeVisible();
+  const evaluationLink = page.getByRole("link", { name: "Avaliar atendimento" }).first();
+  const appointmentId = new URL(await evaluationLink.getAttribute("href"), "http://test.local").searchParams.get("appointment_id");
   const evaluationResponse = page.waitForResponse((response) =>
     response.url().includes("/avaliacao") && response.request().method() === "POST");
-  await page.getByRole("link", { name: "Avaliar atendimento" }).first().click();
+  await evaluationLink.click();
   await page.getByLabel("Sua nota (1 a 5)").selectOption("5");
   await page.getByLabel("Comentário (opcional)").fill("Atendimento fictício para teste E2E.");
   await page.getByRole("button", { name: "Enviar avaliação" }).click();
   expect((await evaluationResponse).status()).toBe(201);
   await page.waitForURL(/client-appointments\.html$/);
+  const ratedCard = page.locator(".appointment-card").filter({ hasText: `Atendimento #${appointmentId}` });
+  await expect(ratedCard.getByRole("link", { name: "Avaliar atendimento" })).toHaveCount(0);
 });
 
 test("painel administrativo carrega e gerencia serviços, equipe, clientes, horários e informações", async ({ page }, testInfo) => {
@@ -326,20 +473,60 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await newAssociation.getByRole("button", { name: "Remover" }).click();
   await expect(newAssociation).toHaveCount(0);
 
+  const serviceRow = page.locator("#services-admin-list .management-item").filter({ hasText: "Serviço criado pelo E2E" });
+  await serviceRow.getByRole("button", { name: "Editar" }).click();
+  await page.locator("#service-name").fill("RF16 service updated");
+  await page.getByLabel("Preço (R$)").fill("47.25");
+  await page.getByLabel("Duração (minutos)").fill("50");
+  await page.locator("#service-form [type=submit]").click();
+  const updatedServiceRow = page.locator("#services-admin-list .management-item").filter({ hasText: "RF16 service updated" });
+  await expect(updatedServiceRow).toContainText("R$ 47,25");
+  page.once("dialog", (dialog) => dialog.accept());
+  await updatedServiceRow.getByRole("button", { name: "Excluir" }).click();
+  await expect(updatedServiceRow).toHaveCount(0);
+
   const scheduleRow = page.locator("#schedules-list .management-item").first();
   await scheduleRow.getByRole("button", { name: "Desativar" }).click();
   await expect(page.locator("#schedules-list .management-item").first()).toContainText("Inativa");
   await page.locator("#schedules-list .management-item").first().getByRole("button", { name: "Ativar" }).click();
   await expect(page.locator("#schedules-list .management-item").first()).toContainText("Ativa");
 
+  await page.locator("#schedule-barber").selectOption({ index: 0 });
+  await page.locator("#schedule-day").selectOption("2");
+  await page.locator("#schedule-start").fill("09:00");
+  await page.locator("#schedule-end").fill("17:00");
+  await page.getByRole("button", { name: "Adicionar jornada" }).click();
+  const newSchedule = page.locator("#schedules-list .management-item").filter({ hasText: "09:00" }).last();
+  await expect(newSchedule).toBeVisible();
+  await expect(newSchedule).toContainText("17:00");
+  await newSchedule.getByRole("button", { name: "Editar" }).click();
+  await page.locator("#schedule-start").fill("10:00");
+  await page.locator("#schedule-end").fill("16:00");
+  await page.locator("#schedule-form [type=submit]").click();
+  const updatedSchedule = page.locator("#schedules-list .management-item").filter({ hasText: "10:00" }).last();
+  await expect(updatedSchedule).toContainText("16:00");
+  await updatedSchedule.getByRole("button", { name: "Desativar" }).click();
+  await expect(updatedSchedule).toContainText("Inativa");
+  await updatedSchedule.getByRole("button", { name: "Ativar" }).click();
+  await expect(updatedSchedule).toContainText("Ativa");
+  await updatedSchedule.getByRole("button", { name: "Remover" }).click();
+  await expect(updatedSchedule).toHaveCount(0);
+
   await page.locator("#block-start").fill(`${bookingDate}T14:00`);
   await page.locator("#block-end").fill(`${bookingDate}T14:30`);
+  await page.locator("#block-type").selectOption("feriado");
   await page.getByLabel("Motivo").fill("Bloqueio criado pela interface E2E");
   await page.getByRole("button", { name: "Salvar bloqueio" }).click();
   const createdBlock = page.locator("#blocks-list .management-item").filter({ hasText: "Bloqueio criado pela interface E2E" });
   await expect(createdBlock).toBeVisible();
-  await createdBlock.getByRole("button", { name: "Remover" }).click();
-  await expect(createdBlock).toHaveCount(0);
+  await expect(createdBlock).toContainText("feriado");
+  await createdBlock.getByRole("button", { name: "Editar" }).click();
+  await page.locator("#block-reason").fill("Bloqueio E2E feriado atualizado");
+  await page.locator("#block-form [type=submit]").click();
+  const updatedBlock = page.locator("#blocks-list .management-item").filter({ hasText: "Bloqueio E2E feriado atualizado" });
+  await expect(updatedBlock).toContainText("feriado");
+  await updatedBlock.getByRole("button", { name: "Remover" }).click();
+  await expect(updatedBlock).toHaveCount(0);
 
   const clientRow = page.locator("#clients-list .management-item").filter({ hasText: clientForProject(testInfo).email });
   await clientRow.getByRole("button", { name: "Bloquear" }).click();
@@ -354,9 +541,19 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await page.locator("#institution-site").fill("https://e2e.example.com");
   await page.getByLabel("Dias de atendimento").fill("Todos os dias");
   await page.getByLabel("Horário de funcionamento").fill("08:00 às 18:00");
-  await page.locator("#institution-map").fill("https://maps.example.com/e2e");
+  await page.locator("#institution-map").fill("https://www.google.com/maps/place/e2e");
   await page.getByRole("button", { name: "Salvar informações" }).click();
   await expect(page.locator("#institutional-form")).toContainText("atualizadas");
+
+  await page.goto("/pages/index.html");
+  await expect(page.locator("#address")).toHaveText("Rua Teste Fictícia, 123");
+  await expect(page.locator("#phone")).toContainText("11999990000");
+  await expect(page.locator("#email")).toContainText("contato-e2e@example.com");
+  await expect(page.locator("#operating-days")).toHaveText("Todos os dias");
+  await expect(page.locator("#mon")).toHaveText("08:00 às 18:00");
+  await expect(page.locator("#map-link")).toHaveAttribute("href", "https://www.google.com/maps/place/e2e");
+  await page.goto("/pages/admin.html");
+  await expect(page.locator("#institution-address")).toHaveValue("Rua Teste Fictícia, 123");
 
   await page.getByRole("button", { name: "Gerar relatório" }).click();
   await expect(page.locator("#finance-result")).toContainText("Receita estimada");
@@ -366,16 +563,17 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await page.waitForURL(/client-dashboard\.html$/);
   await page.goto("/pages/client-appointments.html");
   await page.getByRole("link", { name: "Avaliar atendimento" }).first().click();
+  const moderationComment = `RF22 moderation ${testInfo.project.name}`;
   await page.getByLabel("Sua nota (1 a 5)").selectOption("4");
-  await page.getByLabel("Comentário (opcional)").fill("Avaliação de moderação E2E.");
+  await page.getByLabel("Comentário (opcional)").fill(moderationComment);
   await page.getByRole("button", { name: "Enviar avaliação" }).click();
   await page.waitForURL(/client-appointments\.html$/);
   await page.goto("/pages/login.html");
   await signIn(page, admin);
   await page.waitForURL(/admin\.html$/);
-  await expect(page.locator("#reviews-admin-list")).toContainText("Avaliação de moderação E2E.");
+  await expect(page.locator("#reviews-admin-list")).toContainText(moderationComment);
 
-  const review = page.locator("#reviews-admin-list .management-item").filter({ hasText: "Avaliação de moderação E2E." }).last();
+  const review = page.locator("#reviews-admin-list .management-item").filter({ hasText: moderationComment }).last();
   await expect(review).toBeVisible();
   if (await review.getByRole("button", { name: "Exibir" }).count()) {
     await review.getByRole("button", { name: "Exibir" }).click();
@@ -385,9 +583,175 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await expect(review.getByRole("button", { name: "Exibir" })).toBeVisible();
 
   await page.goto("/pages/index.html");
+  await expect(page.locator("#reviews-list")).not.toContainText(moderationComment);
   await expect(page.locator("#address")).toContainText("Rua Teste Fictícia, 123");
   await page.goto("/pages/admin.html");
+  const reviewAgain = page.locator("#reviews-admin-list .management-item").filter({ hasText: moderationComment }).last();
+  await reviewAgain.getByRole("button", { name: "Exibir" }).click();
+  await expect(reviewAgain.getByRole("button", { name: "Ocultar" })).toBeVisible();
+  await page.goto("/pages/index.html");
+  await expect(page.locator("#reviews-list")).toContainText(moderationComment);
+  await page.goto("/pages/admin.html");
   await expect(page.getByRole("heading", { name: "Gerenciar serviços" })).toBeVisible();
+});
+
+test("RF13 agenda diária respeita data, perfil, propriedade e estados em desktop e mobile", async ({ page }) => {
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  await page.goto("/pages/admin.html");
+  const adminDate = page.locator(`#dateRoll .date-item[data-date="${agendaDate}"]`);
+  await expect(adminDate).toBeVisible();
+  const adminResponse = page.waitForResponse((response) =>
+    response.url().includes("/admin/agenda") && response.url().includes(`data=${agendaDate}`));
+  await adminDate.click();
+  expect((await adminResponse).status()).toBe(200);
+  const adminRows = page.locator("#agendaList .agenda-row");
+  await expect(adminRows).toHaveCount(6);
+  for (const text of [
+    "Cliente RF13 Pendente", "Cliente RF13 Confirmado", "Cliente RF13 Concluído",
+    "Cliente RF13 Cancelado", "Cliente RF13 Falta", "Cliente RF13 Avaliado",
+    "Corte E2E", "Barbeiro E2E Fictício", "Segundo Barbeiro RF13",
+    "Pendente", "Confirmado", "Concluído", "Cancelado", "Falta", "Avaliado",
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  ]) {
+    await expect(page.locator("#agendaList")).toContainText(text);
+  }
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await signIn(page, barber);
+  await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem("token")))).toBe(true);
+  await page.goto("/pages/admin.html");
+  const barberDate = page.locator(`#dateRoll .date-item[data-date="${agendaDate}"]`);
+  await expect(barberDate).toBeVisible();
+  const barberResponse = page.waitForResponse((response) =>
+    response.url().includes("/admin/me/agenda") && response.url().includes(`data=${agendaDate}`));
+  await barberDate.click();
+  expect((await barberResponse).status()).toBe(200);
+  const barberRows = page.locator("#agendaList .agenda-row");
+  await expect(barberRows).toHaveCount(3);
+  await expect(page.locator("#agendaList")).toContainText("Barbeiro E2E Fictício");
+  await expect(page.locator("#agendaList")).toContainText("Corte E2E");
+  await expect(page.locator("#agendaList")).not.toContainText("Segundo Barbeiro RF13");
+  await expect(page.locator("#agendaList")).not.toContainText("Cliente RF13 Cancelado");
+
+  const barberToken = await page.evaluate(() => localStorage.getItem("token"));
+  const forgedFullAgenda = await page.request.get(
+    `http://127.0.0.1:4174/admin/agenda?data=${agendaDate}&barbeiro_id=999999`,
+    { headers: { Authorization: `Bearer ${barberToken}` } },
+  );
+  expect(forgedFullAgenda.status()).toBe(403);
+  const forgedOwnAgenda = await page.request.get(
+    `http://127.0.0.1:4174/admin/me/agenda?data=${agendaDate}&barbeiro_id=999999`,
+    { headers: { Authorization: `Bearer ${barberToken}` } },
+  );
+  expect(forgedOwnAgenda.status()).toBe(200);
+  expect(await forgedOwnAgenda.json()).toHaveLength(3);
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await signIn(page, client);
+  await page.waitForURL(/client-dashboard\.html$/);
+  const clientToken = await page.evaluate(() => localStorage.getItem("token"));
+  for (const endpoint of ["/admin/agenda", "/admin/me/agenda"]) {
+    const response = await page.request.get(
+      `http://127.0.0.1:4174${endpoint}?data=${agendaDate}`,
+      { headers: { Authorization: `Bearer ${clientToken}` } },
+    );
+    expect(response.status()).toBe(403);
+  }
+});
+
+test("agenda registra status da equipe e valor cobrado", async ({ page }) => {
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  let appointmentStatus = "pendente";
+  let updatePayload = null;
+  await page.route("**/admin/agenda*", (route) => route.fulfill({ json: [{
+    id: 501, user_id: 1, barbeiro_id: 2, nome_cliente: "Cliente RF14",
+    servico_nome: "Corte RF14", profissional_nome: "Barbeiro RF14",
+    horario: "10:00", status: appointmentStatus, preco: 45, valor_cobrado: null,
+  }] }));
+  await page.route("**/appointments/501", async (route) => {
+    updatePayload = route.request().postDataJSON();
+    appointmentStatus = updatePayload.status;
+    await route.fulfill({ json: {
+      id: 501, user_id: 1, barbeiro_id: 2, service_id: 3,
+      data_hora: "2032-05-12T10:00:00", status: appointmentStatus,
+      preco: 45, duracao_minutos: 30, valor_cobrado: updatePayload.valor_cobrado,
+    } });
+  });
+  await page.goto("/pages/admin.html");
+  const row = page.locator(".agenda-row").filter({ hasText: "Cliente RF14" });
+  await expect(row).toBeVisible();
+  await page.locator("#charged-501").fill("38.50");
+  await row.getByRole("button", { name: "Concluído" }).click();
+  await expect.poll(() => updatePayload).toEqual({ status: "concluido", valor_cobrado: 38.5 });
+  await expect(row).toContainText("Concluído");
+});
+
+test("bloqueio e desbloqueio de cliente afetam a sessão ativa imediatamente", async ({ browser }, testInfo) => {
+  const contextOptions = {
+    baseURL: "http://127.0.0.1:4173",
+    viewport: testInfo.project.use.viewport,
+    isMobile: Boolean(testInfo.project.use.isMobile),
+    hasTouch: Boolean(testInfo.project.use.hasTouch),
+  };
+  const clientContext = await browser.newContext(contextOptions);
+  const adminContext = await browser.newContext(contextOptions);
+  try {
+    const clientPage = await clientContext.newPage();
+    const adminPage = await adminContext.newPage();
+    const account = clientForProject(testInfo);
+    await signIn(clientPage, account);
+    await clientPage.waitForURL(/client-dashboard\.html$/);
+    await signIn(adminPage, admin);
+    await adminPage.waitForURL(/admin\.html$/);
+
+    const clientRow = adminPage.locator("#clients-list .management-item").filter({ hasText: account.email });
+    await expect(clientRow).toBeVisible();
+    await clientRow.getByRole("button", { name: "Bloquear" }).click();
+    await expect(clientRow).toContainText("Bloqueado");
+    await clientPage.reload();
+    await expect(clientPage).toHaveURL(/login\.html/);
+    await expect.poll(() => clientPage.evaluate(() => localStorage.getItem("token"))).toBeNull();
+
+    await clientRow.getByRole("button", { name: "Desbloquear" }).click();
+    await expect(clientRow).toContainText("Ativo");
+    await signIn(clientPage, account);
+    await clientPage.waitForURL(/client-dashboard\.html$/);
+  } finally {
+    await clientContext.close();
+    await adminContext.close();
+  }
+});
+
+test("relatório financeiro exibe quebras por período e exporta CSV", async ({ page }) => {
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  await page.route("**/admin/relatorio**", (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith("/csv")) {
+      return route.fulfill({ contentType: "text/csv; charset=utf-8", body: "data_hora,barbeiro,servico,status,valor_cobrado\n" });
+    }
+    return route.fulfill({ json: {
+      periodo: { inicio: "2026-06-01", fim: "2026-06-03" },
+      total_agendamentos: 3, total_receita: 100, ticket_medio: 100 / 3,
+      por_barbeiro: [{ barbeiro_id: 7, barbeiro: "Barbeiro RF21", total_agendamentos: 3, receita: 100 }],
+      por_servico: [{ servico_id: 8, servico: "Serviço RF21", total_agendamentos: 3, receita: 100 }],
+      por_dia: [{ dia: "2026-06-02", total_agendamentos: 2, receita: 67.5 }],
+      contagem_status: { concluido: 3, cancelado: 1, falta: 1 },
+    } });
+  });
+  await page.locator("#finance-start").fill("2026-06-01");
+  await page.locator("#finance-end").fill("2026-06-03");
+  await page.getByRole("button", { name: "Gerar relatório" }).click();
+  await expect(page.locator(".finance-table")).toContainText("Barbeiro RF21");
+  await expect(page.locator(".finance-table")).toContainText("Serviço RF21");
+  await expect(page.locator(".finance-table")).toContainText("2026-06-02");
+  await expect(page.locator(".finance-table")).toContainText("cancelado");
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar CSV" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("relatorio-financeiro-2026-06-01-2026-06-03.csv");
 });
 
 test("usuário comum recebe 403 na API e é retirado da tela administrativa", async ({ page }, testInfo) => {

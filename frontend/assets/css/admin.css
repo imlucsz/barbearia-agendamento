@@ -1,16 +1,6 @@
 :root {
-    --admin-bg: #120f0d;
-    --admin-panel: #1b1714;
-    --admin-card: #201d1b;
-    --admin-border: rgba(201, 168, 76, 0.25);
-    --admin-text: #f5f1eb;
-    --admin-muted: #c3b49b;
-    --admin-dourado: #c9a84c;
-    --admin-dourado-escuro: #8f7422;
-    --admin-success: #67d7a6;
-    --admin-warning: #ffcb69;
-    --admin-danger: #ff7a7a;
-    --admin-info: #8ab4ff;
+    --admin-dourado: var(--admin-gold);
+    --admin-dourado-escuro: var(--admin-gold-strong);
 }
 
 .Agenda {
@@ -52,20 +42,20 @@
 }
 
 .date-item.selected {
-    background: linear-gradient(180deg, #d8b867 0%, #c9a84c 100%);
+    background: linear-gradient(180deg, var(--admin-gold-strong) 0%, var(--admin-gold) 100%);
     border-color: var(--admin-dourado);
-    color: #1a150f;
-    box-shadow: 0 10px 20px rgba(201, 168, 76, 0.25);
+    color: var(--admin-contrast);
+    box-shadow: var(--shadow-card);
 }
 
 .date-item.today {
-    outline: 2px solid rgba(255, 255, 255, 0.38);
+    outline: 2px solid var(--admin-today-outline);
     outline-offset: 1px;
 }
 
 .date-item.selected .date-weekday,
 .date-item.selected .date-number {
-    color: #1a150f;
+    color: var(--admin-contrast);
 }
 
 .date-weekday {
@@ -87,7 +77,7 @@
     width: 42px;
     height: 42px;
     border-radius: 50%;
-    border: 1px solid rgba(201, 168, 76, 0.6);
+    border: 1px solid var(--admin-border-strong);
     background: transparent;
     color: var(--admin-dourado);
     font-size: 1.4rem;
@@ -108,11 +98,11 @@
 .agenda-panel {
     max-width: 1100px;
     margin: 38px auto 0;
-    background: rgba(27, 23, 20, 0.96);
+    background: var(--admin-panel);
     border: 1px solid var(--admin-border);
     border-radius: 22px;
     padding: 24px 24px 18px;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
 }
 
 .agenda-header {
@@ -122,7 +112,7 @@
     gap: 16px;
     margin-bottom: 18px;
     padding-bottom: 14px;
-    border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+    border-bottom: 1px solid var(--admin-border-soft);
 }
 
 .agenda-header h2 {
@@ -145,25 +135,25 @@
 .agenda-table-wrapper {
     overflow-x: auto;
     border-radius: 16px;
-    border: 1px solid rgba(201, 168, 76, 0.18);
+    border: 1px solid var(--admin-border-soft);
 }
 
 .agenda-table {
     width: 100%;
     border-collapse: collapse;
     min-width: 760px;
-    background: #171311;
+    background: var(--admin-bg);
     color: var(--admin-text);
 }
 
 .agenda-table thead {
-    background: rgba(201, 168, 76, 0.08);
+    background: var(--admin-gold-faint);
 }
 
 .agenda-table th, .agenda-table td {
     text-align: left;
     padding: 14px 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--color-border);
     vertical-align: middle;
 }
 
@@ -176,7 +166,7 @@
 }
 
 .agenda-row:hover {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--admin-row-hover);
 }
 
 .time-pill {
@@ -185,8 +175,8 @@
     justify-content: center;
     padding: 6px 10px;
     border-radius: 999px;
-    background: rgba(201, 168, 76, 0.12);
-    border: 1px solid rgba(201, 168, 76, 0.22);
+    background: var(--admin-gold-wash);
+    border: 1px solid var(--admin-border-soft);
     color: var(--admin-dourado);
     font-weight: 700;
     min-width: 70px;
@@ -204,22 +194,23 @@
     text-transform: capitalize;
 }
 
-.status-confirmado, .status-concluido, .status-finalizado {
-    background: rgba(103, 215, 166, 0.13);
-    border: 1px solid rgba(103, 215, 166, 0.5);
+.status-confirmado, .status-concluido, .status-avaliado, .status-finalizado {
+    background: var(--admin-success-bg);
+    border: 1px solid var(--admin-success-border);
     color: var(--admin-success);
 }
 
 .status-pendente {
-    background: rgba(255, 203, 105, 0.12);
-    border: 1px solid rgba(255, 203, 105, 0.45);
+    background: var(--admin-warning-bg);
+    border: 1px solid var(--admin-warning-border);
     color: var(--admin-warning);
 }
 
 .status-cancelado,
-.status-cancelada {
-    background: rgba(255, 122, 122, 0.12);
-    border: 1px solid rgba(255, 122, 122, 0.45);
+.status-cancelada,
+.status-falta {
+    background: var(--admin-danger-bg);
+    border: 1px solid var(--admin-danger-border);
     color: var(--admin-danger);
 }
 
@@ -229,9 +220,9 @@
     justify-content: center;
     min-height: 130px;
     text-align: center;
-    border: 1px dashed rgba(201, 168, 76, 0.45);
+    border: 1px dashed var(--admin-border-strong);
     border-radius: 16px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--admin-row-hover);
     color: var(--admin-text);
     padding: 20px;
     font-size: 1rem;
@@ -239,9 +230,9 @@
 }
 
 .agenda-empty.error {
-    color: #ffd7d7;
-    border-color: rgba(255, 122, 122, 0.38);
-    background: rgba(255, 122, 122, 0.05);
+    color: var(--color-danger-text);
+    border-color: var(--admin-empty-error);
+    background: var(--admin-danger-faint);
 }
 
 @media (max-width: 720px) {

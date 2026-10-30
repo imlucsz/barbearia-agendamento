@@ -55,6 +55,8 @@ async function loadServices() {
       card.className = "card service-selection-card";
       const title = document.createElement("h2");
       title.textContent = service.nome;
+      const description = document.createElement("p");
+      description.textContent = service.descricao || "Descrição não informada.";
       const price = document.createElement("strong");
       price.textContent = currency.format(Number(service.preco));
       const duration = document.createElement("p");
@@ -69,7 +71,7 @@ async function loadServices() {
           requireLogin(link.getAttribute("href"));
         }
       });
-      card.append(title, price, duration, link);
+      card.append(title, description, price, duration, link);
       container.append(card);
     });
   } catch (error) {
@@ -326,10 +328,31 @@ async function loadAccount() {
     const email = document.createElement("p");
     email.textContent = `E-mail: ${user.email}`;
     container.append(name, email);
-    document.getElementById("delete-account")?.addEventListener("click", async () => {
-      if (!window.confirm("Excluir sua conta? Seus dados pessoais serão desativados/anonimizados.")) return;
+    document.getElementById("export-account")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
       try {
-        await api.delete("/users/me");
+        const data = await api.get("/users/me/exportacao");
+        const file = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `meus-dados-${new Date().toISOString().slice(0, 10)}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        showMessage(container, error.message, "danger");
+        handleAuthError(error);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    document.getElementById("delete-account")?.addEventListener("click", async () => {
+      if (!window.confirm("Excluir sua conta? Seus dados pessoais serão anonimizados e esta ação é irreversível.")) return;
+      const senhaAtual = window.prompt("Confirme sua senha atual para continuar:");
+      if (senhaAtual === null || !senhaAtual) return;
+      try {
+        await api.delete("/users/me", { body: { senha_atual: senhaAtual } });
         clearToken();
         localStorage.removeItem("user");
         window.location.href = "index.html";

@@ -1,13 +1,13 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
 from typing import Optional
 from datetime import datetime
 from app.models.user import AppointmentStatusEnum
-from app.schemas.base import ORMModel
+from app.schemas.base import ORMModel, SchemaModel
 
 
 class AppointmentBase(ORMModel):
-    service_id: int
-    barbeiro_id: int
+    service_id: StrictInt = Field(gt=0)
+    barbeiro_id: StrictInt = Field(gt=0)
     data_hora: datetime
 
 
@@ -16,8 +16,8 @@ class AppointmentCreate(AppointmentBase):
 
 
 class AdminAppointmentCreate(AppointmentBase):
-    user_id: Optional[int] = None
-    nome_cliente: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    user_id: Optional[StrictInt] = Field(default=None, gt=0)
+    nome_cliente: Optional[StrictStr] = Field(default=None, min_length=1, max_length=120)
 
     @field_validator("nome_cliente")
     @classmethod
@@ -33,29 +33,29 @@ class AdminAppointmentCreate(AppointmentBase):
         return self
 
 
-class AppointmentUpdate(BaseModel):
+class AppointmentUpdate(SchemaModel):
     status: Optional[AppointmentStatusEnum] = None
     data_hora: Optional[datetime] = None
-    valor_cobrado: Optional[float] = Field(default=None, ge=0)
+    valor_cobrado: Optional[float] = Field(default=None, ge=0, le=100000, strict=True)
 
 
 class AppointmentResponse(ORMModel):
-    id: int
-    user_id: Optional[int] = None
-    nome_cliente: Optional[str] = None
-    service_id: int
-    barbeiro_id: int
+    id: StrictInt = Field(gt=0)
+    user_id: Optional[StrictInt] = Field(default=None, gt=0)
+    nome_cliente: Optional[StrictStr] = Field(default=None, max_length=120)
+    service_id: StrictInt = Field(gt=0)
+    barbeiro_id: StrictInt = Field(gt=0)
     data_hora: datetime
     status: AppointmentStatusEnum
     # RN-05: Snapshot of service price and duration at time of booking
-    preco: float
-    duracao_minutos: int
-    valor_cobrado: Optional[float] = None
+    preco: float = Field(gt=0, le=100000, strict=True)
+    duracao_minutos: StrictInt = Field(ge=1, le=1440)
+    valor_cobrado: Optional[float] = Field(default=None, ge=0, le=100000, strict=True)
 
 class AvaliacaoBase(ORMModel):
-    nota: int = Field(..., ge=1, le=5)  # Assuming 1-5 scale
-    comentario: Optional[str] = None
-    oculta: Optional[bool] = None
+    nota: StrictInt = Field(..., ge=1, le=5)
+    comentario: Optional[StrictStr] = Field(default=None, max_length=2000)
+    oculta: Optional[StrictBool] = None
 
 
 class AvaliacaoCreate(AvaliacaoBase):
@@ -63,6 +63,6 @@ class AvaliacaoCreate(AvaliacaoBase):
 
 
 class AvaliacaoResponse(AvaliacaoBase):
-    id: int
-    appointment_id: int
+    id: StrictInt = Field(gt=0)
+    appointment_id: Optional[StrictInt] = Field(default=None, gt=0)
     criada_em: datetime

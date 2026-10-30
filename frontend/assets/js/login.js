@@ -1,4 +1,4 @@
-import { apiPost } from "./api.js";
+import { apiPost, setToken } from "./api.js";
 
 
 
@@ -121,7 +121,7 @@ loginForm.addEventListener('submit', (e) => {
 
     apiPost('/auth/login', dadosLogin)
         .then((dados) => {
-            localStorage.setItem('token', dados.access_token);
+            setToken(dados.access_token);
             localStorage.setItem('user', JSON.stringify(dados.user));
 
             window.location.href = dados.user.role === 'admin' ? 'admin.html' : 'index.html';

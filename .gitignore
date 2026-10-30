@@ -8,5 +8,13 @@ venv/
 *.db
 *.sqlite3
 .github/
+!.github/
+!.github/dependabot.yml
+!.github/workflows/
+!.github/workflows/ci.yml
 barbearia.db
 test-results/
+tools/backup/archive/
+node_modules/
+frontend/dist/
+debug.log

@@ -1,4 +1,5 @@
 import { api, getToken } from "./api.js";
+import { escapeHtml } from "./escape-html.mjs";
 
 const byId = (id) => document.getElementById(id);
 const dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -6,6 +7,7 @@ let services = [];
 let barbers = [];
 let clients = [];
 let institutionalInfoExists = true;
+let auditSkip = 0;
 
 document.addEventListener("DOMContentLoaded", initialize);
 
@@ -36,6 +38,9 @@ async function initialize() {
         loadInstitutionalInfo(),
         loadReviews(),
       ]);
+      byId("audit-filter").addEventListener("submit", (event) => { event.preventDefault(); loadAudit(0); });
+      byId("audit-next").addEventListener("click", () => loadAudit(auditSkip + 50));
+      document.querySelector('a[href="#auditoria"]').addEventListener("click", () => loadAudit(0));
     }
   } catch (error) {
     console.error("Falha ao inicializar o painel:", error);
@@ -68,7 +73,9 @@ function bindAdminForms() {
   byId("service-cancel-edit").addEventListener("click", resetServiceForm);
   byId("barber-service-form").addEventListener("submit", assignService);
   byId("schedule-form").addEventListener("submit", createSchedule);
+  byId("schedule-cancel-edit").addEventListener("click", resetScheduleForm);
   byId("block-form").addEventListener("submit", createBlock);
+  byId("block-cancel-edit").addEventListener("click", resetBlockForm);
   byId("institutional-form").addEventListener("submit", saveInstitutionalInfo);
   byId("schedule-barber").addEventListener("change", loadSchedules);
   byId("block-barber").addEventListener("change", loadBlocks);
@@ -82,7 +89,7 @@ async function loadServices() {
     const container = byId("services-admin-list");
     container.innerHTML = services.map((service) => `
       <article class="management-item">
-        <div><strong>${escapeHtml(service.nome)}</strong><p>${formatCurrency(service.preco)} · ${service.duracao_minutos} min</p></div>
+        <div><strong>${escapeHtml(service.nome)}</strong><p>${escapeHtml(service.descricao || "Descrição não informada.")}</p><p>${formatCurrency(service.preco)} · ${service.duracao_minutos} min</p></div>
         <div class="management-actions">
           <button type="button" class="btn btn-ghost" data-service-edit="${service.id}">Editar</button>
           <button type="button" class="btn btn-danger" data-service-delete="${service.id}">Excluir</button>
@@ -102,6 +109,7 @@ function editService(id) {
   const form = byId("service-form");
   form.elements.id.value = service.id;
   form.elements.nome.value = service.nome;
+  form.elements.descricao.value = service.descricao || "";
   form.elements.preco.value = service.preco;
   form.elements.duracao_minutos.value = service.duracao_minutos;
   form.querySelector("[type=submit]").textContent = "Atualizar serviço";
@@ -115,6 +123,7 @@ async function saveService(event) {
   const id = form.elements.id.value;
   const body = {
     nome: form.elements.nome.value.trim(),
+    descricao: form.elements.descricao.value.trim() || null,
     preco: Number(form.elements.preco.value),
     duracao_minutos: Number(form.elements.duracao_minutos.value),
   };
@@ -246,20 +255,20 @@ async function removeAssociation(key) {
 async function createSchedule(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const id = form.elements.id.value;
   const body = {
     barbeiro_id: Number(form.elements.barbeiro_id.value),
     dia_semana: Number(form.elements.dia_semana.value),
     hora_inicio: form.elements.hora_inicio.value,
     hora_fim: form.elements.hora_fim.value,
-    ativo: true,
   };
   if (body.hora_inicio >= body.hora_fim) {
     return showMessage(byId("schedules-list"), "O horário de término deve ser posterior ao início.", "danger");
   }
   try {
-    await api.post("/horario/jornadas", body);
-    form.elements.hora_inicio.value = "";
-    form.elements.hora_fim.value = "";
+    if (id) await api.put(`/horario/jornadas/${encodeURIComponent(id)}`, body);
+    else await api.post("/horario/jornadas", { ...body, ativo: true });
+    resetScheduleForm();
     await loadSchedules();
   } catch (error) {
     report("schedules-list", error);
@@ -275,9 +284,34 @@ async function loadSchedules() {
     container.innerHTML = records.map((record) => `
       <article class="management-item">
         <div><strong>${dayNames[record.dia_semana] || "Dia"} · ${escapeHtml(record.hora_inicio)}–${escapeHtml(record.hora_fim)}</strong><p>${record.ativo ? "Ativa" : "Inativa"}</p></div>
+        <button type="button" class="btn btn-ghost" data-schedule-edit="${record.id}">Editar</button>
         <button type="button" class="btn btn-ghost" data-schedule-toggle="${record.id}" data-active="${record.ativo}">${record.ativo ? "Desativar" : "Ativar"}</button>
+        <button type="button" class="btn btn-danger" data-schedule-delete="${record.id}">Remover</button>
       </article>
     `).join("") || emptyHtml("Nenhuma jornada cadastrada para este barbeiro.");
+    container.querySelectorAll("[data-schedule-edit]").forEach((button) => button.addEventListener("click", () => {
+      const record = records.find((item) => String(item.id) === button.dataset.scheduleEdit);
+      if (!record) return;
+      const form = byId("schedule-form");
+      form.elements.id.value = record.id;
+      form.elements.barbeiro_id.value = String(record.barbeiro_id);
+      form.elements.barbeiro_id.disabled = true;
+      form.elements.dia_semana.value = String(record.dia_semana);
+      form.elements.hora_inicio.value = record.hora_inicio;
+      form.elements.hora_fim.value = record.hora_fim;
+      form.querySelector("[type=submit]").textContent = "Atualizar jornada";
+      byId("schedule-cancel-edit").hidden = false;
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    }));
+    container.querySelectorAll("[data-schedule-delete]").forEach((button) => button.addEventListener("click", async () => {
+      try {
+        await api.delete(`/horario/jornadas/${encodeURIComponent(button.dataset.scheduleDelete)}`);
+        if (byId("schedule-form").elements.id.value === button.dataset.scheduleDelete) resetScheduleForm();
+        await loadSchedules();
+      } catch (error) {
+        report("schedules-list", error);
+      }
+    }));
     container.querySelectorAll("[data-schedule-toggle]").forEach((button) => button.addEventListener("click", async () => {
       try {
         await api.put(`/horario/jornadas/${encodeURIComponent(button.dataset.scheduleToggle)}`, { ativo: button.dataset.active !== "true" });
@@ -291,25 +325,33 @@ async function loadSchedules() {
   }
 }
 
+function resetScheduleForm() {
+  const form = byId("schedule-form");
+  form.reset();
+  form.elements.id.value = "";
+  form.elements.barbeiro_id.disabled = false;
+  form.querySelector("[type=submit]").textContent = "Adicionar jornada";
+  byId("schedule-cancel-edit").hidden = true;
+}
+
 async function createBlock(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const id = form.elements.id.value;
   const body = {
     barbeiro_id: Number(form.elements.barbeiro_id.value),
     inicio: form.elements.inicio.value,
     fim: form.elements.fim.value,
     tipo: form.elements.tipo.value,
     motivo: form.elements.motivo.value.trim() || null,
-    ativo: true,
   };
   if (body.inicio >= body.fim) {
     return showMessage(byId("blocks-list"), "O fim do bloqueio deve ser posterior ao início.", "danger");
   }
   try {
-    await api.post("/horario/bloqueios", body);
-    form.elements.inicio.value = "";
-    form.elements.fim.value = "";
-    form.elements.motivo.value = "";
+    if (id) await api.put(`/horario/bloqueios/${encodeURIComponent(id)}`, body);
+    else await api.post("/horario/bloqueios", { ...body, ativo: true });
+    resetBlockForm();
     await loadBlocks();
   } catch (error) {
     report("blocks-list", error);
@@ -325,9 +367,25 @@ async function loadBlocks() {
     container.innerHTML = records.map((record) => `
       <article class="management-item">
         <div><strong>${escapeHtml(record.tipo)}</strong><p>${escapeHtml(record.motivo || "Sem motivo")} · ${new Date(record.inicio).toLocaleString("pt-BR")}–${new Date(record.fim).toLocaleString("pt-BR")}</p></div>
+        <button type="button" class="btn btn-ghost" data-block-edit="${record.id}">Editar</button>
         <button type="button" class="btn btn-danger" data-block-delete="${record.id}">Remover</button>
       </article>
     `).join("") || emptyHtml("Nenhum bloqueio cadastrado.");
+    container.querySelectorAll("[data-block-edit]").forEach((button) => button.addEventListener("click", () => {
+      const record = records.find((item) => String(item.id) === button.dataset.blockEdit);
+      if (!record) return;
+      const form = byId("block-form");
+      form.elements.id.value = record.id;
+      form.elements.barbeiro_id.value = String(record.barbeiro_id);
+      form.elements.barbeiro_id.disabled = true;
+      form.elements.inicio.value = String(record.inicio).slice(0, 16);
+      form.elements.fim.value = String(record.fim).slice(0, 16);
+      form.elements.tipo.value = record.tipo;
+      form.elements.motivo.value = record.motivo || "";
+      form.querySelector("[type=submit]").textContent = "Atualizar bloqueio";
+      byId("block-cancel-edit").hidden = false;
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+    }));
     container.querySelectorAll("[data-block-delete]").forEach((button) => button.addEventListener("click", async () => {
       try {
         await api.delete(`/horario/bloqueios/${encodeURIComponent(button.dataset.blockDelete)}`);
@@ -339,6 +397,15 @@ async function loadBlocks() {
   } catch (error) {
     report("blocks-list", error);
   }
+}
+
+function resetBlockForm() {
+  const form = byId("block-form");
+  form.reset();
+  form.elements.id.value = "";
+  form.elements.barbeiro_id.disabled = false;
+  form.querySelector("[type=submit]").textContent = "Salvar bloqueio";
+  byId("block-cancel-edit").hidden = true;
 }
 
 async function createManualAppointment(event) {
@@ -432,6 +499,21 @@ async function loadReviews() {
   }
 }
 
+async function loadAudit(skip = auditSkip) {
+  auditSkip = skip;
+  const values = Object.fromEntries(new FormData(byId("audit-filter")).entries());
+  if (values.de) values.de = `${values.de}T00:00:00`;
+  if (values.ate) values.ate = `${values.ate}T23:59:59`;
+  try {
+    const data = await api.get("/admin/auditoria", { params: { ...values, skip, limit: 50 } });
+    byId("audit-count").textContent = `${data.total} eventos · página ${Math.floor(skip / 50) + 1}`;
+    byId("audit-list").innerHTML = data.items.map((item) => `<tr><td>${escapeHtml(new Date(item.ocorrido_em).toLocaleString())}</td><td>${escapeHtml(item.usuario_id ?? "Sistema")}</td><td>${escapeHtml(item.acao)}</td><td>${escapeHtml(item.entidade)} ${escapeHtml(item.entidade_id ?? "")}</td><td>${escapeHtml(item.resultado)}</td><td>${escapeHtml(item.ip ?? "")}</td></tr>`).join("");
+    byId("audit-next").disabled = skip + data.items.length >= data.total;
+  } catch (error) {
+    report("audit-list", error);
+  }
+}
+
 function fillSelect(id, items, label, placeholder = null) {
   const select = byId(id);
   if (!select) return;
@@ -468,12 +550,6 @@ function showMessage(container, message, kind) {
 
 function emptyHtml(message) {
   return `<p class="text-muted">${escapeHtml(message)}</p>`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[character]);
 }
 
 function formatCurrency(value) {

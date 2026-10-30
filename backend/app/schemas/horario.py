@@ -1,23 +1,18 @@
 import re
-from pydantic import BaseModel, field_validator, model_validator
-from typing import Optional
 from datetime import datetime
-from app.schemas.base import ORMModel
+from typing import Literal, Optional
+
+from pydantic import Field, StrictBool, StrictInt, StrictStr, field_validator, model_validator
+
+from app.schemas.base import ORMModel, SchemaModel
 
 
 class JornadaTrabalhoBase(ORMModel):
-    barbeiro_id: int
-    dia_semana: int  # 0=Domingo, 1=Segunda, ..., 6=Sábado
-    hora_inicio: str  # Format: "HH:MM"
-    hora_fim: str     # Format: "HH:MM"
-    ativo: Optional[bool] = True
-
-    @field_validator("dia_semana")
-    @classmethod
-    def validate_weekday(cls, value):
-        if not 0 <= value <= 6:
-            raise ValueError("dia_semana deve estar entre 0 e 6")
-        return value
+    barbeiro_id: StrictInt = Field(gt=0)
+    dia_semana: StrictInt = Field(ge=0, le=6)
+    hora_inicio: StrictStr = Field(min_length=5, max_length=5)
+    hora_fim: StrictStr = Field(min_length=5, max_length=5)
+    ativo: Optional[StrictBool] = True
 
     @field_validator("hora_inicio", "hora_fim")
     @classmethod
@@ -37,18 +32,11 @@ class JornadaTrabalhoCreate(JornadaTrabalhoBase):
     pass
 
 
-class JornadaTrabalhoUpdate(BaseModel):
-    dia_semana: Optional[int] = None
-    hora_inicio: Optional[str] = None
-    hora_fim: Optional[str] = None
-    ativo: Optional[bool] = None
-
-    @field_validator("dia_semana")
-    @classmethod
-    def validate_weekday(cls, value):
-        if value is not None and not 0 <= value <= 6:
-            raise ValueError("dia_semana deve estar entre 0 e 6")
-        return value
+class JornadaTrabalhoUpdate(SchemaModel):
+    dia_semana: Optional[StrictInt] = Field(default=None, ge=0, le=6)
+    hora_inicio: Optional[StrictStr] = Field(default=None, min_length=5, max_length=5)
+    hora_fim: Optional[StrictStr] = Field(default=None, min_length=5, max_length=5)
+    ativo: Optional[StrictBool] = None
 
     @field_validator("hora_inicio", "hora_fim")
     @classmethod
@@ -67,25 +55,26 @@ class JornadaTrabalhoUpdate(BaseModel):
 class JornadaTrabalhoResponse(JornadaTrabalhoBase):
     id: int
 
+
 class BloqueioHorarioBase(ORMModel):
-    barbeiro_id: int
+    barbeiro_id: StrictInt = Field(gt=0)
     inicio: datetime
     fim: datetime
-    motivo: Optional[str] = None
-    tipo: str  # e.g., "folga", "feriado", "bloqueio_ad_hoc"
-    ativo: Optional[bool] = True
+    motivo: Optional[StrictStr] = Field(default=None, max_length=300)
+    tipo: Literal["folga", "feriado", "bloqueio_ad_hoc"]
+    ativo: Optional[StrictBool] = True
 
 
 class BloqueioHorarioCreate(BloqueioHorarioBase):
     pass
 
 
-class BloqueioHorarioUpdate(BaseModel):
+class BloqueioHorarioUpdate(SchemaModel):
     inicio: Optional[datetime] = None
     fim: Optional[datetime] = None
-    motivo: Optional[str] = None
-    tipo: Optional[str] = None
-    ativo: Optional[bool] = None
+    motivo: Optional[StrictStr] = Field(default=None, max_length=300)
+    tipo: Optional[Literal["folga", "feriado", "bloqueio_ad_hoc"]] = None
+    ativo: Optional[StrictBool] = None
 
 
 class BloqueioHorarioResponse(BloqueioHorarioBase):

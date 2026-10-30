@@ -22,6 +22,7 @@ _TEST_DB_PATH = Path(_TEST_DB_DIR.name) / "tests.db"
 os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 os.environ["SECRET_KEY"] = TEST_SECRET_KEY
 os.environ["CORS_ALLOWED_ORIGINS"] = "https://frontend.test.invalid"
+os.environ["ALLOWED_HOSTS"] = "*"
 os.environ["APP_ENV"] = "test"
 for _optional_email_setting in (
     "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL",
@@ -191,10 +192,18 @@ def load_app_for_environment(app_env):
         os.environ["APP_ENV"] = "test"
     else:
         os.environ["APP_ENV"] = app_env
-    return importlib.reload(main)
+    previous_allowed_hosts = os.environ.get("ALLOWED_HOSTS")
+    os.environ["ALLOWED_HOSTS"] = "testserver"
+    try:
+        return importlib.reload(main)
+    finally:
+        if previous_allowed_hosts is None:
+            os.environ.pop("ALLOWED_HOSTS", None)
+        else:
+            os.environ["ALLOWED_HOSTS"] = previous_allowed_hosts
 
 
-def asgi_request(application, method, path, payload=None, headers=None):
+def asgi_request(application, method, path, payload=None, headers=None, return_headers=False, client_ip="127.0.0.1", scheme="https"):
     if not isinstance(application, FastAPI):
         raise TypeError("ASGI client requires the FastAPI instance, not its module")
 
@@ -226,13 +235,13 @@ def asgi_request(application, method, path, payload=None, headers=None):
         "asgi": {"version": "3.0"},
         "http_version": "1.1",
         "method": method,
-        "scheme": "http",
+        "scheme": scheme,
         "path": parsed_path.path,
         "raw_path": parsed_path.path.encode("ascii"),
         "query_string": parsed_path.query.encode("ascii"),
         "root_path": "",
         "headers": request_headers,
-        "client": ("127.0.0.1", 12345),
+        "client": (client_ip, 12345),
         "server": ("testserver", 80),
     }
     asyncio.run(application(scope, receive, send))
@@ -246,7 +255,21 @@ def asgi_request(application, method, path, payload=None, headers=None):
         for message in messages
         if message["type"] == "http.response.body"
     )
-    return status, json.loads(response_body) if response_body else None
+    if response_body:
+        try:
+            body = json.loads(response_body)
+        except json.JSONDecodeError:
+            body = response_body.decode("utf-8")
+    else:
+        body = None
+    if return_headers:
+        response_headers = next(
+            message.get("headers", [])
+            for message in messages
+            if message["type"] == "http.response.start"
+        )
+        return status, body, {key.decode("latin-1").lower(): value.decode("latin-1") for key, value in response_headers}
+    return status, body
 
 
 def reset_database():

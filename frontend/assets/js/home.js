@@ -128,7 +128,7 @@ function renderServices() {
     title.textContent = service.nome;
     const details = document.createElement("p");
     details.className = "service-details";
-    details.textContent = "Atendimento feito com atenção ao acabamento.";
+    details.textContent = service.descricao || "Atendimento feito com atenção ao acabamento.";
     const footer = document.createElement("div");
     footer.className = "service-card-footer";
     const meta = document.createElement("div");
@@ -220,7 +220,7 @@ function renderMap(value) {
 
   try {
     const mapUrl = new URL(value);
-    if (mapUrl.protocol !== "https:" || !/(^|\.)google\.(com|com\.br)$/.test(mapUrl.hostname)) {
+    if (mapUrl.protocol !== "https:" || mapUrl.username || mapUrl.password || !/(^|\.)google\.(com|com\.br)$/.test(mapUrl.hostname)) {
       throw new Error("Origem de mapa não permitida");
     }
     link.href = mapUrl.href;

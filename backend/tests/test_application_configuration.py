@@ -15,7 +15,7 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 _MISSING = object()
 
 
-def _asgi_exchange(application, method, headers):
+def _asgi_exchange(application, method, headers, host="testserver"):
     messages = []
     sent_request = False
 
@@ -39,7 +39,7 @@ def _asgi_exchange(application, method, headers):
         "raw_path": b"/health",
         "query_string": b"",
         "root_path": "",
-        "headers": [(key.lower().encode(), value.encode()) for key, value in headers.items()],
+        "headers": [(key.lower().encode(), value.encode()) for key, value in {"host": host, **headers}.items()],
         "client": ("127.0.0.1", 12345),
         "server": ("testserver", 80),
     }
@@ -58,13 +58,16 @@ class ApplicationConfigurationTests(unittest.TestCase):
     def setUp(self):
         self.previous_app_env = os.environ.get("APP_ENV", _MISSING)
         self.previous_origins = os.environ.get("CORS_ALLOWED_ORIGINS", _MISSING)
+        self.previous_allowed_hosts = os.environ.get("ALLOWED_HOSTS", _MISSING)
         os.environ["APP_ENV"] = "development"
         os.environ["CORS_ALLOWED_ORIGINS"] = "http://frontend.test"
+        os.environ.pop("ALLOWED_HOSTS", None)
         self.application = importlib.reload(main).app
 
     def tearDown(self):
         self._restore("APP_ENV", self.previous_app_env)
         self._restore("CORS_ALLOWED_ORIGINS", self.previous_origins)
+        self._restore("ALLOWED_HOSTS", self.previous_allowed_hosts)
         importlib.reload(main)
 
     @staticmethod
@@ -106,6 +109,21 @@ class ApplicationConfigurationTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(headers.get("access-control-allow-origin"), "http://frontend.test")
         self.assertIn("GET", headers.get("access-control-allow-methods", ""))
+
+    def test_preflight_rejects_unlisted_origin_method_and_header(self):
+        cases = (
+            {"origin": "http://other.test", "access-control-request-method": "GET"},
+            {"origin": "http://frontend.test", "access-control-request-method": "TRACE"},
+            {"origin": "http://frontend.test", "access-control-request-method": "GET", "access-control-request-headers": "x-unlisted"},
+        )
+        for headers in cases:
+            with self.subTest(headers=headers):
+                status, response_headers = _asgi_exchange(self.application, "OPTIONS", headers)
+                self.assertEqual(status, 400)
+                if headers["origin"] == "http://other.test":
+                    self.assertNotIn("access-control-allow-origin", response_headers)
+                else:
+                    self.assertEqual(response_headers.get("access-control-allow-origin"), "http://frontend.test")
 
     def test_development_defaults_to_the_documented_local_frontend_origin(self):
         os.environ.pop("CORS_ALLOWED_ORIGINS", None)
@@ -187,6 +205,30 @@ class ApplicationConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "explicitly configured in production"):
             main._configured_cors_origins("production")
 
+    def test_trusted_hosts_accept_allowlisted_and_reject_unlisted_hosts(self):
+        os.environ["ALLOWED_HOSTS"] = "api.example.test,*.internal.example.test"
+        application = importlib.reload(main).app
+
+        allowed_status, _ = _asgi_exchange(application, "GET", {}, host="api.example.test")
+        wildcard_status, _ = _asgi_exchange(application, "GET", {}, host="worker.internal.example.test")
+        denied_status, _ = _asgi_exchange(application, "GET", {}, host="attacker.example.test")
+
+        self.assertEqual(allowed_status, 200)
+        self.assertEqual(wildcard_status, 200)
+        self.assertEqual(denied_status, 400)
+
+    def test_production_disables_interactive_api_documentation_routes(self):
+        result = self._run_production_import()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "None|None|None")
+
+    def test_development_keeps_api_documentation_routes_enabled(self):
+        os.environ["APP_ENV"] = "development"
+        importlib.reload(main)
+        self.assertEqual(main.app.docs_url, "/docs")
+        self.assertEqual(main.app.redoc_url, "/redoc")
+        self.assertEqual(main.app.openapi_url, "/openapi.json")
+
     def test_empty_cors_configuration_fails_closed(self):
         os.environ["CORS_ALLOWED_ORIGINS"] = " ,  , "
 
@@ -202,6 +244,7 @@ class ApplicationConfigurationTests(unittest.TestCase):
             env["SECRET_KEY"] = "isolated-app-config-test-key-not-for-deployment"
             env.pop("DATABASE_URL", None)
             env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+            env["ALLOWED_HOSTS"] = "unit-test.example"
             python_path = env.get("PYTHONPATH", "")
             env["PYTHONPATH"] = str(BACKEND_DIR) + (os.pathsep + python_path if python_path else "")
             return subprocess.run(
@@ -221,6 +264,7 @@ class ApplicationConfigurationTests(unittest.TestCase):
             env["PYTHON_DOTENV_DISABLED"] = "1"
             env["SECRET_KEY"] = secrets.token_urlsafe(48)
             env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+            env["ALLOWED_HOSTS"] = "unit-test.example"
             env["SMTP_HOST"] = "smtp.example.test"
             env["SMTP_FROM"] = "no-reply@example.test"
             env["PASSWORD_RESET_URL"] = "https://unit-test.example/frontend/pages/reset.html"
@@ -253,6 +297,7 @@ class ApplicationConfigurationTests(unittest.TestCase):
                 ),
                 "SECRET_KEY": secrets.token_urlsafe(48),
                 "CORS_ALLOWED_ORIGINS": "https://unit-test.example",
+                "ALLOWED_HOSTS": "unit-test.example",
                 "SCHEDULING_TIMEZONE": "America/Sao_Paulo",
                 "SMTP_HOST": "smtp.example.test",
                 "SMTP_FROM": "no-reply@example.test",
@@ -269,7 +314,7 @@ class ApplicationConfigurationTests(unittest.TestCase):
             python_path = env.get("PYTHONPATH", "")
             env["PYTHONPATH"] = str(BACKEND_DIR) + (os.pathsep + python_path if python_path else "")
             return subprocess.run(
-                [sys.executable, "-c", "import app.main"],
+                [sys.executable, "-c", "import app.main; print(f'{app.main.app.docs_url}|{app.main.app.redoc_url}|{app.main.app.openapi_url}')"],
                 cwd=temp_dir,
                 env=env,
                 capture_output=True,

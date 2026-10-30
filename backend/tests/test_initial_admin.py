@@ -8,7 +8,7 @@ from unittest.mock import patch
 from alembic import command
 from alembic.config import Config
 
-from support import asgi_request, main, reset_database
+from support import Base, asgi_request, main, reset_database
 from app.core.security import verify_password
 from app.initial_admin import create_initial_admin, validate_installation_for_admin_bootstrap
 from app.models.user import RoleEnum, User
@@ -17,6 +17,7 @@ from app.models.user import RoleEnum, User
 class InitialAdminTests(unittest.TestCase):
     def setUp(self):
         reset_database()
+        Base.metadata.drop_all(bind=main.engine)
         with main.engine.begin() as connection:
             connection.exec_driver_sql("DROP TABLE IF EXISTS alembic_version")
         config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
