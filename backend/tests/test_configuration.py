@@ -18,6 +18,7 @@ def valid_production_environment():
         "SMTP_TIMEOUT_SECONDS": "10",
         "PASSWORD_RESET_URL": "https://barbearia.example.test/frontend/pages/reset.html",
         "SCHEDULING_TIMEZONE": "America/Sao_Paulo",
+        "ALLOWED_HOSTS": "api.example.test",
     }
 
 
@@ -59,6 +60,25 @@ class ApplicationSettingsTests(unittest.TestCase):
         self.assertNotIn(values["SECRET_KEY"], rendered)
         self.assertNotIn("fake-test-password", rendered)
         self.assertNotIn("PASSWORD_RESET_URL", rendered)
+        self.assertEqual(loaded.allowed_hosts, ("api.example.test",))
+
+    def test_production_requires_explicit_valid_host_allowlist(self):
+        values = valid_production_environment()
+        values.pop("ALLOWED_HOSTS")
+        with self.assertRaisesRegex(RuntimeError, "ALLOWED_HOSTS"):
+            load_settings(values)
+
+        for invalid in ("https://api.example.test", "api.example.test:443", "*.", "api.example.test/path", "*"):
+            with self.subTest(host=invalid):
+                candidate = valid_production_environment()
+                candidate["ALLOWED_HOSTS"] = invalid
+                with self.assertRaisesRegex(RuntimeError, "ALLOWED_HOSTS"):
+                    load_settings(candidate)
+
+    def test_host_allowlist_normalizes_names_and_supports_leading_wildcards(self):
+        values = valid_production_environment()
+        values["ALLOWED_HOSTS"] = " API.EXAMPLE.TEST, *.example.test, api.example.test "
+        self.assertEqual(load_settings(values).allowed_hosts, ("api.example.test", "*.example.test"))
 
     def test_installation_name_is_per_installation_and_bounded(self):
         values = valid_production_environment()
@@ -80,9 +100,24 @@ class ApplicationSettingsTests(unittest.TestCase):
         self.assertEqual(loaded.database_backend, "sqlite")
         self.assertEqual(loaded.cors_allowed_origins, ("http://127.0.0.1:5500",))
         self.assertEqual(loaded.smtp_host, "")
+        self.assertEqual(loaded.allowed_hosts, ("*",))
         self.assertEqual(loaded.access_token_expire_minutes, 15)
         self.assertEqual(loaded.terms_version, "1.0")
-        self.assertEqual(loaded.trusted_proxy_count, 0)
+        self.assertEqual(loaded.client_ip_source, "direct")
+
+    def test_client_ip_source_is_explicit_and_enumerated(self):
+        values = valid_production_environment()
+        self.assertEqual(load_settings(values).client_ip_source, "direct")
+        values["CLIENT_IP_SOURCE"] = "cf-connecting-ip"
+        self.assertEqual(load_settings(values).client_ip_source, "cf-connecting-ip")
+
+    def test_empty_development_host_allowlist_keeps_local_access(self):
+        loaded = load_settings({
+            "APP_ENV": "development",
+            "SECRET_KEY": "local-test-signing-key-that-is-not-a-real-secret",
+            "ALLOWED_HOSTS": "",
+        })
+        self.assertEqual(loaded.allowed_hosts, ("*",))
 
     def test_production_requires_database_secret_cors_and_email(self):
         valid = valid_production_environment()
@@ -125,7 +160,7 @@ class ApplicationSettingsTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     load_settings(candidate)
 
-    def test_bad_database_url_and_remote_postgres_without_tls_fail_without_echo(self):
+    def test_bad_database_url_and_insecure_remote_postgres_fail_without_echo(self):
         candidate = valid_production_environment()
         candidate["DATABASE_URL"] = (
             "postgresql+psycopg://db_user:db-password-marker@db.example.test:not-a-port/barbearia"
@@ -136,10 +171,20 @@ class ApplicationSettingsTests(unittest.TestCase):
 
         candidate = valid_production_environment()
         candidate["DATABASE_URL"] = (
-            "postgresql+psycopg://app_user:fake-test-password@db.example.test:5432/barbearia"
+            "postgresql+psycopg://app_user:fake-test-password@db.example.test:5432/barbearia?sslmode=prefer"
         )
-        with self.assertRaisesRegex(RuntimeError, "sslmode"):
+        with self.assertRaisesRegex(RuntimeError, "insecure PostgreSQL sslmode"):
             load_settings(candidate)
+
+    def test_render_style_postgres_url_uses_psycopg_and_enforces_tls(self):
+        candidate = valid_production_environment()
+        candidate["DATABASE_URL"] = "postgresql://render_user:fake-test-password@db.example.test:5432/barbearia_homolog"
+
+        configured_url = load_settings(candidate).database_url
+
+        self.assertTrue(configured_url.startswith("postgresql+psycopg://"))
+        self.assertIn("sslmode=require", configured_url)
+        self.assertNotIn("fake-test-password", repr(load_settings(candidate)))
 
     def test_incompatible_database_driver_is_rejected(self):
         candidate = valid_production_environment()
@@ -185,9 +230,8 @@ class ApplicationSettingsTests(unittest.TestCase):
             ("ACCESS_TOKEN_EXPIRE_MINUTES", "4"),
             ("ACCESS_TOKEN_EXPIRE_MINUTES", "61"),
             ("ACCESS_TOKEN_EXPIRE_MINUTES", "not-a-number"),
-            ("TRUSTED_PROXY_COUNT", "-1"),
-            ("TRUSTED_PROXY_COUNT", "many"),
-            ("TRUSTED_PROXY_COUNT", "33"),
+            ("CLIENT_IP_SOURCE", "x-forwarded-for"),
+            ("CLIENT_IP_SOURCE", "CF-Connecting-IP, XFF"),
             ("RATE_LIMIT_MAX_ATTEMPTS", "0"),
             ("RATE_LIMIT_MAX_ATTEMPTS", "many"),
             ("RATE_LIMIT_BLOCK_MINUTES", "0"),

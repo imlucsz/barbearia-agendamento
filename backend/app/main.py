@@ -9,18 +9,18 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()  # precisa rodar antes do import abaixo, que já lê DATABASE_URL
-from app.config import get_app_environment, parse_cors_origins
+from app.config import get_app_environment, parse_allowed_hosts, parse_cors_origins
 
 APP_ENV = get_app_environment()
 INSTALLATION_NAME = os.environ.get("INSTALLATION_NAME", "Barbearia").strip() or "Barbearia"
 def _security_settings():
     raw = os.environ.get("FORCE_HTTPS", "true" if APP_ENV == "production" else "false").strip().lower()
     force_https = raw in {"true", "1", "yes"}
-    try:
-        trusted_proxy_count = int(os.environ.get("TRUSTED_PROXY_COUNT", "0"))
-    except ValueError:
-        trusted_proxy_count = 0
-    return SimpleNamespace(app_env=APP_ENV, force_https=force_https, trusted_proxy_count=trusted_proxy_count)
+    return SimpleNamespace(
+        app_env=APP_ENV,
+        force_https=force_https,
+        allowed_hosts=parse_allowed_hosts(os.getenv("ALLOWED_HOSTS"), APP_ENV),
+    )
 
 
 SECURITY_SETTINGS = _security_settings()
@@ -39,6 +39,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.database import check_schema_revision, engine, SessionLocal
 from app.routers import auth, services, appointments, admin, institucional, users, horario, barbeiro_servico
@@ -69,6 +70,9 @@ app = FastAPI(
     title=f"API {INSTALLATION_NAME}",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url=None if APP_ENV == "production" else "/docs",
+    redoc_url=None if APP_ENV == "production" else "/redoc",
+    openapi_url=None if APP_ENV == "production" else "/openapi.json",
 )
 
 
@@ -79,12 +83,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         configured = SECURITY_SETTINGS
         if configured.force_https:
             scheme = request.url.scheme
-            if configured.trusted_proxy_count > 0:
-                forwarded = request.headers.get("x-forwarded-proto", "").split(",")
-                if forwarded:
-                    candidate = forwarded[-1].strip().lower()
-                    if candidate in {"http", "https"}:
-                        scheme = candidate
             if scheme == "http":
                 target = request.url.replace(scheme="https")
                 response = RedirectResponse(str(target), status_code=307)
@@ -130,6 +128,10 @@ app.add_middleware(
 )
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestObservabilityMiddleware)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=list(SECURITY_SETTINGS.allowed_hosts),
+)
 
 # Routers
 app.include_router(auth.router)

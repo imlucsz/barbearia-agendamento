@@ -11,6 +11,7 @@ from app.booking import (
     lock_barber_for_booking,
     normalize_datetime,
     now_local,
+    validate_appointment_status_transition,
     validate_booking_slot,
     validate_slot_against_loaded_data,
 )
@@ -255,15 +256,19 @@ def update_appointment(
 
     if "status" in update_data:
         new_status = update_data["status"]
-        if is_owner and new_status != AppointmentStatusEnum.CANCELADO:
-            raise HTTPException(status_code=403, detail="Clientes só podem cancelar seus próprios agendamentos")
-        if not (is_admin or is_assigned_barber or (is_owner and new_status == AppointmentStatusEnum.CANCELADO)):
-            raise HTTPException(status_code=403, detail="Acesso negado")
-        if new_status == AppointmentStatusEnum.CANCELADO and not (is_admin or is_assigned_barber):
-            if appointment.status not in (AppointmentStatusEnum.PENDENTE, AppointmentStatusEnum.CONFIRMADO):
-                raise HTTPException(status_code=400, detail="Este agendamento não pode mais ser cancelado")
-            if appointment.data_hora - now_local() < timedelta(hours=24):
-                raise HTTPException(status_code=400, detail="Cancelamentos exigem 24 horas de antecedência")
+        validate_appointment_status_transition(
+            db,
+            appointment,
+            new_status,
+            current_user.role,
+            validate_confirmation_slot="data_hora" not in update_data,
+            target_start=update_data.get("data_hora"),
+        )
+        if "valor_cobrado" in update_data and new_status != AppointmentStatusEnum.CONCLUIDO:
+            raise HTTPException(
+                status_code=400,
+                detail="O valor cobrado só pode acompanhar a conclusão do atendimento",
+            )
         appointment.status = new_status
         if new_status == AppointmentStatusEnum.CONCLUIDO and "valor_cobrado" not in update_data:
             appointment.valor_cobrado = appointment.preco
@@ -271,6 +276,11 @@ def update_appointment(
     if "valor_cobrado" in update_data:
         if not (is_admin or is_assigned_barber):
             raise HTTPException(status_code=403, detail="Apenas a equipe pode registrar o valor cobrado")
+        if "status" not in update_data:
+            raise HTTPException(
+                status_code=400,
+                detail="O valor cobrado deve ser registrado ao concluir o atendimento",
+            )
         appointment.valor_cobrado = update_data["valor_cobrado"]
 
     if "data_hora" in update_data:

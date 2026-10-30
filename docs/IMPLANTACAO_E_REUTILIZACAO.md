@@ -6,11 +6,11 @@ O modelo recomendado é uma instalação independente por barbearia: frontend, d
 
 **O projeto ainda não está pronto para uma publicação de produção sem ressalvas.** A cadeia Alembic cria o schema completo, o startup não executa DDL, e migrações PostgreSQL e um ciclo local de backup/restauração foram ensaiados com bancos descartáveis e dados artificiais. Ainda é necessário escolher e validar a infraestrutura externa de deploy e HTTPS.
 
-Também não há configuração de proxy/TLS, processo de serviço, container de produção ou pipeline de deploy versionados neste repositório. O operador da instalação precisa fornecer esses componentes e verificar TLS, cabeçalhos, logs, disponibilidade e restauração no ambiente escolhido.
+Há agora um Blueprint Render de preparação (`render.yaml`) com o processo web, static site, PostgreSQL, headers estáticos e etapa de migrations; nenhum recurso externo foi criado. O operador ainda precisa provisionar e validar o ambiente, fornecer os valores por instalação e verificar TLS, headers, logs, disponibilidade e restauração.
 
 ## Pré-requisitos
 
-- Python 3.10 ou superior; Python 3.11+ é recomendado.
+- Python 3.10 ou superior para a base atual; Render usa a versão 3.14.8 fixada em `backend/.python-version`, alinhada à versão 3.14 do CI.
 - PostgreSQL para produção. A dependência `psycopg[binary]` já está em `backend/requirements.txt`.
 - Um host para servir os arquivos estáticos de `frontend/` e um processo para executar FastAPI. Podem ser infraestrutura já disponível ou serviços escolhidos pelo operador; este projeto não exige um fornecedor pago específico.
 - Um domínio com HTTPS para o site e um endpoint HTTPS para a API. Podem usar o mesmo domínio com proxy ou subdomínios distintos sob o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`), exigência para envio do cookie de refresh `SameSite=Lax`.
@@ -24,17 +24,17 @@ Copie `backend/.env.example` para `backend/.env` apenas no servidor protegido, o
 | Variável | Necessidade e uso |
 | --- | --- |
 | `APP_ENV` | Obrigatória em todos os ambientes: `development`, `test` ou `production`. Use exatamente `production` na publicação; `/seed` só é registrado em `development`. |
-| `DATABASE_URL` | Obrigatória fora do desenvolvimento local. Produção exige `postgresql+psycopg`, banco, host e usuário; hosts remotos precisam de `sslmode=require`, `verify-ca` ou `verify-full`. SQLite é rejeitado em produção. Proteja a URL como segredo. |
+| `DATABASE_URL` | Obrigatória fora do desenvolvimento local. Produção exige PostgreSQL, banco, host e usuário; `postgresql://` é normalizada para `postgresql+psycopg://`. Para host remoto, `sslmode=require` é aplicado quando ausente e modos inseguros explícitos são rejeitados. SQLite é rejeitado em produção. Proteja a URL como segredo. |
 | `SECRET_KEY` | Obrigatória em todos os ambientes, privada e persistente. Gere uma chave aleatória de pelo menos 32 bytes; valores de exemplo, baixa diversidade ou marcados como teste/desenvolvimento são recusados em produção. |
 | `CORS_ALLOWED_ORIGINS` | Origens exatas do frontend, separadas por vírgula, obrigatórias e HTTPS em produção; não inclua caminhos nem `*`. A origem pública do site é definida aqui. |
 | `SCHEDULING_TIMEZONE` | Obrigatória em produção e validada como fuso IANA, por exemplo `America/Sao_Paulo`. Não altere depois de gravar reservas sem um plano de conversão dos horários existentes. |
 | `ALGORITHM` | Algoritmo JWT; o padrão do projeto é `HS256`. |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Expiração do access token JWT em minutos; padrão `15`, faixa `5` a `60`. |
 | `TERMS_VERSION` | Versão dos termos de consentimento LGPD gravada no cadastro; padrão `1.0`. |
-| `TRUSTED_PROXY_COUNT` | Número de proxies reversos confiáveis para aceitar `X-Forwarded-For`; padrão `0` (ignorado). |
+| `CLIENT_IP_SOURCE` | Fonte do IP de cliente para rate limit e auditoria: `direct` (padrão, usa o socket e ignora headers) ou `cf-connecting-ip` (valida um único endereço IP no header do edge explicitamente confiável). |
 | `RATE_LIMIT_MAX_ATTEMPTS` | Falhas consecutivas por IP/rota antes de bloquear; padrão `5`, faixa `1` a `100`. |
 | `RATE_LIMIT_BLOCK_MINUTES` | Duração do bloqueio; padrão `15`, faixa `1` a `1440` minutos. |
-| `FORCE_HTTPS` | Redireciona HTTP para HTTPS; padrão ligado em `production`, desligado nos demais ambientes. O esquema encaminhado só é aceito quando `TRUSTED_PROXY_COUNT` é maior que zero. |
+| `FORCE_HTTPS` | Redireciona HTTP para HTTPS; padrão ligado em `production`, desligado nos demais ambientes. Se TLS termina em proxy, configure o redirect no proxy/edge; a aplicação não confia em `X-Forwarded-Proto`. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Host e remetente são obrigatórios em produção; usuário e senha devem ser fornecidos juntos quando usados. SMTP usa STARTTLS; a senha é segredo. |
 | `SMTP_TIMEOUT_SECONDS` | Timeout de envio SMTP, entre 1 e 120 segundos; padrão 10. |
 | `PASSWORD_RESET_URL` | Obrigatória em produção: URL HTTPS sem query/fragment, terminando em `reset.html` e na mesma origem autorizada por CORS. |
@@ -45,9 +45,31 @@ Gere a chave JWT localmente e transfira-a para o mecanismo de segredo sem inclu�
 python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-No frontend, ajuste `frontend/assets/js/installation-config.mjs` para a origem pública HTTPS da API. `window.BARBEARIA_API_URL`, quando definido antes dos módulos da página, continua sendo um override suportado. Configure `CORS_ALLOWED_ORIGINS` com a origem exata do site, incluindo porta não padrão quando houver.
+Em hospedagem Render, configure `PUBLIC_API_URL`; o build gera a configuração pública no artefato estático e preserva o fallback local dos fontes. `window.BARBEARIA_API_URL`, definido antes dos módulos da página, continua sendo um override suportado. Configure `CORS_ALLOWED_ORIGINS` com a origem HTTPS exata do site, incluindo porta não padrão quando houver.
 
 O cookie de refresh usa `SameSite=Lax`; por isso, site e API precisam estar sob o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). Não use domínios registráveis diferentes para a página e a API.
+
+## Homologação Render
+
+O `render.yaml` na raiz descreve PostgreSQL 16, um Web Service para `backend/` e um Static Site para `frontend/`. O backend instala `backend/requirements.txt`, executa `python -m alembic upgrade head` no `preDeployCommand`, inicia `uvicorn app.main:app --host 0.0.0.0 --port $PORT` e usa `/ready` como health check. A aplicação não executa migrations no lifespan. O serviço de banco deve estar na mesma região do backend; a URL Render `postgresql://` é normalizada para `postgresql+psycopg://`, e `sslmode=require` é aplicado à conexão remota quando não houver modo TLS explícito.
+
+O comando `preDeployCommand` do Render está disponível somente para Web Services pagos. O Blueprint não escolhe um plano; antes do provisionamento, selecione um plano que suporte essa etapa. Não mova migrations para o startup de cada worker. `/ready` verifica a revisão Alembic esperada após a etapa de release.
+
+O Static Site executa `node scripts/build-static.mjs` apenas durante o build e publica `dist/`; o Node não é runtime do site. O build exige `PUBLIC_API_URL`, valida uma origem HTTPS sem credenciais/caminho/query e grava apenas a origem pública em `assets/js/render-api-config.js` no artefato. Os arquivos fonte continuam com fallback local `http://127.0.0.1:8000`. O domínio padrão do frontend redireciona `/` para `/pages/index.html`.
+
+### Valores de ambiente a fornecer no Render
+
+Públicos: `PUBLIC_API_URL` no Static Site; `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `PASSWORD_RESET_URL`, `SCHEDULING_TIMEZONE` e `APP_ENV` no backend. `ALLOWED_HOSTS` contém hostname(s) da API sem esquema ou porta; `CORS_ALLOWED_ORIGINS` contém a origem HTTPS exata do frontend. Os domínios Render ou custom domains ainda precisam ser copiados para as respectivas listas.
+
+Segredos: `SECRET_KEY` é gerada pelo Blueprint no provisionamento; `DATABASE_URL` é referenciada do PostgreSQL do mesmo Blueprint; `SMTP_USERNAME`/`SMTP_PASSWORD` são valores manuais protegidos quando o relay exigir autenticação. `SMTP_HOST`, `SMTP_PORT`, `SMTP_FROM` e `PASSWORD_RESET_URL` são configuração não secreta, mas obrigatória para que o backend production aceite iniciar. Nenhuma credencial SMTP é criada nesta preparação. O Blueprint usa `sync: false` para valores que o operador preencherá; isso não disponibiliza seus valores a ambientes preview.
+
+O primeiro administrador permanece uma operação manual depois das migrations: a partir de `backend/`, executar `python -m app.initial_admin` com `APP_ENV=production` e o `DATABASE_URL` do próprio serviço. O comando exige interação para solicitar senha sem eco. O provisionamento não deve ser considerado concluído até confirmar um terminal interativo seguro no serviço escolhido e criar essa conta; não há credencial administrativa automática.
+
+No Render, HTTPS termina na borda e o Blueprint define `FORCE_HTTPS=false`; o edge é responsável pelo redirect HTTP→HTTPS. O comando Uvicorn usa `--no-proxy-headers`, pois o runtime Render pode definir `FORWARDED_ALLOW_IPS=*` e a aplicação não deve confiar implicitamente em `X-Forwarded-For` ou `X-Forwarded-Proto`. `CLIENT_IP_SOURCE=cf-connecting-ip` habilita somente o header `CF-Connecting-IP`, validado como exatamente um IPv4 ou IPv6. A documentação do Render informa que sua integração Cloudflare sobrescreve esse header na borda com o IP conectado ao edge ([referência](https://render.com/articles/host-pocketbase-on-render)); isso é apropriado para o Web Service público do Render, não para serviços privados nem para qualquer proxy genérico. O modo `direct` permanece como padrão local e ignora todos os headers encaminhados. Para outro provedor, mantenha `direct` até haver uma garantia documentada de que um header específico é removido/sobrescrito pelo proxy; então implemente uma fonte enumerada equivalente. `ALLOWED_HOSTS` restringe o Host, mas não autentica headers de IP.
+
+O Blueprint aplica HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy` e `Content-Security-Policy: frame-ancestors 'none'` ao Static Site. A CSP completa continua pendente: a home usa import map inline para Three.js em `cdn.jsdelivr.net`, permite logo HTTPS configurável e pode criar iframe do Google Maps. Uma política mais estrita depende de hash do import map e validação real dos hosts; CSP restritiva arbitrária poderia quebrar esses recursos.
+
+`/docs`, `/redoc` e `/openapi.json` ficam desativados em `APP_ENV=production`; permanecem habilitados em desenvolvimento/teste. O root Python fixa `3.14.8` por `backend/.python-version`, alinhado à linha 3.14 do CI. O build estático fixa Node 22 em `frontend/.node-version` e não instala dependências.
 
 ## CSP e cabeçalhos para arquivos estáticos
 

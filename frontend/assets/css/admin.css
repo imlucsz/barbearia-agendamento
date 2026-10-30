@@ -194,7 +194,7 @@
     text-transform: capitalize;
 }
 
-.status-confirmado, .status-concluido, .status-finalizado {
+.status-confirmado, .status-concluido, .status-avaliado, .status-finalizado {
     background: var(--admin-success-bg);
     border: 1px solid var(--admin-success-border);
     color: var(--admin-success);
@@ -207,7 +207,8 @@
 }
 
 .status-cancelado,
-.status-cancelada {
+.status-cancelada,
+.status-falta {
     background: var(--admin-danger-bg);
     border: 1px solid var(--admin-danger-border);
     color: var(--admin-danger);

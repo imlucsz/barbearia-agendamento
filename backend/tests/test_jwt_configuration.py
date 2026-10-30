@@ -24,6 +24,7 @@ def run_app_import(secret_key=_UNSET, app_env="production"):
         env["APP_ENV"] = app_env
         env["DATABASE_URL"] = "postgresql+psycopg://unit_test:unit_test@127.0.0.1:55432/barbearia_test"
         env["CORS_ALLOWED_ORIGINS"] = "https://unit-test.example"
+        env["ALLOWED_HOSTS"] = "unit-test.example"
         env["SMTP_HOST"] = "smtp.example.test"
         env["SMTP_FROM"] = "no-reply@example.test"
         env["PASSWORD_RESET_URL"] = "https://unit-test.example/frontend/pages/reset.html"

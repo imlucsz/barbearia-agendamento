@@ -10,7 +10,7 @@ from sqlalchemy.engine import make_url
 from zoneinfo import ZoneInfo
 
 
-def validate_test_database() -> date:
+def validate_test_database() -> tuple[date, date]:
     if os.environ.get("APP_ENV") != "test":
         raise RuntimeError("E2E seed only runs with APP_ENV=test")
     url = make_url(os.environ.get("DATABASE_URL", ""))
@@ -25,10 +25,16 @@ def validate_test_database() -> date:
     local_target = datetime.now(ZoneInfo("America/Sao_Paulo")).date() + timedelta(days=5)
     if booking_date != local_target:
         raise RuntimeError("E2E booking date changed while preparing the isolated database")
-    return booking_date
+    agenda_date = date.fromisoformat(os.environ.get("E2E_AGENDA_DATE", ""))
+    today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    week_start = today - timedelta(days=(today.weekday() + 1) % 7)
+    week_end = week_start + timedelta(days=7)
+    if not week_start <= agenda_date < week_end or agenda_date == today:
+        raise RuntimeError("E2E agenda date must be another day in the current local week")
+    return booking_date, agenda_date
 
 
-booking_date = validate_test_database()
+booking_date, agenda_date = validate_test_database()
 
 from app.core.security import get_password_hash  # noqa: E402
 from app.database import Base, SessionLocal, engine  # noqa: E402
@@ -62,6 +68,11 @@ with SessionLocal() as db:
         senha_hash=get_password_hash(barber_password), role=RoleEnum.BARBEIRO,
         consentimento_lgpd=False,
     )
+    other_barber = User(
+        nome="Segundo Barbeiro RF13", email="barbeiro.rf13@example.com",
+        senha_hash=get_password_hash(barber_password), role=RoleEnum.BARBEIRO,
+        consentimento_lgpd=False,
+    )
     client = User(
         nome="Cliente E2E Fictício", email="cliente.e2e@example.com",
         senha_hash=get_password_hash(client_password), role=RoleEnum.CLIENTE,
@@ -74,10 +85,11 @@ with SessionLocal() as db:
     )
     service = Service(nome="Corte E2E", preco=35.0, duracao_minutos=30)
     long_service = Service(nome="Serviço Longo E2E", preco=75.0, duracao_minutos=90)
-    db.add_all([admin, barber, client, mobile_client, service, long_service])
+    db.add_all([admin, barber, other_barber, client, mobile_client, service, long_service])
     db.flush()
     db.add(BarbearioServico(barbeiro_id=barber.id, service_id=service.id))
     db.add(BarbearioServico(barbeiro_id=barber.id, service_id=long_service.id))
+    db.add(BarbearioServico(barbeiro_id=other_barber.id, service_id=service.id))
 
     for weekday in range(7):
         db.add(JornadaTrabalho(
@@ -86,6 +98,33 @@ with SessionLocal() as db:
             hora_inicio="08:00",
             hora_fim="18:00",
             ativo=True,
+        ))
+        db.add(JornadaTrabalho(
+            barbeiro_id=other_barber.id,
+            dia_semana=weekday,
+            hora_inicio="08:00",
+            hora_fim="18:00",
+            ativo=True,
+        ))
+
+    agenda_items = (
+        (barber, "Cliente RF13 Pendente", time(9, 0), AppointmentStatusEnum.PENDENTE),
+        (barber, "Cliente RF13 Confirmado", time(9, 30), AppointmentStatusEnum.CONFIRMADO),
+        (barber, "Cliente RF13 Concluído", time(10, 0), AppointmentStatusEnum.CONCLUIDO),
+        (other_barber, "Cliente RF13 Cancelado", time(10, 30), AppointmentStatusEnum.CANCELADO),
+        (other_barber, "Cliente RF13 Falta", time(11, 0), AppointmentStatusEnum.FALTA),
+        (other_barber, "Cliente RF13 Avaliado", time(11, 30), AppointmentStatusEnum.AVALIADO),
+    )
+    for assigned_barber, customer_name, starts_at, status in agenda_items:
+        db.add(Appointment(
+            user_id=None,
+            nome_cliente=customer_name,
+            service_id=service.id,
+            barbeiro_id=assigned_barber.id,
+            data_hora=datetime.combine(agenda_date, starts_at),
+            status=status,
+            preco=service.preco,
+            duracao_minutos=service.duracao_minutos,
         ))
 
     blocked_start = datetime.combine(booking_date, time(12, 0))

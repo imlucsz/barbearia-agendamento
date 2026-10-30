@@ -22,6 +22,7 @@ _TEST_DB_PATH = Path(_TEST_DB_DIR.name) / "tests.db"
 os.environ["PYTHON_DOTENV_DISABLED"] = "1"
 os.environ["SECRET_KEY"] = TEST_SECRET_KEY
 os.environ["CORS_ALLOWED_ORIGINS"] = "https://frontend.test.invalid"
+os.environ["ALLOWED_HOSTS"] = "*"
 os.environ["APP_ENV"] = "test"
 for _optional_email_setting in (
     "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL",
@@ -191,7 +192,15 @@ def load_app_for_environment(app_env):
         os.environ["APP_ENV"] = "test"
     else:
         os.environ["APP_ENV"] = app_env
-    return importlib.reload(main)
+    previous_allowed_hosts = os.environ.get("ALLOWED_HOSTS")
+    os.environ["ALLOWED_HOSTS"] = "testserver"
+    try:
+        return importlib.reload(main)
+    finally:
+        if previous_allowed_hosts is None:
+            os.environ.pop("ALLOWED_HOSTS", None)
+        else:
+            os.environ["ALLOWED_HOSTS"] = previous_allowed_hosts
 
 
 def asgi_request(application, method, path, payload=None, headers=None, return_headers=False, client_ip="127.0.0.1", scheme="https"):

@@ -18,7 +18,7 @@ class AuthenticationSessionTests(unittest.TestCase):
         reset_database()
         self.app_module = load_app_for_environment("development")
         self.application = self.app_module.app
-        os.environ["TRUSTED_PROXY_COUNT"] = "0"
+        os.environ["CLIENT_IP_SOURCE"] = "direct"
         os.environ["TERMS_VERSION"] = "terms-test-7"
         os.environ["CORS_ALLOWED_ORIGINS"] = "https://frontend.test.invalid"
         self.origin = "https://frontend.test.invalid"

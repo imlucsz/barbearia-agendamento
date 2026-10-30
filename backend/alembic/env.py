@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -9,7 +8,7 @@ from sqlalchemy.pool import NullPool
 # Load backend/.env before app.database reads DATABASE_URL.
 load_dotenv()
 
-from app.database import Base
+from app.database import Base, DATABASE_URL
 from app.models import user as _user_models  # noqa: F401
 
 
@@ -23,7 +22,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline():
-    database_url = os.environ.get("DATABASE_URL")
+    database_url = DATABASE_URL
     if not database_url:
         raise RuntimeError("DATABASE_URL must be set in the environment or backend/.env")
     context.configure(
@@ -71,7 +70,7 @@ def run_migrations_online():
         _run_migrations(supplied_connection)
         return
 
-    database_url = os.environ.get("DATABASE_URL")
+    database_url = DATABASE_URL
     if not database_url:
         raise RuntimeError("DATABASE_URL must be set in the environment or backend/.env")
 

@@ -133,7 +133,7 @@ Em outro terminal, na raiz do repositório:
 python -m http.server 5500
 ```
 
-Abra `http://127.0.0.1:5500/frontend/pages/index.html`. A API usada pelo frontend é configurada em `frontend/assets/js/api.js`; por padrão, aponta para `http://127.0.0.1:8000`. Se o backend estiver em outro endereço, ajuste `window.BARBEARIA_API_URL` antes dos módulos da página ou altere o valor padrão em `api.js`.
+Abra `http://127.0.0.1:5500/frontend/pages/index.html`. O fallback dos fontes do frontend continua sendo `http://127.0.0.1:8000`, configurado em `installation-config.mjs`; `window.BARBEARIA_API_URL` continua disponível como override antes dos módulos. Para o build hospedado do Render, use `PUBLIC_API_URL`; `build-static.mjs` injeta essa origem pública no artefato sem editar arquivos do frontend.
 
 ## Variáveis de ambiente
 
@@ -147,7 +147,7 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `ALGORITHM` | Algoritmo JWT | `HS256` |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos (faixa 5–60) | `15` minutos |
 | `TERMS_VERSION` | Versão dos termos de consentimento LGPD registrada no cadastro | `1.0` |
-| `TRUSTED_PROXY_COUNT` | Quantidade de proxies reversos confiáveis para interpretar `X-Forwarded-For` | `0` (ignora o cabeçalho) |
+| `CLIENT_IP_SOURCE` | Origem do IP para rate limit/auditoria: `direct` (padrão, ignora headers) ou `cf-connecting-ip` (um IP validado do edge confiável) | `direct` |
 | `RATE_LIMIT_MAX_ATTEMPTS` | Falhas consecutivas por IP e rota antes do bloqueio | `5` |
 | `RATE_LIMIT_BLOCK_MINUTES` | Duração do bloqueio das rotas de autenticação | `15` minutos |
 | `RETENTION_DAYS` | Retenção de eventos de auditoria antes de expurgo | `365` dias |
@@ -169,7 +169,7 @@ python -c "import secrets; print(secrets.token_urlsafe(48))"
 
 Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao iniciar se a chave estiver ausente, curta, de baixa diversidade ou parecer um valor de exemplo/desenvolvimento/teste. O `.env.example` deixa essa variável vazia intencionalmente. Use uma chave persistente e privada por ambiente; não envie `.env` ao Git. Em produção, configure também HTTPS, restrinja CORS e não use as credenciais de demonstração.
 
-Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Produção exige `postgresql+psycopg`, nome do banco, host e usuário; conexões para hosts remotos devem usar `sslmode=require`, `verify-ca` ou `verify-full`. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
+Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Em produção, `postgresql://` é normalizada para o driver `postgresql+psycopg`; a conexão remota adiciona `sslmode=require` quando nenhum modo TLS é informado e rejeita modos inseguros explícitos. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
 
 O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 60) e permanece em `localStorage` para a navegação entre páginas; JavaScript injetado na origem, como em um XSS, pode lê-lo. O refresh token aleatório é armazenado no servidor somente como SHA-256 e enviado ao frontend em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção. As chamadas usam `credentials: include`; em produção, site e API precisam compartilhar o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). `/auth/refresh` e `/auth/logout` aceitam somente `Origin` listado em `CORS_ALLOWED_ORIGINS`.
 
@@ -195,8 +195,8 @@ A Tabela 1 detalha os 24 requisitos funcionais que compõem o escopo de funciona
 | RF10 | Reagendamento de Reserva | Permitir a alteração de data/horário respeitando limites de até 2 reagendamentos (RN-02). | Cliente / Admin |
 | RF11 | Histórico do Cliente | Exibir o histórico completo de agendamentos passados e futuros do cliente. | Cliente |
 | RF12 | Avaliação do Atendimento | Permitir que o cliente avalie com nota e comentário atendimentos concluídos (RN-04). | Cliente |
-| RF13 | Consulta de Agenda | Exibir agenda diária: o barbeiro visualiza a sua própria e o admin visualiza a geral. | Barbeiro / Admin |
-| RF14 | Registro de Atendimento | Registrar status do agendamento (Concluído, Cancelado, Falta) e o valor final cobrado. | Barbeiro / Admin |
+| RF13 | Consulta de Agenda | Exibir horários, clientes, serviços, profissionais e status do dia selecionado; o barbeiro visualiza apenas a própria agenda e o admin visualiza a agenda de toda a equipe. A interface permite selecionar datas da semana atual. | Barbeiro / Admin |
+| RF14 | Registro de Atendimento | Aplicar transições válidas: pendente para confirmado/cancelado; confirmado para concluído/falta/cancelado; concluído para avaliado somente pela avaliação do cliente dono. Cliente cancela com 24h de antecedência; conclusão e falta só após o início. | Cliente / Barbeiro / Admin |
 | RF15 | Agendamento Manual/Avulso | Permitir ao admin/barbeiro realizar agendamentos manuais para clientes sem cadastro. | Admin / Barbeiro |
 | RF16 | Gestão de Serviços | Permitir cadastrar, editar, listar e remover serviços, preços e durações. | Admin |
 | RF17 | Associação Barbeiro-Serviço | Vincular ou remover a capacitação de um barbeiro para realizar determinados serviços. | Admin |
@@ -374,6 +374,12 @@ Registro de 2026-10-29: a suíte Python com SQLite temporário executou 185 test
 - O CORS aceita apenas as origens normalizadas listadas em `CORS_ALLOWED_ORIGINS`. Em desenvolvimento, se a variável estiver ausente, é permitida a origem documentada `http://127.0.0.1:5500`. Em produção, a variável é obrigatória e deve conter uma ou mais origens HTTPS exatas do frontend publicado, incluindo a porta não padrão quando aplicável. Não use `*` nem inclua caminhos.
 - Novas alterações de schema devem continuar sendo registradas em revisões Alembic e testadas em SQLite e PostgreSQL.
 - Consentimento e anonimização implementados são controles técnicos; não substituem avaliação jurídica e operacional de conformidade com a LGPD.
+
+## Homologação no Render
+
+`render.yaml` descreve um Static Site e um Web Service com PostgreSQL independente. O build estático usa Node 22 somente para gerar o arquivo público de configuração da API; o site publicado continua sendo HTML/CSS/JavaScript estático. Configure `PUBLIC_API_URL` no Static Site. No backend, preencha `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `PASSWORD_RESET_URL` e as variáveis SMTP com os domínios e valores do ambiente. O Blueprint não contém credenciais; `SECRET_KEY` é gerada pelo Render e `DATABASE_URL` referencia o banco provisionado.
+
+O comando Alembic está em `preDeployCommand`, disponível no Render apenas para serviços web pagos. O processo de criação do administrador segue manual e interativo com `python -m app.initial_admin`, depois de as migrations terminarem. Consulte [preparação Render](docs/IMPLANTACAO_E_REUTILIZACAO.md#homologacao-render) antes de provisionar. Não configure SMTP de produção em homologação sem credenciais específicas do ambiente.
 
 ## Equipe
 

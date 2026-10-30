@@ -17,6 +17,24 @@ const bookingDate = (() => {
 
 process.env.PW_E2E_BOOKING_DATE = bookingDate;
 
+const agendaDate = (() => {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date()).map(({ type, value }) => [type, value]),
+  );
+  const today = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
+  const weekday = today.getUTCDay();
+  const offset = weekday === 0 ? 1 : weekday === 6 ? -1 : 1;
+  today.setUTCDate(today.getUTCDate() + offset);
+  return `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
+})();
+
+process.env.PW_E2E_AGENDA_DATE = agendaDate;
+
 export default defineConfig({
   testDir: projectRoot + "frontend/e2e",
   testMatch: "**/*.spec.mjs",

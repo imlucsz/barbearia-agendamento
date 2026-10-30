@@ -100,6 +100,7 @@ function renderDateRoll() {
         const item = document.createElement("button");
         item.type = "button";
         item.classList.add("date-item");
+        item.dataset.date = formatDateForAPI(date);
 
         if (sameDay(date, selectedDate)) {
             item.classList.add("selected");
@@ -157,7 +158,7 @@ function normalizeAppointment(item) {
 
     return {
         id: item?.id ?? `${item?.horario ?? "agenda"}-${Math.random().toString(16).slice(2)}`,
-        horario: normalizeTime(item?.horario ?? item?.hora ?? item?.time ?? item?.inicio ?? item?.start_time ?? item?.agenda_hora),
+        horario: normalizeTime(item?.horario ?? item?.hora ?? item?.time ?? item?.inicio ?? item?.start_time ?? item?.agenda_hora ?? item?.data_hora),
         cliente: String(customer),
         servico: String(service),
         profissional: String(professional),
@@ -182,6 +183,8 @@ function getStatusLabel(status) {
         pendente: "Pendente",
         cancelado: "Cancelado",
         cancelada: "Cancelado",
+        falta: "Falta",
+        avaliado: "Avaliado",
         concluido: "Concluído",
         finalizado: "Finalizado"
     };
@@ -339,10 +342,23 @@ function init() {
             console.error("Falha ao carregar dados de referência da agenda:", error);
             renderAgendaMessage(error.message || "Não foi possível carregar os dados da agenda.", "error");
         });
+    } else if (currentUser?.role === "barbeiro") {
+        api.get("/services/").then((services) => {
+            referenceMaps.services = new Map(services.map((item) => [item.id, item.nome]));
+            if (currentUser.id != null) {
+                referenceMaps.barbers = new Map([[currentUser.id, currentUser.nome || currentUser.name || "Você"]]);
+            }
+            return carregarAgendaDoDia(selectedDate);
+        }).catch((error) => {
+            console.error("Falha ao carregar os serviços da agenda:", error);
+            renderAgendaMessage(error.message || "Não foi possível carregar os dados da agenda.", "error");
+        });
     }
     weekDays = generateWeekDays(selectedDate);
     renderDateRoll();
-    if (currentUser?.role !== "admin") carregarAgendaDoDia(selectedDate);
+    if (currentUser?.role !== "admin" && currentUser?.role !== "barbeiro") {
+        carregarAgendaDoDia(selectedDate);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", init);

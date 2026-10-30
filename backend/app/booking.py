@@ -27,6 +27,22 @@ ACTIVE_APPOINTMENT_STATUSES = [
     AppointmentStatusEnum.CONFIRMADO,
 ]
 
+ALLOWED_APPOINTMENT_STATUS_TRANSITIONS = {
+    AppointmentStatusEnum.PENDENTE: {
+        AppointmentStatusEnum.CONFIRMADO,
+        AppointmentStatusEnum.CANCELADO,
+    },
+    AppointmentStatusEnum.CONFIRMADO: {
+        AppointmentStatusEnum.CONCLUIDO,
+        AppointmentStatusEnum.FALTA,
+        AppointmentStatusEnum.CANCELADO,
+    },
+    AppointmentStatusEnum.CONCLUIDO: set(),
+    AppointmentStatusEnum.CANCELADO: set(),
+    AppointmentStatusEnum.FALTA: set(),
+    AppointmentStatusEnum.AVALIADO: set(),
+}
+
 
 def schedule_bounds(day: date, schedule: JornadaTrabalho) -> tuple[datetime, datetime]:
     try:
@@ -164,3 +180,51 @@ def validate_booking_slot(
         appointments=appointments_query.all(), now=now, exclude_appointment_id=exclude_appointment_id,
         duration_minutes=duration_minutes,
     )
+
+
+def validate_appointment_status_transition(
+    db: Session,
+    appointment: Appointment,
+    target_status: AppointmentStatusEnum,
+    actor_role: RoleEnum,
+    *,
+    validate_confirmation_slot: bool = True,
+    target_start: datetime | None = None,
+) -> None:
+    """Enforce the RF14 status matrix and transition-specific domain rules."""
+    if actor_role == RoleEnum.CLIENTE:
+        if target_status != AppointmentStatusEnum.CANCELADO:
+            raise HTTPException(status_code=403, detail="Clientes sÃ³ podem cancelar seus prÃ³prios agendamentos")
+    elif actor_role not in (RoleEnum.ADMIN, RoleEnum.BARBEIRO):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+    if target_status == AppointmentStatusEnum.AVALIADO:
+        raise HTTPException(status_code=400, detail="O status avaliado sÃ³ pode ser definido por uma avaliaÃ§Ã£o vÃ¡lida")
+
+    allowed_targets = ALLOWED_APPOINTMENT_STATUS_TRANSITIONS.get(appointment.status, set())
+    if target_status not in allowed_targets:
+        raise HTTPException(status_code=400, detail="TransiÃ§Ã£o de status invÃ¡lida para este agendamento")
+
+    now = now_local()
+    effective_start = normalize_datetime(target_start or appointment.data_hora)
+    if target_status == AppointmentStatusEnum.CANCELADO and actor_role == RoleEnum.CLIENTE:
+        if appointment.data_hora - now < timedelta(hours=24):
+            raise HTTPException(status_code=400, detail="Cancelamentos exigem 24 horas de antecedÃªncia")
+
+    if target_status in (AppointmentStatusEnum.CONCLUIDO, AppointmentStatusEnum.FALTA):
+        if now < effective_start:
+            raise HTTPException(status_code=400, detail="O status sÃ³ pode ser registrado apÃ³s o inÃ­cio do atendimento")
+
+    if target_status == AppointmentStatusEnum.CONFIRMADO and validate_confirmation_slot:
+        service = db.query(Service).filter(Service.id == appointment.service_id).first()
+        if service is None:
+            raise HTTPException(status_code=404, detail="ServiÃ§o nÃ£o encontrado")
+        lock_barber_for_booking(db, appointment.barbeiro_id)
+        validate_booking_slot(
+            db,
+            service,
+            appointment.barbeiro_id,
+            appointment.data_hora,
+            exclude_appointment_id=appointment.id,
+            duration_minutes=appointment.duracao_minutos,
+        )

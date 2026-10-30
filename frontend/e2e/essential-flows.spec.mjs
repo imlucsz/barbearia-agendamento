@@ -18,6 +18,7 @@ const barber = {
   password: "E2E-Test-Barber-Only-2026!",
 };
 const bookingDate = process.env.PW_E2E_BOOKING_DATE;
+const agendaDate = process.env.PW_E2E_AGENDA_DATE;
 
 function clientForProject(testInfo) {
   return testInfo.project.name.startsWith("mobile") ? mobileClient : client;
@@ -592,6 +593,71 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await expect(page.locator("#reviews-list")).toContainText(moderationComment);
   await page.goto("/pages/admin.html");
   await expect(page.getByRole("heading", { name: "Gerenciar serviços" })).toBeVisible();
+});
+
+test("RF13 agenda diária respeita data, perfil, propriedade e estados em desktop e mobile", async ({ page }) => {
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  await page.goto("/pages/admin.html");
+  const adminDate = page.locator(`#dateRoll .date-item[data-date="${agendaDate}"]`);
+  await expect(adminDate).toBeVisible();
+  const adminResponse = page.waitForResponse((response) =>
+    response.url().includes("/admin/agenda") && response.url().includes(`data=${agendaDate}`));
+  await adminDate.click();
+  expect((await adminResponse).status()).toBe(200);
+  const adminRows = page.locator("#agendaList .agenda-row");
+  await expect(adminRows).toHaveCount(6);
+  for (const text of [
+    "Cliente RF13 Pendente", "Cliente RF13 Confirmado", "Cliente RF13 Concluído",
+    "Cliente RF13 Cancelado", "Cliente RF13 Falta", "Cliente RF13 Avaliado",
+    "Corte E2E", "Barbeiro E2E Fictício", "Segundo Barbeiro RF13",
+    "Pendente", "Confirmado", "Concluído", "Cancelado", "Falta", "Avaliado",
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  ]) {
+    await expect(page.locator("#agendaList")).toContainText(text);
+  }
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await signIn(page, barber);
+  await expect.poll(() => page.evaluate(() => Boolean(localStorage.getItem("token")))).toBe(true);
+  await page.goto("/pages/admin.html");
+  const barberDate = page.locator(`#dateRoll .date-item[data-date="${agendaDate}"]`);
+  await expect(barberDate).toBeVisible();
+  const barberResponse = page.waitForResponse((response) =>
+    response.url().includes("/admin/me/agenda") && response.url().includes(`data=${agendaDate}`));
+  await barberDate.click();
+  expect((await barberResponse).status()).toBe(200);
+  const barberRows = page.locator("#agendaList .agenda-row");
+  await expect(barberRows).toHaveCount(3);
+  await expect(page.locator("#agendaList")).toContainText("Barbeiro E2E Fictício");
+  await expect(page.locator("#agendaList")).toContainText("Corte E2E");
+  await expect(page.locator("#agendaList")).not.toContainText("Segundo Barbeiro RF13");
+  await expect(page.locator("#agendaList")).not.toContainText("Cliente RF13 Cancelado");
+
+  const barberToken = await page.evaluate(() => localStorage.getItem("token"));
+  const forgedFullAgenda = await page.request.get(
+    `http://127.0.0.1:4174/admin/agenda?data=${agendaDate}&barbeiro_id=999999`,
+    { headers: { Authorization: `Bearer ${barberToken}` } },
+  );
+  expect(forgedFullAgenda.status()).toBe(403);
+  const forgedOwnAgenda = await page.request.get(
+    `http://127.0.0.1:4174/admin/me/agenda?data=${agendaDate}&barbeiro_id=999999`,
+    { headers: { Authorization: `Bearer ${barberToken}` } },
+  );
+  expect(forgedOwnAgenda.status()).toBe(200);
+  expect(await forgedOwnAgenda.json()).toHaveLength(3);
+
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await signIn(page, client);
+  await page.waitForURL(/client-dashboard\.html$/);
+  const clientToken = await page.evaluate(() => localStorage.getItem("token"));
+  for (const endpoint of ["/admin/agenda", "/admin/me/agenda"]) {
+    const response = await page.request.get(
+      `http://127.0.0.1:4174${endpoint}?data=${agendaDate}`,
+      { headers: { Authorization: `Bearer ${clientToken}` } },
+    );
+    expect(response.status()).toBe(403);
+  }
 });
 
 test("agenda registra status da equipe e valor cobrado", async ({ page }) => {

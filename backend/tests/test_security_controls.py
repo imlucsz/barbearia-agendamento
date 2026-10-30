@@ -16,15 +16,17 @@ class SecurityControlTests(unittest.TestCase):
         os.environ["RATE_LIMIT_MAX_ATTEMPTS"] = "5"
         os.environ["RATE_LIMIT_BLOCK_MINUTES"] = "15"
         os.environ["FORCE_HTTPS"] = "false"
+        os.environ["CLIENT_IP_SOURCE"] = "direct"
         self.app = load_app_for_environment("development").app
 
     def tearDown(self):
         os.environ.pop("RATE_LIMIT_MAX_ATTEMPTS", None)
         os.environ.pop("RATE_LIMIT_BLOCK_MINUTES", None)
         os.environ.pop("FORCE_HTTPS", None)
+        os.environ.pop("CLIENT_IP_SOURCE", None)
 
-    def post_login(self, ip="127.0.0.1", password="wrong"):
-        return asgi_request(self.app, "POST", "/auth/login", {"email": "none@example.com", "senha": password}, client_ip=ip, return_headers=True)
+    def post_login(self, ip="127.0.0.1", password="wrong", headers=None):
+        return asgi_request(self.app, "POST", "/auth/login", {"email": "none@example.com", "senha": password}, headers=headers, client_ip=ip, return_headers=True)
 
     def test_five_failures_block_and_different_ips_are_independent(self):
         for _ in range(4):
@@ -35,6 +37,25 @@ class SecurityControlTests(unittest.TestCase):
         self.assertGreater(int(headers["retry-after"]), 0)
         self.assertEqual(headers["x-content-type-options"], "nosniff")
         self.assertEqual(self.post_login("127.0.0.2")[0], 401)
+
+    def test_forwarded_headers_cannot_change_rate_limit_bucket_in_direct_mode(self):
+        for _ in range(4):
+            self.assertEqual(self.post_login()[0], 401)
+        status = self.post_login(headers={
+            "X-Forwarded-For": "127.0.0.2",
+            "X-Real-IP": "127.0.0.2",
+            "CF-Connecting-IP": "127.0.0.2",
+        })[0]
+        self.assertEqual(status, 429)
+
+    def test_trusted_edge_ips_use_separate_rate_limit_buckets(self):
+        os.environ["CLIENT_IP_SOURCE"] = "cf-connecting-ip"
+        first = {"CF-Connecting-IP": "198.51.100.10"}
+        second = {"CF-Connecting-IP": "198.51.100.11"}
+        for _ in range(4):
+            self.assertEqual(self.post_login(ip="10.0.0.5", headers=first)[0], 401)
+        self.assertEqual(self.post_login(ip="10.0.0.5", headers=first)[0], 429)
+        self.assertEqual(self.post_login(ip="10.0.0.5", headers=second)[0], 401)
 
     def test_success_resets_consecutive_failure_count(self):
         for _ in range(4):
@@ -68,13 +89,13 @@ class SecurityControlTests(unittest.TestCase):
         self.assertIn("frame-ancestors 'none'", headers["content-security-policy"])
         self.assertNotIn("strict-transport-security", headers)
 
-        with patch("app.main.SECURITY_SETTINGS", type("S", (), {"force_https": False, "trusted_proxy_count": 0, "app_env": "production"})()):
+        with patch("app.main.SECURITY_SETTINGS", type("S", (), {"force_https": False, "app_env": "production"})()):
             status, headers = _asgi_exchange(self.app, "GET", {})
         self.assertEqual(status, 200)
         self.assertIn("max-age=31536000", headers["strict-transport-security"])
 
-    def test_https_redirect_uses_forwarded_scheme_only_with_trusted_proxy(self):
-        configured = type("S", (), {"force_https": True, "trusted_proxy_count": 0, "app_env": "production"})()
+    def test_https_redirect_does_not_trust_forwarded_scheme_headers(self):
+        configured = type("S", (), {"force_https": True, "app_env": "production"})()
         with patch("app.main.SECURITY_SETTINGS", configured):
             messages = []
 
@@ -87,19 +108,18 @@ class SecurityControlTests(unittest.TestCase):
             import asyncio
             scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "GET",
                      "scheme": "http", "path": "/health", "raw_path": b"/health", "query_string": b"",
-                     "root_path": "", "headers": [(b"x-forwarded-proto", b"https")],
+                     "root_path": "", "headers": [(b"host", b"testserver"), (b"x-forwarded-proto", b"https")],
                      "client": ("127.0.0.1", 12345), "server": ("testserver", 80)}
             asyncio.run(self.app(scope, receive, send))
             response = next(message for message in messages if message["type"] == "http.response.start")
             self.assertEqual(response["status"], 307)
             self.assertIn((b"location", b"https://testserver/health"), response["headers"])
 
-        configured = type("S", (), {"force_https": True, "trusted_proxy_count": 1, "app_env": "production"})()
         with patch("app.main.SECURITY_SETTINGS", configured):
             messages.clear()
             asyncio.run(self.app(scope, receive, send))
             response = next(message for message in messages if message["type"] == "http.response.start")
-            self.assertEqual(response["status"], 200)
+            self.assertEqual(response["status"], 307)
 
 
 if __name__ == "__main__":

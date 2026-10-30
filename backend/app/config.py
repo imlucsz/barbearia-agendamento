@@ -42,7 +42,8 @@ class Settings:
     jwt_algorithm: str
     access_token_expire_minutes: int
     terms_version: str
-    trusted_proxy_count: int
+    client_ip_source: str
+    allowed_hosts: tuple[str, ...]
     rate_limit_max_attempts: int
     rate_limit_block_minutes: int
     force_https: bool
@@ -144,6 +145,43 @@ def parse_cors_origins(configured: str | None, environment: str) -> tuple[str, .
     return tuple(origins)
 
 
+def parse_allowed_hosts(configured: str | None, environment: str) -> tuple[str, ...]:
+    """Validate HTTP Host allowlist; production must always be explicit."""
+    environment = environment.strip().lower()
+    if configured is None or not configured.strip():
+        if environment == "production":
+            raise RuntimeError("ALLOWED_HOSTS must be explicitly configured in production")
+        return ("*",)
+
+    hosts: list[str] = []
+    seen: set[str] = set()
+    for raw_host in configured.split(","):
+        host = raw_host.strip().lower()
+        if not host:
+            continue
+        if host == "*" and environment != "production":
+            if host not in seen:
+                seen.add(host)
+                hosts.append(host)
+            continue
+        wildcard = host.startswith("*.")
+        candidate = host[2:] if wildcard else host
+        if "*" in candidate or ":" in candidate or "/" in candidate or "@" in candidate:
+            raise RuntimeError("ALLOWED_HOSTS entries must be hostnames or leading subdomain wildcards")
+        try:
+            normalized = _normalize_cors_hostname(candidate).rstrip(".")
+        except RuntimeError:
+            raise RuntimeError("ALLOWED_HOSTS contains an invalid hostname") from None
+        normalized = f"*.{normalized}" if wildcard else normalized
+        if normalized not in seen:
+            seen.add(normalized)
+            hosts.append(normalized)
+
+    if environment == "production" and not hosts:
+        raise RuntimeError("ALLOWED_HOSTS must contain at least one hostname in production")
+    return tuple(hosts)
+
+
 def validate_secret_key(value: str | None, *, production: bool = False) -> str:
     secret = (value or "").strip()
     normalized = re.sub(r"[^a-z0-9]", "", secret.lower())
@@ -191,6 +229,8 @@ def _validate_database_url(value: str, environment: str) -> tuple[URL, str]:
             raise RuntimeError("DATABASE_URL uses an unsupported SQLite driver")
         return parsed, backend
 
+    if backend == "postgresql" and parsed.drivername == "postgresql":
+        parsed = parsed.set(drivername="postgresql+psycopg")
     if backend != "postgresql" or parsed.drivername != "postgresql+psycopg":
         raise RuntimeError("DATABASE_URL must use the supported postgresql+psycopg driver")
     if environment == "production":
@@ -204,8 +244,8 @@ def _validate_database_url(value: str, environment: str) -> tuple[URL, str]:
             is_local = False
         if sslmode is not None and sslmode not in _SECURE_SSL_MODES:
             raise RuntimeError("Production DATABASE_URL has an insecure PostgreSQL sslmode")
-        if not is_local and sslmode not in _SECURE_SSL_MODES:
-            raise RuntimeError("Remote production PostgreSQL requires sslmode=require or stronger")
+        if not is_local and sslmode is None:
+            parsed = parsed.update_query_dict({"sslmode": "require"})
     return parsed, backend
 
 
@@ -312,6 +352,8 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         else:
             raise RuntimeError("DATABASE_URL must be explicitly configured unless APP_ENV=development")
     _parsed_database_url, database_backend = _validate_database_url(database_url, environment)
+    if database_backend == "postgresql":
+        database_url = _parsed_database_url.render_as_string(hide_password=False)
 
     secret_key = validate_secret_key(_get(source, "SECRET_KEY"), production=environment == "production")
     algorithm = _get(source, "ALGORITHM", "HS256").upper()
@@ -327,12 +369,10 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
     terms_version = _get(source, "TERMS_VERSION", "1.0")
     if not terms_version or len(terms_version) > 100:
         raise RuntimeError("TERMS_VERSION must contain between 1 and 100 characters")
-    try:
-        trusted_proxy_count = int(_get(source, "TRUSTED_PROXY_COUNT", "0"))
-    except ValueError:
-        raise RuntimeError("TRUSTED_PROXY_COUNT must be a non-negative integer") from None
-    if not 0 <= trusted_proxy_count <= 32:
-        raise RuntimeError("TRUSTED_PROXY_COUNT must be between 0 and 32")
+    client_ip_source = _get(source, "CLIENT_IP_SOURCE", "direct").lower()
+    if client_ip_source not in {"direct", "cf-connecting-ip"}:
+        raise RuntimeError("CLIENT_IP_SOURCE must be 'direct' or 'cf-connecting-ip'")
+    allowed_hosts = parse_allowed_hosts(source.get("ALLOWED_HOSTS"), environment)
 
     try:
         rate_limit_max_attempts = int(_get(source, "RATE_LIMIT_MAX_ATTEMPTS", "5"))
@@ -407,7 +447,8 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         jwt_algorithm=algorithm,
         access_token_expire_minutes=token_minutes,
         terms_version=terms_version,
-        trusted_proxy_count=trusted_proxy_count,
+        client_ip_source=client_ip_source,
+        allowed_hosts=allowed_hosts,
         rate_limit_max_attempts=rate_limit_max_attempts,
         rate_limit_block_minutes=rate_limit_block_minutes,
         force_https=force_https,

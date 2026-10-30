@@ -16,4 +16,5 @@ barbearia.db
 test-results/
 tools/backup/archive/
 node_modules/
+frontend/dist/
 debug.log

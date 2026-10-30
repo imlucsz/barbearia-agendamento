@@ -1,5 +1,5 @@
 import unittest
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
@@ -266,7 +266,9 @@ class AuthorizationTests(unittest.TestCase):
     def test_barber_sees_only_own_agenda_and_cannot_access_full_or_other_agenda(self):
         date_param = self.appointment_time.date().isoformat()
         own_status, own_agenda = self.request(
-            "GET", f"/admin/me/agenda?data={date_param}", principal="barber_a"
+            "GET",
+            f"/admin/me/agenda?data={date_param}&barbeiro_id={self.user_ids['barber_b']}",
+            principal="barber_a",
         )
         self.assertEqual(own_status, 200)
         self.assertEqual(
@@ -322,6 +324,9 @@ class AuthorizationTests(unittest.TestCase):
         agenda_status, _ = self.request(
             "GET", f"/admin/agenda?data={date_param}", principal="client_a"
         )
+        own_agenda_status, _ = self.request(
+            "GET", f"/admin/me/agenda?data={date_param}", principal="client_a"
+        )
         create_status, _ = self.request(
             "POST", "/admin/agendamentos", manual_appointment,
             principal="client_a",
@@ -333,6 +338,7 @@ class AuthorizationTests(unittest.TestCase):
 
         self.assertEqual(users_status, 403)
         self.assertEqual(agenda_status, 403)
+        self.assertEqual(own_agenda_status, 403)
         self.assertEqual(create_status, 403)
         self.assertEqual(update_status, 403)
         self.assertEqual(self.appointment_snapshot(), before)
@@ -463,6 +469,36 @@ class AuthorizationTests(unittest.TestCase):
         self.assertEqual(own_resource_status, 200)
         self.assertEqual(update_status, 200)
         self.assertEqual(self.client_name(self.user_ids["client_b"]), "Cliente atualizado")
+
+    def test_daily_agenda_filters_the_selected_local_day_half_open(self):
+        selected_day = self.appointment_time.date()
+        day_start = datetime.combine(selected_day, time.min)
+        before_day = day_start - timedelta(minutes=1)
+        following_day = day_start + timedelta(days=1)
+        db = main.SessionLocal()
+        try:
+            starts_at_boundary = self.create_appointment(
+                db, self.users["client_a"], self.users["barber_a"], self.service, day_start,
+            )
+            self.create_appointment(
+                db, self.users["client_a"], self.users["barber_a"], self.service, before_day,
+            )
+            self.create_appointment(
+                db, self.users["client_b"], self.users["barber_b"], self.service, following_day,
+            )
+            db.commit()
+            boundary_id = starts_at_boundary.id
+        finally:
+            db.close()
+
+        status, agenda = self.request(
+            "GET", f"/admin/agenda?data={selected_day.isoformat()}", principal="admin",
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            {item["id"] for item in agenda},
+            set(self.appointment_ids.values()) | {boundary_id},
+        )
 
 
 if __name__ == "__main__":
