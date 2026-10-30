@@ -26,6 +26,7 @@ os.environ["ALLOWED_HOSTS"] = "*"
 os.environ["APP_ENV"] = "test"
 for _optional_email_setting in (
     "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL",
+    "EMAIL_TRANSPORT", "BREVO_API_KEY", "EMAIL_FROM", "EMAIL_TIMEOUT_SECONDS",
 ):
     os.environ.pop(_optional_email_setting, None)
 

@@ -329,6 +329,19 @@ class ApplicationConfigurationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "sqlite")
 
+    def test_production_brevo_imports_without_smtp_or_network_calls(self):
+        result = self._run_production_import({
+            "EMAIL_TRANSPORT": "brevo_api",
+            "BREVO_API_KEY": secrets.token_urlsafe(32),
+            "EMAIL_FROM": "sender@example.test",
+            "SMTP_HOST": None,
+            "SMTP_FROM": None,
+            "SMTP_USERNAME": None,
+            "SMTP_PASSWORD": None,
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "None|None|None")
+
     def test_published_environment_without_database_url_fails_clearly(self):
         result = self._run_app_import("production")
 

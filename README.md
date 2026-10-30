@@ -155,11 +155,14 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `FORCE_HTTPS` | Redireciona requisições HTTP; padrão ligado em produção e desligado em desenvolvimento/teste | Derivado de `APP_ENV` |
 | `APP_ENV` | Ambiente de execução | Obrigatória: use `development`, `test` ou `production`; implantações devem usar exatamente `production` |
 | `SCHEDULING_TIMEZONE` | Fuso IANA da instalação | `America/Sao_Paulo` local; obrigatório em produção |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Transporte e remetente para redefinição de senha | O host e remetente são obrigatórios em produção; usuário/senha devem ser fornecidos juntos e podem ficar vazios para relay sem autenticação |
+| `EMAIL_TRANSPORT` | Transporte de recuperação: `smtp` ou `brevo_api` | `smtp` (compatível com instalações existentes) |
+| `BREVO_API_KEY`, `EMAIL_FROM` | Chave secreta e endereço de remetente autorizado na Brevo | Obrigatórios em produção com `brevo_api`; chave somente no backend/painel, nunca no repositório |
+| `EMAIL_TIMEOUT_SECONDS` | Timeout HTTPS da Brevo | `10` segundos, maior que zero e até `120` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM` | Transporte e remetente para redefinição de senha | Com `smtp`, host e remetente obrigatórios em produção; usuário/senha devem ser fornecidos juntos e podem ficar vazios para relay sem autenticação |
 | `SMTP_TIMEOUT_SECONDS` | Timeout da conexão SMTP | `10` segundos |
 | `PASSWORD_RESET_URL` | URL pública da página `reset.html` | Opcional em desenvolvimento; obrigatória em produção, HTTPS e na origem listada em CORS |
 
-O envio de redefinição usa SMTP com STARTTLS. Em produção, a API não inicia sem host, remetente e URL HTTPS válida da página de redefinição. Configure usuário e senha SMTP em conjunto quando o relay exigir autenticação. Em desenvolvimento, SMTP é opcional; sem ele, a resposta de recuperação continua genérica e nenhum token utilizável é persistido. Os links colocam o token no fragmento da URL, que não é enviado na requisição HTTP da página. O `.env.example` contém somente opções locais e valores fictícios.
+O envio de redefinição usa o transporte selecionado: SMTP com STARTTLS ou a [API transacional HTTPS da Brevo](https://developers.brevo.com/reference/send-transac-email). Em produção, a API valida somente as opções do transporte selecionado e exige URL HTTPS de redefinição na origem permitida por CORS. Configure usuário e senha SMTP em conjunto quando o relay exigir autenticação; na Brevo, use uma chave de API (não SMTP) e `EMAIL_FROM` com apenas o endereço autorizado do remetente. Em desenvolvimento, e-mail é opcional; sem entrega aceita pelo transporte, a resposta continua genérica e nenhum novo token utilizável é persistido. Os links colocam o token no fragmento da URL, que não é enviado na requisição HTTP da página.
 
 Gere uma chave uma única vez e guarde-a em `backend/.env` (não gere uma chave nova a cada inicialização):
 
@@ -377,9 +380,9 @@ Registro de 2026-10-29: a suíte Python com SQLite temporário executou 185 test
 
 ## Homologação no Render
 
-`render.yaml` descreve um Static Site e um Web Service com PostgreSQL independente. O build estático usa Node 22 somente para gerar o arquivo público de configuração da API; o site publicado continua sendo HTML/CSS/JavaScript estático. Configure `PUBLIC_API_URL` no Static Site. No backend, preencha `ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS`, `PASSWORD_RESET_URL` e as variáveis SMTP com os domínios e valores do ambiente. O Blueprint não contém credenciais; `SECRET_KEY` é gerada pelo Render e `DATABASE_URL` referencia o banco provisionado.
+`render.yaml` descreve um Static Site e um Web Service Free com PostgreSQL independente. O build estático usa Node 22 para gerar a configuração pública da API. Referências `fromService` resolvem automaticamente `ALLOWED_HOSTS` pelo hostname público da API, `CORS_ALLOWED_ORIGINS` e `FRONTEND_ORIGIN` pela URL pública do frontend, e `PUBLIC_API_URL` pela URL pública da API. O `startCommand` compõe `PASSWORD_RESET_URL` como `${FRONTEND_ORIGIN}/pages/reset.html`, caminho confirmado em `frontend/pages/reset.html`; nenhuma URL precisa ser conhecida antes da criação dos serviços.
 
-O comando Alembic está em `preDeployCommand`, disponível no Render apenas para serviços web pagos. O processo de criação do administrador segue manual e interativo com `python -m app.initial_admin`, depois de as migrations terminarem. Consulte [preparação Render](docs/IMPLANTACAO_E_REUTILIZACAO.md#homologacao-render) antes de provisionar. Não configure SMTP de produção em homologação sem credenciais específicas do ambiente.
+O Blueprint seleciona `EMAIL_TRANSPORT=brevo_api`, pois o Free bloqueia as portas SMTP usuais. O Render solicitará apenas `BREVO_API_KEY` (segredo) e `EMAIL_FROM` (endereço autorizado na Brevo), ambos fornecidos no painel; não os coloque no YAML nem no frontend. `SECRET_KEY` é gerada pelo Render e `DATABASE_URL` referencia o banco provisionado. SMTP permanece disponível para outras instalações. O Blueprint não executa Alembic no início nem usa `preDeployCommand`; migrations e criação interativa do administrador com `python -m app.initial_admin` continuam etapas operacionais separadas e pendentes antes do uso da aplicação. A entrega real pela Brevo precisa ser validada após o provisionamento.
 
 ## Equipe
 

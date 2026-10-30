@@ -56,6 +56,10 @@ class Settings:
     smtp_from: str
     smtp_timeout_seconds: float
     password_reset_url: str = field(repr=False)
+    email_transport: str
+    email_from: str
+    brevo_api_key: str = field(repr=False)
+    email_timeout_seconds: float
     retention_days: int = 365
     metrics_token: str = field(default="", repr=False)
 
@@ -410,25 +414,56 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
     smtp_password = source.get("SMTP_PASSWORD", "")
     smtp_from = _get(source, "SMTP_FROM")
     password_reset_url = _get(source, "PASSWORD_RESET_URL")
+    email_transport = _get(source, "EMAIL_TRANSPORT", "smtp").lower()
+    if email_transport not in {"smtp", "brevo_api"}:
+        raise RuntimeError("EMAIL_TRANSPORT must be smtp or brevo_api")
+    email_from = _get(source, "EMAIL_FROM")
+    brevo_api_key = _get(source, "BREVO_API_KEY")
     try:
-        smtp_port = int(_get(source, "SMTP_PORT", "587"))
-        smtp_timeout = float(_get(source, "SMTP_TIMEOUT_SECONDS", "10"))
+        email_timeout = float(_get(source, "EMAIL_TIMEOUT_SECONDS", "10")) if email_transport == "brevo_api" else 10
+    except ValueError:
+        raise RuntimeError("EMAIL_TIMEOUT_SECONDS must be numeric") from None
+    if not math.isfinite(email_timeout) or not 0 < email_timeout <= 120:
+        raise RuntimeError("EMAIL_TIMEOUT_SECONDS is outside the supported range")
+    try:
+        smtp_port = int(_get(source, "SMTP_PORT", "587")) if email_transport == "smtp" else 587
+        smtp_timeout = float(_get(source, "SMTP_TIMEOUT_SECONDS", "10")) if email_transport == "smtp" else 10
     except ValueError:
         raise RuntimeError("SMTP_PORT and SMTP_TIMEOUT_SECONDS must be valid numeric values") from None
     if not 1 <= smtp_port <= 65535 or not math.isfinite(smtp_timeout) or not 0 < smtp_timeout <= 120:
         raise RuntimeError("SMTP_PORT or SMTP_TIMEOUT_SECONDS is outside the supported range")
 
-    email_partially_configured = bool(smtp_host or smtp_username or smtp_password or smtp_from)
+    email_partially_configured = (
+        bool(smtp_host or smtp_username or smtp_password or smtp_from)
+        if email_transport == "smtp" else bool(brevo_api_key or email_from)
+    )
     email_required = environment == "production"
     if email_required or email_partially_configured:
-        if not smtp_host or not smtp_from or not password_reset_url:
+        if email_transport == "brevo_api":
+            if not brevo_api_key or not email_from or not password_reset_url:
+                raise RuntimeError("Configure BREVO_API_KEY, EMAIL_FROM, and PASSWORD_RESET_URL together")
+            if any(character.isspace() or ord(character) < 32 or ord(character) == 127 for character in brevo_api_key):
+                raise RuntimeError("BREVO_API_KEY must not contain whitespace or control characters")
+            try:
+                brevo_api_key.encode("ascii")
+            except UnicodeEncodeError:
+                raise RuntimeError("BREVO_API_KEY must be ASCII") from None
+            try:
+                _validate_sender(email_from)
+            except RuntimeError:
+                raise RuntimeError("EMAIL_FROM must be a valid sender email address") from None
+            from email.utils import parseaddr
+            if parseaddr(email_from)[1] != email_from:
+                raise RuntimeError("EMAIL_FROM must contain only the sender email address")
+        elif not smtp_host or not smtp_from or not password_reset_url:
             raise RuntimeError(
                 "Configure SMTP_HOST, SMTP_FROM, and PASSWORD_RESET_URL together to enable password recovery"
             )
-        _validate_smtp_host(smtp_host)
-        _validate_sender(smtp_from)
-        if bool(smtp_username) != bool(smtp_password):
-            raise RuntimeError("SMTP_USERNAME and SMTP_PASSWORD must be configured together")
+        if email_transport == "smtp":
+            _validate_smtp_host(smtp_host)
+            _validate_sender(smtp_from)
+            if bool(smtp_username) != bool(smtp_password):
+                raise RuntimeError("SMTP_USERNAME and SMTP_PASSWORD must be configured together")
         _reset_url, reset_origin = _validate_reset_url(
             password_reset_url,
             production=email_required,
@@ -461,6 +496,10 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         smtp_from=smtp_from,
         smtp_timeout_seconds=smtp_timeout,
         password_reset_url=password_reset_url,
+        email_transport=email_transport,
+        email_from=email_from,
+        brevo_api_key=brevo_api_key,
+        email_timeout_seconds=email_timeout,
         retention_days=retention_days,
         metrics_token=metrics_token,
     )
