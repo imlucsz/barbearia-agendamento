@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python -m pip install -r backend/requirements.txt
@@ -39,7 +39,7 @@ jobs:
       BOOKING_TEST_POSTGRES_URL: postgresql+psycopg://barbearia_test:ci-test-password-only@127.0.0.1:5432/barbearia_test
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python -m pip install -r backend/requirements.txt
@@ -57,7 +57,7 @@ jobs:
       - run: npm ci
       - run: node --test frontend/tests/*.test.mjs
       - run: npm audit --audit-level=low
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: python -m pip install pip-audit
@@ -71,7 +71,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
       - run: npm ci
