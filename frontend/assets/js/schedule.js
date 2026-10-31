@@ -328,6 +328,23 @@ async function loadAccount() {
     const email = document.createElement("p");
     email.textContent = `E-mail: ${user.email}`;
     container.append(name, email);
+    document.getElementById("export-pdf")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const file = await api.get("/users/me/export.pdf", { responseType: "blob" });
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "meus-dados.pdf";
+        link.click();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        showMessage(container, error.message, "danger");
+      } finally {
+        button.disabled = false;
+      }
+    });
     document.getElementById("export-account")?.addEventListener("click", async (event) => {
       const button = event.currentTarget;
       button.disabled = true;
@@ -347,10 +364,22 @@ async function loadAccount() {
         button.disabled = false;
       }
     });
-    document.getElementById("delete-account")?.addEventListener("click", async () => {
-      if (!window.confirm("Excluir sua conta? Seus dados pessoais serão anonimizados e esta ação é irreversível.")) return;
-      const senhaAtual = window.prompt("Confirme sua senha atual para continuar:");
-      if (senhaAtual === null || !senhaAtual) return;
+    const dialog = document.getElementById("delete-dialog");
+    const deleteForm = document.getElementById("delete-form");
+    const deleteButton = document.getElementById("delete-account");
+    deleteButton?.addEventListener("click", () => dialog.showModal());
+    document.getElementById("delete-cancel").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("close", () => {
+      deleteForm.reset();
+      document.getElementById("delete-error").textContent = "";
+      deleteButton.focus();
+    });
+    deleteForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submit = deleteForm.querySelector('[type="submit"]');
+      if (submit.disabled) return;
+      submit.disabled = true;
+      const senhaAtual = document.getElementById("delete-password").value;
       try {
         await api.delete("/users/me", { body: { senha_atual: senhaAtual } });
         clearToken();
@@ -358,7 +387,9 @@ async function loadAccount() {
         window.location.href = "index.html";
       } catch (error) {
         console.error("Falha ao excluir conta:", error);
-        showMessage(container, error.message, "danger");
+        document.getElementById("delete-error").textContent = error.message;
+      } finally {
+        submit.disabled = false;
       }
     });
   } catch (error) {

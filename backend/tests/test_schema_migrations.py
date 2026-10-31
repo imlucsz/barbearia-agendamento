@@ -43,7 +43,8 @@ def schema_snapshot(engine):
                 for column in inspector.get_columns(table)
             ),
             tuple(sorted(
-                (tuple(index["column_names"]), bool(index["unique"]))
+                (tuple(column if column is not None else index["expressions"][position]
+                       for position, column in enumerate(index["column_names"])), bool(index["unique"]))
                 for index in inspector.get_indexes(table)
             )),
             tuple(sorted(
@@ -93,7 +94,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261029_06",
+                "20261031_01",
             )
 
     def test_supported_create_all_legacy_schema_is_adopted_without_losing_rows(self):
@@ -192,7 +193,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261029_06",
+                "20261031_01",
             )
 
 

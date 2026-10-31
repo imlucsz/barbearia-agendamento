@@ -14,6 +14,20 @@ from app.routers.auth import _set_refresh_cookie
 
 
 class AuthenticationSessionTests(unittest.TestCase):
+    def test_email_identity_ignores_case_and_outer_whitespace(self):
+        self.create_user("Mixed.Case@example.com")
+        status, body, _ = self.login("  MIXED.CASE@EXAMPLE.COM  ")
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body["user"]["email"], "mixed.case@example.com")
+        status, _ = asgi_request(self.application, "POST", "/auth/register", {
+            "nome": "Duplicata", "email": "Mixed.Case@example.com", "senha": "client-pass-123", "consentimento_lgpd": True,
+        })
+        self.assertEqual(status, 400)
+        with patch("app.routers.auth.send_password_reset_email") as send:
+            status, _ = asgi_request(self.application, "POST", "/auth/esqueci-senha", {"email": " MIXED.CASE@EXAMPLE.COM "})
+            self.assertEqual(status, 200)
+            self.assertEqual(send.call_args.args[0], "mixed.case@example.com")
+
     def setUp(self):
         reset_database()
         self.app_module = load_app_for_environment("development")

@@ -1,6 +1,7 @@
 import enum
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Boolean, Index, JSON
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
+from app.core.email_identity import normalize_email, email_key
 from app.database import Base
 from app.core.clock import utc_now_naive
 
@@ -26,6 +27,11 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
+    __table_args__ = (Index("uq_users_email_identity", email_key(email), unique=True),)
+
+    @validates("email")
+    def normalize_identity(self, key, value):
+        return normalize_email(value)
     senha_hash = Column(String, nullable=False)
     role = Column(Enum(RoleEnum), default=RoleEnum.CLIENTE)
     bloqueado = Column(Boolean, default=False)  # RF19: Para bloquear clientes

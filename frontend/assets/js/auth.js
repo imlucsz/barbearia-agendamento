@@ -25,7 +25,7 @@ async function login(event) {
       email: form.elements.email.value.trim(),
       senha: form.elements.senha.value,
     }, { auth: false });
-    if (!data.access_token || !data.user) throw new Error("A API não retornou uma sessão válida.");
+    if (!data.access_token || !data.user) throw new Error("Não foi possível entrar na sua conta. Tente novamente.");
     setToken(data.access_token);
     localStorage.setItem("user", JSON.stringify(data.user));
     const redirect = new URLSearchParams(window.location.search).get("redirect");

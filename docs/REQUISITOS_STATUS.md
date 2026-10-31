@@ -1,5 +1,22 @@
 # Status de auditoria dos requisitos
 
+## Correções da revisão final — 2026-10-31
+
+- Telefone internacional explícito preservado, catálogo explícito de erros sem heurística de acentos e precedência de campo obrigatório. Maps separa embed de navegação, valida destinos/caminhos esperados e gera pesquisa somente com endereço textual apropriado; teste XSS original preservado.
+- Migração verifica índice/constraint homônimo antes de atualizar dados; recusa definição incompatível. Limites Python/SQL para Unicode e whitespace e necessidade de janela sem escritas foram documentados em `docs/UX_RODADA_20261031.md`.
+- Cadastro e atualização tratam somente violações únicas identificadas como e-mail; outros IntegrityErrors não são mascarados. Testes de corrida determinística em duas sessões e de classificação do driver passaram em SQLite/PostgreSQL descartável.
+- PDF registra exportação após geração bem-sucedida, usa limite conservador de largura da fonte e tem testes de múltiplas páginas, escaping, offsets e auditoria em falha. Modal foi preservado, com testes de foco inicial, Tab/Shift+Tab, Escape e retorno do foco. E2E de e-mail inválido comprova apresentação amigável.
+- Validação final: SQLite 235 testes (7 skips: 6 anteriores e 1 caso específico de PostgreSQL); PostgreSQL 235 testes (2 skips anteriores); JavaScript 26/26; audits npm/pip sem vulnerabilidades; migração/paridade PostgreSQL 7/7; E2E direcionados de modal/e-mail 4/4 e XSS 2/2; matriz Playwright completa 63/63 em Windows, incluindo 320x568/390px/desktop. O cenário XSS continuou com as assertions originais; corrigido o fallback de endereço que o afetava. `git diff --check` nos arquivos da revisão aprovado. AGENTS.md e GUIA.md preservados; nenhum Ruflo/Graphify, staging, commit, push ou deploy.
+
+## Rodada controlada de UX — 2026-10-31
+
+- Identidade de e-mail: trim/lowercase em schemas, persistência e consultas; nova revisão Alembic `20261031_01` com preflight de colisões e índice único funcional, sem unir contas ou editar revisões anteriores. Testes de login/cadastro/recuperação, colisão legada, preservação de aliases e paridade de schema.
+- Apresentação de erros: mensagens de validação traduzidas e códigos HTTP removidos da mensagem ao usuário; status e tipo/localização de validação preservados para diagnóstico sem dados enviados. Transporte recebe mensagem amigável.
+- Home: skeletons removidos em finally e recriados no início; hidden respeitado nos grids; apenas Todos na UI; categorias internas preservadas; telefone da API com WhatsApp e endereço com Maps validado. Teste E2E de sucesso/erro e contatos em desktop/320px.
+- Conta: diálogo acessível com senha atual e autorização original; PDF autenticado reutiliza a exportação JSON, que continua disponível. Testes verificam exclusão em modal, download, PDF e isolamento de dados. Limite de repertório da fonte PDF, estratégia de migração e plano futuro de confirmação de e-mail documentados em `docs/UX_RODADA_20261031.md`.
+- Navegação: scroll suave, offsets e prefers-reduced-motion já existiam; teste adicional verifica menu mobile fechado, seção não coberta e reduced-motion em 320px.
+- Validação final: SQLite 225 testes (6 skips preexistentes); PostgreSQL 16 descartável 225 testes (2 skips preexistentes); Node 23/23; audits npm/pip sem vulnerabilidades; migrações/paridade PostgreSQL 7/7; Playwright completo 61/61 em Windows, incluindo 320x568/390px/desktop; direcionados de home/modal/navegação/PDF aprovados. PDF binário e isolamento do titular aprovados nos dois bancos. `git diff --check` restrito aos arquivos da rodada aprovado. Não houve staging, commit, push ou deploy. Não foram consultados dados reais nem realizado envio real de e-mail nesta validação.
+
 ## Overflow administrativo confirmado no Linux — 2026-10-30
 
 - Reproduzidas as duas falhas remotas: Firefox/WebKit 320x568, documento de 349px para viewport de 320px. A imagem Linux Playwright 1.64.1 usava inicialmente WenQuanYi como sans-serif; com DejaVu Sans instalada no ambiente descartável, a falha de 349px apareceu nos dois browsers. Isso explica por que as inspeções anteriores e o Windows não a reproduziram. Nenhuma fonte ou dependência do projeto foi alterada.

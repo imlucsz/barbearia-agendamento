@@ -1,5 +1,7 @@
 # Sistema de Agendamento Online para Barbearia
 
+E-mails de identidade usam apenas trim + lowercase. A revisão Alembic `20261031_01` recusa conflitos existentes sem unir contas. Minha conta mantém exportação JSON e oferece PDF, além de exclusão confirmada em modal com senha atual. Limites e plano futuro de confirmação de e-mail: [rodada UX](docs/UX_RODADA_20261031.md).
+
 Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM) da FATEC Itaquera. O sistema reúne um site público, fluxo de agendamento para clientes e painel de gestão da barbearia.
 
 ## Tecnologias

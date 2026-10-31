@@ -1,3 +1,4 @@
+from app.core.email_identity import email_key, normalize_email
 import logging
 import os
 import uuid
@@ -197,7 +198,7 @@ if APP_ENV == "development":
         db = SessionLocal()
         try:
             barbeiro_email = "barbeiro@barbearia.com"
-            barbeiro = db.query(User).filter(User.email == barbeiro_email).first()
+            barbeiro = db.query(User).filter(email_key(User.email) == normalize_email(barbeiro_email)).first()
             if not barbeiro:
                 barbeiro = User(
                     nome="Barbeiro João",
@@ -208,7 +209,7 @@ if APP_ENV == "development":
                 db.add(barbeiro)
 
             client_email = "cliente@barbearia.com"
-            client = db.query(User).filter(User.email == client_email).first()
+            client = db.query(User).filter(email_key(User.email) == normalize_email(client_email)).first()
             if not client:
                 client = User(
                     nome="Cliente Maria",

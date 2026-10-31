@@ -1,3 +1,4 @@
+from app.core.email_identity import email_key, normalize_email
 from collections.abc import Callable, Iterable
 
 from fastapi import Depends, HTTPException, status
@@ -40,7 +41,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(email_key(User.email) == normalize_email(email)).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

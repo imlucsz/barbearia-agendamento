@@ -1,4 +1,5 @@
 import { api, getCurrentUser, getToken, logout } from "./api.js";
+import { whatsappUrl, mapsUrls } from "./contact-links.mjs";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 let allServices = [];
@@ -72,6 +73,11 @@ async function loadServices() {
   const skeleton = document.getElementById("services-skeleton");
   const list = document.getElementById("services-list");
   const error = document.getElementById("services-error");
+  skeleton.replaceChildren(...Array.from({ length: 3 }, () => {
+    const item = document.createElement("div");
+    item.className = "skeleton-loading";
+    return item;
+  }));
   skeleton.hidden = false;
   list.hidden = true;
   error.hidden = true;
@@ -85,6 +91,9 @@ async function loadServices() {
     console.error("Falha ao carregar serviços:", requestError);
     skeleton.hidden = true;
     error.hidden = false;
+  } finally {
+    skeleton.replaceChildren();
+    skeleton.hidden = true;
   }
 }
 
@@ -174,7 +183,7 @@ async function loadBusinessInfo() {
     }
 
     renderBusinessHours(data.dias_atendimento, data.horario_funcionamento);
-    renderMap(data.endereco_maps);
+    renderMap(data.endereco_maps, data.endereco);
   } catch (error) {
     console.error("Falha ao carregar informações institucionais:", error);
     ["address", "phone", "operating-days", "email", "mon", "tue", "wed", "thu", "fri", "sat", "sun"]
@@ -205,12 +214,14 @@ function renderBusinessHours(daysText = "", hoursText = "") {
   });
 }
 
-function renderMap(value) {
+function renderMap(value, address) {
   const container = document.getElementById("map-container");
   const link = document.getElementById("map-link");
   container.replaceChildren();
   link.hidden = true;
-  if (!value) {
+  link.removeAttribute("href");
+  const urls = mapsUrls(value, address);
+  if (!urls.navigation && !urls.embed) {
     const fallback = document.createElement("p");
     fallback.className = "text-muted";
     fallback.textContent = "Mapa não disponível.";
@@ -219,15 +230,23 @@ function renderMap(value) {
   }
 
   try {
-    const mapUrl = new URL(value);
-    if (mapUrl.protocol !== "https:" || mapUrl.username || mapUrl.password || !/(^|\.)google\.(com|com\.br)$/.test(mapUrl.hostname)) {
-      throw new Error("Origem de mapa não permitida");
+    if (urls.navigation) {
+      link.href = urls.navigation;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      const addressLink = document.createElement("a");
+      addressLink.href = urls.navigation;
+      addressLink.target = "_blank";
+      addressLink.rel = "noopener noreferrer";
+      addressLink.textContent = document.getElementById("address").textContent;
+      document.getElementById("address").replaceChildren(addressLink);
+      link.hidden = false;
+    } else {
+      link.removeAttribute("href");
     }
-    link.href = mapUrl.href;
-    link.hidden = false;
-    if (mapUrl.pathname.includes("/maps/embed")) {
+    if (urls.embed) {
       const iframe = document.createElement("iframe");
-      iframe.src = mapUrl.href;
+      iframe.src = urls.embed;
       iframe.title = "Mapa da barbearia";
       iframe.loading = "lazy";
       iframe.referrerPolicy = "no-referrer-when-downgrade";
@@ -300,7 +319,15 @@ function setTelephoneLink(id, value) {
     return;
   }
   const link = document.createElement("a");
-  link.href = `tel:${phone.replace(/[^\d+]/g, "")}`;
+  const url = whatsappUrl(phone);
+  if (!url) {
+    node.textContent = phone;
+    return;
+  }
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.setAttribute("aria-label", `Conversar pelo WhatsApp: ${phone}`);
   link.textContent = phone;
   node.replaceChildren(link);
 }

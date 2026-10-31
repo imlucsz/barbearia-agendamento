@@ -12,6 +12,59 @@ from app.models.user import (
 
 
 class LgpdPortabilityTests(unittest.TestCase):
+    def test_pdf_failure_does_not_record_successful_export(self):
+        from app.models.user import AuditLog
+        token = self.login("titular@example.com")
+        with main.SessionLocal() as db:
+            db.query(User).filter(User.id == self.owner_id).update({User.nome:"Cliente \U0001f600"})
+            db.commit()
+            before = db.query(AuditLog).filter(AuditLog.acao == "dados.exportados").count()
+        code,_ = asgi_request(self.app,"GET","/users/me/export.pdf",headers={"Authorization":f"Bearer {token}"})
+        self.assertEqual(code,422)
+        with main.SessionLocal() as db:
+            self.assertEqual(db.query(AuditLog).filter(AuditLog.acao == "dados.exportados").count(),before)
+
+    def test_pdf_multipage_escapes_text_and_has_valid_object_offsets(self):
+        from app.core.pdf_export import personal_data_pdf
+        import re
+        data = dict(usuario=dict(nome='Teste', email='test@example.com'), agendamentos=[], consentimentos=[], avaliacoes=[])
+        data["usuario"]["nome"] = "Teste (seguro) " + chr(92)
+        data["avaliacoes"] = [{"criada_em":"2026-01-01","nota":5,"comentario":"W"*180} for _ in range(40)]
+        pdf = personal_data_pdf(data)
+        self.assertGreater(len(re.findall(rb'/Type /Page\b',pdf)),2)
+        self.assertIn(b"\\(seguro\\)",pdf)
+        self.assertNotIn(b"W"*46,pdf)
+        position = int(pdf.split(b"startxref\n")[1].splitlines()[0])
+        entries = pdf[position:].splitlines()
+        count = int(entries[1].split()[1])
+        for number,line in enumerate(entries[3:count+2],1):
+            offset = int(line.split()[0])
+            self.assertTrue(pdf[offset:].startswith(f"{number} 0 obj".encode()))
+
+    def test_pdf_export_uses_only_authorized_export_data(self):
+        from app.core.pdf_export import personal_data_pdf
+        token = self.login("titular@example.com")
+        status, data = asgi_request(self.app, "GET", "/users/me/exportacao", headers={"Authorization": f"Bearer {token}"})
+        self.assertEqual(status, 200)
+        pdf = personal_data_pdf(data)
+        self.assertTrue(pdf.startswith(b"%PDF-1.4"))
+        self.assertTrue(pdf.endswith(b"%%EOF\n"))
+        self.assertIn(b"titular@example.com", pdf)
+        self.assertNotIn(b"outra@example.com", pdf)
+        self.assertNotIn(b"only-a-test-hash", pdf)
+        self.assertNotIn(b"senha_hash", pdf)
+        status, exported, headers = asgi_request(self.app, "GET", f"/users/me/export.pdf?user_id={self.other_id}",
+            headers={"Authorization": f"Bearer {token}"}, raw_response=True, return_headers=True)
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["content-type"], "application/pdf")
+        self.assertEqual(headers["cache-control"], "no-store")
+        self.assertIn(b"titular@example.com", exported)
+        self.assertNotIn(b"outra@example.com", exported)
+        xref = int(exported.split(b"startxref\n")[1].splitlines()[0])
+        self.assertEqual(exported[xref:xref+4], b"xref")
+        status, _ = asgi_request(self.app, "GET", "/users/me/export.pdf")
+        self.assertEqual(status, 401)
+
     def setUp(self):
         reset_database()
         self.app = load_app_for_environment("development").app

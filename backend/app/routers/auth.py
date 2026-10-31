@@ -1,3 +1,5 @@
+from app.core.email_identity import email_key, normalize_email, is_email_conflict
+from sqlalchemy.exc import IntegrityError
 import hashlib
 import os
 import secrets
@@ -91,7 +93,7 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="O consentimento para tratamento de dados é obrigatório")
 
     # Check if user already exists
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -109,7 +111,13 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
         consentimento_em=utc_now_naive(),
     )
     db.add(db_user)
-    db.flush()
+    try:
+        db.flush()
+    except IntegrityError as error:
+        db.rollback()
+        if is_email_conflict(error):
+            raise HTTPException(status_code=409, detail="E-mail já cadastrado") from None
+        raise
     db.add(ConsentimentoLGPD(
         user_id=db_user.id,
         versao_termos=_terms_version(),
@@ -126,7 +134,7 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
 @router.post("/login", response_model=UserTokenResponse)
 def login_user(user: UserLogin, request: Request, response: Response, db: Session = Depends(get_db)):
     # Find user by email
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
     password_valid, upgraded_hash = (
         verify_password_and_update(user.senha, db_user.senha_hash)
         if db_user else (False, None)
@@ -255,7 +263,7 @@ def read_current_user(current_user: User = Depends(get_current_user)):
 
 @router.post("/esqueci-senha")
 def esqueci_senha(payload: EsqueciSenhaRequest, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    user = db.query(User).filter(email_key(User.email) == normalize_email(payload.email)).first()
     if user:
         token = secrets.token_urlsafe(32)
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()

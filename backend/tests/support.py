@@ -205,7 +205,7 @@ def load_app_for_environment(app_env):
             os.environ["ALLOWED_HOSTS"] = previous_allowed_hosts
 
 
-def asgi_request(application, method, path, payload=None, headers=None, return_headers=False, client_ip="127.0.0.1", scheme="https"):
+def asgi_request(application, method, path, payload=None, headers=None, return_headers=False, client_ip="127.0.0.1", scheme="https", raw_response=False):
     if not isinstance(application, FastAPI):
         raise TypeError("ASGI client requires the FastAPI instance, not its module")
 
@@ -257,7 +257,9 @@ def asgi_request(application, method, path, payload=None, headers=None, return_h
         for message in messages
         if message["type"] == "http.response.body"
     )
-    if response_body:
+    if raw_response:
+        body = response_body
+    elif response_body:
         try:
             body = json.loads(response_body)
         except json.JSONDecodeError:

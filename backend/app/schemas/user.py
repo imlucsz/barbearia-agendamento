@@ -1,11 +1,15 @@
 from pydantic import EmailStr, Field, StrictBool, StrictStr, field_validator
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
+from pydantic import BeforeValidator
+from app.core.email_identity import normalize_email
 from datetime import datetime
 from app.schemas.base import ORMModel, SchemaModel
 
+NormalizedEmail = Annotated[EmailStr, BeforeValidator(lambda value: normalize_email(value) if isinstance(value, str) else value)]
+
 
 class UserBase(ORMModel):
-    email: EmailStr = Field(max_length=254)
+    email: NormalizedEmail = Field(max_length=254)
     nome: StrictStr = Field(min_length=1, max_length=120)
 
 
@@ -15,7 +19,7 @@ class UserCreate(UserBase):
 
 
 class UserLogin(SchemaModel):
-    email: EmailStr = Field(max_length=254)
+    email: NormalizedEmail = Field(max_length=254)
     senha: StrictStr = Field(min_length=1, max_length=128)
 
 
@@ -30,7 +34,7 @@ class UserResponse(UserBase):
 
 class UserUpdate(SchemaModel):
     nome: Optional[StrictStr] = Field(default=None, min_length=1, max_length=120)
-    email: Optional[EmailStr] = Field(default=None, max_length=254)
+    email: Optional[NormalizedEmail] = Field(default=None, max_length=254)
     # Note: Password changes should use a separate endpoint for security
     bloqueado: Optional[bool] = None
 
@@ -50,7 +54,7 @@ class UserUpdate(SchemaModel):
 
 
 class EsqueciSenhaRequest(SchemaModel):
-    email: EmailStr = Field(max_length=254)
+    email: NormalizedEmail = Field(max_length=254)
 
 
 class RedefinirSenhaRequest(SchemaModel):

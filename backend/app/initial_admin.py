@@ -1,5 +1,7 @@
 """One-time interactive bootstrap for the first installation administrator."""
 
+from app.core.email_identity import email_key, normalize_email
+
 import getpass
 import os
 from pathlib import Path
@@ -62,7 +64,7 @@ def create_initial_admin(db: Session, *, nome: str, email: str, password: str) -
 
     if db.query(User).filter(User.role == RoleEnum.ADMIN).first():
         raise ValueError("This installation already has an administrator")
-    if db.query(User).filter(User.email == email).first():
+    if db.query(User).filter(email_key(User.email) == normalize_email(email)).first():
         raise ValueError("This email is already registered")
 
     from app.core.security import get_password_hash

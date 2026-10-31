@@ -1,6 +1,10 @@
 import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from fastapi.responses import Response
+from app.core.pdf_export import personal_data_pdf
+from app.core.email_identity import email_key, is_email_conflict
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 from app.database import get_db
 from app.models.user import (
@@ -16,6 +20,20 @@ from app.core.clock import utc_now_naive
 from app.core.security import verify_password, get_password_hash
 
 router = APIRouter(prefix="/users", tags=["usuarios"])
+
+
+@router.get("/me/export.pdf")
+def export_pdf(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    data = _collect_personal_data(current_user, db)
+    try:
+        pdf = personal_data_pdf(data)
+    except UnicodeEncodeError:
+        raise HTTPException(status_code=422, detail="Seus dados contêm caracteres não suportados neste PDF. Use a exportação JSON para preservá-los integralmente.") from None
+    _record_export(request, current_user, db, data)
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": 'attachment; filename="meus-dados.pdf"',
+        "Cache-Control": "no-store",
+    })
 
 
 @router.get("/", response_model=List[UserResponse])
@@ -83,13 +101,23 @@ def update_user(
         )
 
     update_data = user_update.model_dump(exclude_unset=True)
+    if "email" in update_data and db.query(User.id).filter(
+        email_key(User.email) == update_data["email"], User.id != user.id,
+    ).first():
+        raise HTTPException(status_code=409, detail="E-mail já cadastrado")
     previous_blocked = user.bloqueado
     if update_data.get("bloqueado") is True and not user.bloqueado:
         revoke_user_refresh_tokens(db, user.id)
     for key, value in update_data.items():
         setattr(user, key, value)
 
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        if is_email_conflict(error):
+            raise HTTPException(status_code=409, detail="E-mail já cadastrado") from None
+        raise
     db.refresh(user)
     if "bloqueado" in update_data and previous_blocked != user.bloqueado:
         record_audit(db, request, actor=current_user, acao="usuario.bloqueado" if user.bloqueado else "usuario.desbloqueado", entidade="usuario", entidade_id=user.id)
@@ -167,6 +195,12 @@ def exportar_meus_dados(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    result = _collect_personal_data(current_user, db)
+    _record_export(request, current_user, db, result)
+    return result
+
+
+def _collect_personal_data(current_user, db):
     appointments = db.query(Appointment, Service.nome).outerjoin(
         Service, Service.id == Appointment.service_id,
     ).filter(Appointment.user_id == current_user.id).order_by(Appointment.data_hora.desc()).all()
@@ -193,7 +227,10 @@ def exportar_meus_dados(
                         "data_agendamento": appointment_date.isoformat()}
                        for review, appointment_date in evaluations],
     }
-    record_audit(db, request, actor=current_user, acao="dados.exportados", entidade="dados_pessoais", entidade_id=current_user.id,
-                 detalhes={"agendamentos": len(appointments)})
-    db.commit()
     return result
+
+
+def _record_export(request, current_user, db, data):
+    record_audit(db, request, actor=current_user, acao="dados.exportados", entidade="dados_pessoais", entidade_id=current_user.id,
+                 detalhes={"agendamentos": len(data["agendamentos"])})
+    db.commit()

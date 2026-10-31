@@ -81,7 +81,12 @@ async function request(endpoint, options = {}) {
     ...rest,
     credentials: "include",
   };
-  let response = await fetch(url, fetchOptions);
+  let response;
+  try {
+    response = await fetch(url, fetchOptions);
+  } catch (cause) {
+    throw new Error("Não foi possível conectar ao servidor. Tente novamente.", { cause });
+  }
 
   if (shouldRefreshSession(response.status, auth, endpoint)) {
     try {

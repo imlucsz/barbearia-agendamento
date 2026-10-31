@@ -20,6 +20,50 @@ const barber = {
 const bookingDate = process.env.PW_E2E_BOOKING_DATE;
 const agendaDate = process.env.PW_E2E_AGENDA_DATE;
 
+test("login apresenta e-mail inválido em português sem detalhes internos", async ({ page }) => {
+  await page.goto("/pages/login.html");
+  await page.getByLabel("E-mail").fill("teste@dominio-invalido");
+  await page.getByLabel("Senha", { exact: true }).fill("test-only-password");
+  await page.getByRole("button", { name: "Entrar na minha conta" }).click();
+  await expect(page.getByRole("alert")).toContainText("Digite um endereço de e-mail válido.");
+  await expect(page.getByRole("alert")).not.toContainText(/Erro 422|value is|Pydantic|Traceback|SQL/i);
+});
+
+test("home encerra skeletons, simplifica filtros e oferece contatos seguros", async ({ page }, testInfo) => {
+  if (testInfo.project.name.startsWith("mobile")) await page.setViewportSize({ width: 320, height: 568 });
+  let resolveRoute;
+  const pending = new Promise(resolve => { resolveRoute = resolve; });
+  await page.route("**/services/", route => resolveRoute(route));
+  await page.route("**/informacoes/", route => route.fulfill({json:{
+    endereco:"Rua de Teste, 10", telefone:"(11) 99999-0000", dias_atendimento:"Todos os dias", horario_funcionamento:"08:00 às 18:00",
+    endereco_maps:"https://www.google.com/maps/place/Teste",
+  }}));
+  await page.goto("/pages/index.html");
+  const route = await pending;
+  await expect(page.locator("#services-skeleton .skeleton-loading")).toHaveCount(3);
+  await route.fulfill({json:[{id:999,nome:"Serviço de teste",preco:30,duracao_minutos:30,descricao:"Descrição"}]});
+  await expect(page.locator("#services-list")).toContainText("Serviço de teste");
+  await expect(page.locator("#services-skeleton .skeleton-loading")).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Cortes",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Barba",exact:true})).toHaveCount(0);
+  await expect(page.locator("#phone a")).toHaveAttribute("href","https://wa.me/5511999990000");
+  await expect(page.locator("#address a")).toHaveAttribute("href","https://www.google.com/maps/place/Teste");
+  if (testInfo.project.name.startsWith("mobile")) {
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("smooth");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
+    await page.getByRole("button", { name: "Abrir menu", exact: true }).click();
+    await page.locator('#main-nav a[href="#services"]').click();
+    await expect(page.locator("#nav-toggle")).toHaveAttribute("aria-expanded", "false");
+    expect(await page.evaluate(() => document.getElementById("services").getBoundingClientRect().top >= document.querySelector(".site-header").getBoundingClientRect().bottom)).toBe(true);
+  }
+  await page.unroute("**/services/");
+  await page.route("**/services/", route => route.abort());
+  await page.reload();
+  await expect(page.locator("#services-error")).toBeVisible();
+  await expect(page.locator("#services-skeleton .skeleton-loading")).toHaveCount(0);
+});
+
 function clientForProject(testInfo) {
   return testInfo.project.name.startsWith("mobile") ? mobileClient : client;
 }
@@ -238,17 +282,36 @@ test("conta baixa a exportação JSON e pede a senha atual antes de excluir", as
   await page.getByRole("button", { name: "Exportar meus dados" }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^meus-dados-\d{4}-\d{2}-\d{2}\.json$/);
+  const pdfDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar PDF", exact: true }).click();
+  expect((await pdfDownload).suggestedFilename()).toBe("meus-dados.pdf");
 
   await page.route("**/users/me", async (route) => {
     expect(route.request().method()).toBe("DELETE");
     expect(route.request().postDataJSON()).toEqual({ senha_atual: "current-password-123" });
     await route.fulfill({ json: { mensagem: "Conta anonimizada" } });
   });
-  page.on("dialog", async (dialog) => {
-    if (dialog.type() === "prompt") await dialog.accept("current-password-123");
-    else await dialog.accept();
-  });
+  page.on("dialog", () => { throw new Error("A exclusão deve usar o modal da aplicação"); });
   await page.getByRole("button", { name: "Excluir minha conta" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Senha atual", { exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Excluir conta", exact: true })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByLabel("Senha atual", { exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await expect(page.getByRole("button", { name: "Excluir minha conta" })).toBeFocused();
+  await page.getByRole("button", { name: "Excluir minha conta" }).click();
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Excluir minha conta" })).toBeFocused();
+  await page.getByRole("button", { name: "Excluir minha conta" }).click();
+  await page.getByLabel("Senha atual", { exact: true }).fill("current-password-123");
+  await page.getByRole("button", { name: "Excluir conta", exact: true }).click();
   await expect(page).toHaveURL(/index\.html$/);
 });
 
