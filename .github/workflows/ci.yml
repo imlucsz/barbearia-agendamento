@@ -12,7 +12,7 @@ jobs:
   python-sqlite:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
@@ -38,7 +38,7 @@ jobs:
       BOOKING_TEST_BACKEND: postgresql
       BOOKING_TEST_POSTGRES_URL: postgresql+psycopg://barbearia_test:ci-test-password-only@127.0.0.1:5432/barbearia_test
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: "3.14"
@@ -49,7 +49,7 @@ jobs:
   javascript-and-audits:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -66,7 +66,7 @@ jobs:
   playwright:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
