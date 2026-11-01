@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from app.database import get_db
 from app.models.user import Appointment, User, Service, RoleEnum, AppointmentStatusEnum, Avaliacao
 from app.schemas.appointment import AdminAppointmentCreate, AppointmentResponse, AvaliacaoResponse
@@ -274,6 +274,9 @@ def listar_auditoria(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(RoleEnum.ADMIN, detail="Acesso negado")),
 ):
+    # Audit timestamps are stored as naive UTC; accept ISO offsets consistently.
+    de = de.astimezone(timezone.utc).replace(tzinfo=None) if de is not None and de.tzinfo is not None else de
+    ate = ate.astimezone(timezone.utc).replace(tzinfo=None) if ate is not None and ate.tzinfo is not None else ate
     if de is not None and ate is not None and de > ate:
         raise HTTPException(status_code=400, detail="A data inicial deve ser anterior ou igual à data final")
     query = db.query(AuditLog)

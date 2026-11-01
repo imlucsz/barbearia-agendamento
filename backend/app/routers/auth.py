@@ -140,7 +140,7 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
         if db_user else (False, None)
     )
     if not db_user or not password_valid:
-        record_audit(db, request, actor=None, acao="auth.login", entidade="sessao", resultado="falha")
+        record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao", resultado="falha")
         db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

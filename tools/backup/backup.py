@@ -215,8 +215,8 @@ def create_backup() -> None:
     if not recipient:
         fail("Set BACKUP_AGE_RECIPIENT; plaintext backups are not written")
     retention = int(os.environ.get("BACKUP_RETENTION_DAYS", "30"))
-    if not 1 <= retention <= 3650:
-        fail("BACKUP_RETENTION_DAYS must be between 1 and 3650")
+    if not 30 <= retention <= 3650:
+        fail("BACKUP_RETENTION_DAYS must be between 30 and 3650")
 
     now = datetime.now(timezone.utc)
     stem = f"barbearia-postgres-{now:%Y%m%dT%H%M%SZ}-{secrets.token_hex(4)}"

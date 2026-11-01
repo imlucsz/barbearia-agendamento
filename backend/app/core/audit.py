@@ -8,7 +8,7 @@ from app.core.request_context import get_client_ip
 from app.models.user import AuditLog
 
 logger = logging.getLogger("security.audit")
-_SECRET_KEY = re.compile(r"password|senha|token|hash|secret|credential|authorization|cookie|body|corpo", re.I)
+_SECRET_KEY = re.compile(r"password|senha|token|hash|secret|credential|authorization|cookie|body|corpo|api[_-]?key|database[_-]?url", re.I)
 
 
 def _safe_details(details):

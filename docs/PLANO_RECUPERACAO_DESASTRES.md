@@ -8,7 +8,18 @@ Objetivos operacionais para cada instalação:
 - **RTO:** serviço restaurado em até 4 horas.
 - **Frequência:** backup diário do PostgreSQL, em formato custom, com snapshot transacional consistente.
 - **Retenção local:** 30 dias. Configure retenção equivalente ou maior no destino externo.
-- **Estado de validação:** os objetivos são metas documentadas; não foram medidos em uma recuperação real. O teste de restauração PostgreSQL deste repositório está **não executado** enquanto não houver uma instância descartável disponível.
+- **Estado de validação:** em 2026-11-01, backup criptografado e restauração foram ensaiados com PostgreSQL 16 descartável, ferramentas reais e dados fictícios. Revisão Alembic `20261031_01`, contagens de 14 tabelas e a conta fictícia foram preservadas. A restauração levou 1,673 s; o ciclo backup/cópia/restore levou 2,087 s após preparar as ferramentas. Esses tempos de massa mínima não comprovam RTO/RPO da instalação real, frequência diária ou retenção operacional histórica.
+
+## Primeira instalação: proposta mínima e fronteira externa
+
+- Executar diariamente às 02:15 UTC em máquina externa já existente e sempre ligada, usando cron ou Agendador de Tarefas. Não depender do filesystem efêmero ou Shell do Render Free. Agendamento e execução reais ainda não foram configurados.
+- Manter pelo menos 30 dias tanto no arquivo local quanto no destino remoto. O script agora rejeita `BACKUP_RETENTION_DAYS` abaixo de 30 antes de acessar o banco. Não executar expurgo sobre arquivos reais antes de confirmar a política do destino.
+- Reutilizar um destino já controlado pela instalação via rclone ou rsync/SSH, criptografando com age antes de transferir. A chave privada de recuperação deve ter custódia separada. Não foi escolhido/provisionado provedor, conta, pasta ou bucket.
+- Confirmar recebimento da cópia externa, idade do último backup bem-sucedido e alerta de falha do job; falha diária pode violar RPO de 24h. O checksum comprova integridade, não substitui essas verificações.
+- Antes de usar dados reais, preencher os responsáveis abaixo, realizar aceite do destino e executar restauração com massa representativa. Repetir o ensaio trimestral e após mudanças relevantes. O runbook de incidente deste documento permanece aplicável; o relógio do RTO começa no incidente, não apenas no pg_restore.
+- O YAML versionado ainda descreve PostgreSQL Free de homologação. Não foi consultado/alterado o plano do banco real. A permanência e recuperação dos dados comerciais exigem escolha operacional explícita; não se deve tratar o banco Free com expiração como destino permanente.
+
+No ensaio, dois contêineres na mesma máquina simularam origem e receptor remoto por rsync, sem portas públicas nem mounts do host. A cópia recebida foi comparada byte a byte e usada no restore; criptografia age, checksum e manifesto eram reais. Arquivo cifrado adulterado foi rejeitado antes de restaurar. O banco temporário de restore, os contêineres e a rede exclusiva foram removidos. Isso valida o mecanismo, não comprova armazenamento fisicamente externo da instalação. O primeiro ensaio interrompeu por uma dependência omitida na cópia mínima dos fontes; a repetição incluiu o arquivo necessário e passou, sem alteração do fluxo de restauração.
 
 Preencha e revise em cada instalação:
 

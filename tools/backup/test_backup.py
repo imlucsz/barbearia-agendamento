@@ -11,6 +11,21 @@ import backup
 
 
 class BackupFilesystemTests(unittest.TestCase):
+    def test_backup_refuses_retention_below_thirty_days_before_database_access(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            passfile = directory / "fixture.pgpass"
+            passfile.write_text("fixture-only", encoding="utf-8")
+            passfile.chmod(0o600)
+            for days in ("0", "1", "29"):
+                with self.subTest(days=days), patch.dict(os.environ, {
+                    "PGPASSFILE": str(passfile), "PGUSER": "fixture", "PGDATABASE": "fixture_test",
+                    "BACKUP_DIR": str(directory / "archive"), "BACKUP_AGE_RECIPIENT": "fixture-public-recipient",
+                    "BACKUP_RETENTION_DAYS": days,
+                }), patch.object(backup, "connect", side_effect=AssertionError("Unexpected database access")):
+                    with self.assertRaisesRegex(RuntimeError, "between 30 and 3650"):
+                        backup.create_backup()
+
     def test_retention_removes_only_old_direct_children_with_exact_backup_pattern(self):
         now = datetime.now(timezone.utc)
         old_stamp = (now - timedelta(days=31)).strftime("%Y%m%dT%H%M%SZ")

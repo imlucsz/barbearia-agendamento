@@ -1,40 +1,47 @@
-# Checklist de prontidão para produção
+# Checklist de prontidão para UAT e produção
 
-Este checklist reflete o que está versionado no repositório. A aplicação ainda não está implantada: itens externos precisam ser preenchidos e comprovados por instalação. Não inserir senhas, tokens, certificados privados ou URLs com credenciais neste documento.
+Atualizado em 2026-11-01 para **v1.0.0-rc.1: APROVADA COM RESSALVAS**, restrita a UAT controlado com dados fictícios/contas próprias até fechar as pendências externas. Candidato é o working tree sobre `main` / `218575f202e897a92f23cd4ee23091c2b1438045`, incluindo auditoria e backup locais. A identificação e os resultados estão em `REQUISITOS_STATUS.md`.
 
-## Pendências externas antes de publicar
+Render funcionando/deploy anterior saudável é contexto confirmado pelo usuário. Esta rodada não consultou nem publicou o candidato no Render. Não inserir credenciais, tokens, chaves ou URLs autenticadas nesta lista.
 
-- [ ] **Domínio:** registrar e apontar DNS para frontend e API. Escolher nomes no mesmo domínio registrável (por exemplo, `app.exemplo.com` e `api.exemplo.com`), necessário para a sessão baseada em cookie `SameSite=Lax`.
-- [ ] **TLS/HTTPS:** contratar ou provisionar certificados no host/proxy; forçar HTTP→HTTPS, TLS moderno, HSTS e cabeçalhos de segurança também para páginas estáticas. Não há configuração real de proxy/deploy no repositório.
-- [ ] **Hospedagem:** escolher host para frontend, API e PostgreSQL; manter o banco privado e exclusivo desta barbearia; configurar serviço/supervisor, firewall, atualização do SO, capacidade e monitoramento de processo. Não há unidade systemd, contêiner ou infraestrutura de produção configurada.
-- [ ] **Configuração:** criar `.env` seguro fora do controle de versão; definir `APP_ENV=production`, `INSTALLATION_NAME`, `DATABASE_URL`, `SECRET_KEY`, `CORS_ALLOWED_ORIGINS`, fuso, `TERMS_VERSION` e demais variáveis, todas próprias da instalação. Usar banco novo; não importar banco ou dados de outra barbearia.
-- [ ] **Migrações/admin:** antes do startup, fazer backup do banco novo, executar `python -m alembic upgrade head`, conferir `alembic current` e criar o primeiro admin por `python -m app.initial_admin`. Não usar `/seed` em produção.
-- [ ] **SMTP:** escolher provedor, validar domínio remetente, TLS e entrega; configurar usuário/senha e `PASSWORD_RESET_URL`; enviar e receber mensagem de recuperação de senha em homologação antes do lançamento.
-- [ ] **CORS/sessão:** cadastrar somente a origem HTTPS do frontend em `CORS_ALLOWED_ORIGINS`; confirmar `credentials: include`, domínio registrável compartilhado e Origin permitido em refresh/logout.
-- [ ] **Monitor:** escolher serviço de uptime ou cron externo e configurar verificação de `/health` a cada minuto, alerta após falhas consecutivas e alerta da taxa de 5xx. Configurar acesso protegido a `/metrics` com segredo próprio, se coletor Prometheus for usado. Exemplos estão em `MONITORAMENTO.md`; nenhum monitor foi provisionado.
-- [ ] **Backup remoto:** provisionar destino separado do host de aplicação, ferramenta/conta e criptografia; preencher variáveis exigidas por `tools/backup`; proteger chave `age` e credenciais. Configurar job diário e retenção mínima de 30 dias. O repositório não cria bucket nem conta externa.
-- [ ] **Restauração:** provisionar PostgreSQL descartável isolado e agendar o ensaio trimestral; comparar revisão Alembic e contagens. O teste não foi executado nesta máquina.
-- [ ] **Responsáveis:** preencher os campos em `PLANO_RECUPERACAO_DESASTRES.md` para operação, backup/chaves, comunicação e retorno do serviço.
-- [ ] **Segredos:** definir cofre e calendário por instalação para rodar `SECRET_KEY`, credenciais DB/SMTP e chaves de backup; validar impacto de logout e comunicação. Rotação documentada, ainda não executada.
-- [ ] **Evidência de navegador:** executar os 57 projetos/casos Playwright em ambiente com Chromium, Firefox e WebKit instalados; localmente 51 passaram e 6 não iniciaram por ausência de Firefox/WebKit.
-- [ ] **CI:** executar workflow GitHub Actions em PR/branch e confirmar jobs SQLite, PostgreSQL efêmero, Node, `pip-audit`, `npm audit` e Playwright verdes. A CI remota não foi executada nesta rodada.
+## Evidência local concluída para Release Candidate
 
-## Verificação pós-publicação
+- [x] Backend SQLite: 266 executados, 7 skips condicionais, sem falhas/erros.
+- [x] Backend PostgreSQL 16 exclusivamente descartável: 266 executados, 2 skips exclusivos SQLite, sem falhas/erros; limpeza confirmada.
+- [x] Banco vazio/anterior/head, upgrade repetido, paridade de schema e preservação; revisão Alembic `20261031_01`.
+- [x] Concorrência/double booking, autenticação/RBAC, recuperação local, LGPD, auditoria, RF13 e RF14 cobertos pelas suítes.
+- [x] Node: 26/26; testes backup/retenção/filesystem: 4/4.
+- [x] Playwright: 63 casos distintos aprovados; três motores × 320×568/390×844/1280×800 e fluxos completos desktop/mobile. Completa: 60/63, exit 1, Firefox caiu antes da página; repetição somente Firefox fora da sandbox: 3/3, exit 0.
+- [x] pip-audit com resolução completa: 36 dependências, 0 vulnerabilidades; npm audit: 0 em todas severidades. Nenhuma atualização de dependência aplicada.
+- [x] CORS, headers, rate limiting, XSS, isolamento e RBAC validados em código/testes. Scan sanitizado de textos rastreados sem secret real identificado no recorte; não abrange histórico, binários ou todo arquivo local.
+- [x] Backup PostgreSQL 16 real: pg_dump/age/checksum/manifesto, cópia rsync recebida e restore; head, 14 contagens e fixture preservados, corrupção rejeitada. Restore 3,339 s em massa mínima.
+- [x] YAML Free/launcher verificados: `python -m app.render_start`, migração e verificação antes da fronteira Uvicorn; falha impede startup; `/ready` preservado e usado pelo Render.
+- [x] RF01–RF24, RN01–RN05 e RNF01–RNF18 reconciliados. RF13/RF14/RF23/RNF-14 concluídos preservados; RF06 real continua A validar.
+- [x] Alterações locais alheias preservadas; nenhum commit, push, tag ou deploy nesta rodada.
 
-- [ ] `GET /health` responde 200 com banco acessível e 503 genérico se o banco ficar indisponível.
-- [ ] `GET /ready` responde 200 com esquema atualizado e 503 se a revisão estiver defasada.
-- [ ] Fluxo de fumaça: cadastro/consentimento, e-mail de recuperação, login, agendamento, cancelamento/reagendamento, sessão renovada, exportação e logout.
-- [ ] Testar bloqueio de cliente e verificar revogação imediata da sessão.
-- [ ] Confirmar HTTPS/certificado, redirect, HSTS, CSP das páginas estáticas, CORS restrito e cookie HttpOnly.
-- [ ] Confirmar primeiro backup, checksum, cópia fora do host e alerta de falha; completar restauração descartável antes de declarar recuperação comprovada.
-- [ ] Confirmar que logs e métricas não expõem credenciais, tokens, PII excessiva ou IDs de usuário em labels.
-- [ ] Registrar data, operador, versão/tag, revisão Alembic, resultado dos testes e contatos de incidente em local operacional protegido.
+## Pendências para concluir UAT e liberar piloto com dados reais / v1.0
 
-## Pendências encontradas na validação local
+- [ ] **RF06 — P1:** com uma conta própria de teste, comprovar solicitação, resposta uniforme, entrega pelo transporte configurado (Brevo HTTPS no YAML atual), URL pública, expiração/uso único, reset, senha antiga rejeitada/nova aceita e reuso rejeitado. Não registrar token/link completo nem secrets.
+- [ ] **TLS/headers/origem — P1:** medir HTTPS/TLS 1.3, redirect/HSTS/CSP/nosniff da API e frontend reais; confirmar CORS restrito, cookie HttpOnly/Secure, refresh/logout e relação entre origens. Não alterar configuração por tentativa sem evidência.
+- [ ] **Borda/IP — P1:** confirmar que o serviço recebe IP confiável da borda configurada, sem headers controláveis pelo cliente, para rate limit e auditoria. Não registrar IPs reais em relatório público.
+- [ ] **Banco durável — P1:** resolver a continuidade do PostgreSQL Free declarado no YAML (expiração de 30 dias, confirmada na [documentação Render Free](https://render.com/docs/free)); decisão do responsável antes de uso comercial continuado. Nenhum plano pago autorizado/configurado aqui.
+- [ ] **Backup externo diário — P1 (RNF-15):** escolher executor/destino existentes, configurar agendamento, criptografia/custódia e retenção ≥30 dias, comprovar primeira cópia e alerta de falha. Dois contêineres no mesmo host são ensaio, não destino fisicamente externo.
+- [ ] **Incidente/recuperação — P1 (RNF-18):** nomear operador/suplente e canais protegidos no runbook; ensaiar recuperação representativa em banco descartável e registrar tempo total. Metas RPO ≤24h/RTO ≤4h ainda não medidas na instalação.
+- [ ] **Monitor externo — P1 (RNF-17):** definir conta, alvo e canal; comprovar alerta/recuperação em alvo controlado. Opção mínima anteriormente proposta: UptimeRobot Free (intervalo 5 min), se aceito pelo responsável; não sustenta prometida verificação por minuto.
+- [ ] **Secrets — P1 (RNF-13):** identificar cofre/custódia, responsável e calendário de rotação por instalação; comprovar procedimento sem divulgar valores. Não presumir que a ausência de .env versionado prova operação segura.
+- [ ] **Navegadores (RNF-09):** smoke nas versões comerciais estáveis de Chrome/Firefox/Safari/Edge antes do aceite final de compatibilidade; WebKit Playwright não é Safari instalado.
+- [ ] **Documentação normativa — P1:** resolver redações antigas: RNF-02 cita bcrypt, implementação usa Argon2 com migração de bcrypt; RNF-12 nomeia ALLOWED_ORIGINS, variável é CORS_ALLOWED_ORIGINS; RNF-10 promete rollback genérico, migrations recusam downgrade destrutivo. Não alterar código seguro para reproduzir texto antigo.
+- [ ] **Aceite e versão exata:** registrar responsável UAT, resultados e ressalvas; após autorização de integração/publicação, registrar commit/tag/artefato efetivamente entregue e CI dessa revisão. O estado remoto atual não certifica alterações locais sem commit.
+- [ ] **Smoke publicado do candidato:** somente após publicação autorizada, confirmar `GET /health` e `GET /ready` 200 e fluxos essenciais com conta própria. Não simular falha de banco em produção. Falhas de conectividade/revisão já testadas isoladamente.
 
-1. PostgreSQL de teste indisponível: seis testes foram ignorados e os testes PostgreSQL não executaram.
-2. Firefox e WebKit não estão instalados: seis projetos Playwright falharam ao iniciar; Chromium passou.
-3. Sem SMTP de homologação: não há comprovação de entrega real do link de redefinição.
-4. Sem domínio, TLS, hospedagem, monitor e destino de backup provisionados: são configurações da instalação, não defeitos do código.
-5. Matriz normativa de transições de status de RF14 não foi definida; decisões de domínio continuam pendentes.
-6. Rota visual da agenda diária de RF13 precisa de E2E dedicado.
+## Operação contínua
+
+- [ ] Registrar execução diária/alertas de backup, retenção real de 30 dias e ensaios periódicos de restauração em ambiente descartável; nunca restaurar sobre banco real no ensaio.
+- [ ] Programar retenção de auditoria e coleta/monitoramento conforme runbook; armazenamento best-effort não garante zero perda.
+- [ ] Manter auditorias npm/pip, Dependabot e testes relevantes na CI; não aplicar atualização major sem validação.
+- [ ] Na próxima alteração de schema, manter compatibilidade com versão anterior durante deploy. O launcher executa no start, não no build/pre-deploy; uma única instância deve coordenar migrations. /ready exige head exato; não há garantia de zero downtime ou rollback automático do banco.
+- [ ] Confirmar bases legais/prazos LGPD com o controlador; manter contatos de incidente e inventário de dados em local operacional protegido.
+
+## Histórico substituído nesta revisão
+
+A lista antiga dizia “não implantado”, “PostgreSQL indisponível”, “Firefox/WebKit não instalados”, “RF13 sem E2E” e “RF14 sem matriz”. Esses estados não descrevem o candidato atual e foram substituídos por evidências acima. Histórico de testes e limitações datadas preservado em `REQUISITOS_STATUS.md`; respostas da sessão em `HISTORICO_FECHAMENTO_BETA_RC1.md`.

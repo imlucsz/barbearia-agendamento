@@ -106,6 +106,8 @@ def update_user(
     ).first():
         raise HTTPException(status_code=409, detail="E-mail já cadastrado")
     previous_blocked = user.bloqueado
+    changed_fields = sorted(key for key, value in update_data.items()
+                            if key != "bloqueado" and getattr(user, key) != value)
     if update_data.get("bloqueado") is True and not user.bloqueado:
         revoke_user_refresh_tokens(db, user.id)
     for key, value in update_data.items():
@@ -121,6 +123,10 @@ def update_user(
     db.refresh(user)
     if "bloqueado" in update_data and previous_blocked != user.bloqueado:
         record_audit(db, request, actor=current_user, acao="usuario.bloqueado" if user.bloqueado else "usuario.desbloqueado", entidade="usuario", entidade_id=user.id)
+    if changed_fields:
+        record_audit(db, request, actor=current_user, acao="usuario.alterado", entidade="usuario", entidade_id=user.id,
+                     detalhes={"campos": changed_fields})
+    if changed_fields or ("bloqueado" in update_data and previous_blocked != user.bloqueado):
         db.commit()
     return user
 

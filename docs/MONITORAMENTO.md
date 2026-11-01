@@ -90,3 +90,12 @@ groups:
 ```
 
 O destino e o receptor de alertas são configuração operacional do ambiente; este repositório não cria contas, recursos pagos ou configuração de deploy.
+
+## Primeira instalação — estado em 2026-11-01
+
+- Validados localmente 9 testes de readiness/observabilidade: SELECT 1 e falha sanitizada, revisão Alembic, proteção de métricas, latência/5xx, cardinalidade e logs sem credenciais. Nenhum token ou configuração real do Render foi consultado.
+- Proposta mínima sem serviço pago: monitor externo gratuito para `/health` e `/ready`, notificando o contato operacional indicado pelo proprietário. UptimeRobot Free anuncia cadência de 5 minutos e uso comercial; essa opção não comprova a cadência de 1 minuto do exemplo acima. Para 1 minuto, reutilizar executor externo já existente; não contratar infraestrutura sem decisão do proprietário. Referência verificada: https://uptimerobot.com/pricing/.
+- Exigir resposta HTTP 200 e testar aviso de queda e recuperação em alvo controlado, sem derrubar o banco real. Confirmar também que a tela de aquecimento do Free não é confundida com saúde da API. Não foi criada conta, monitor, webhook ou assinatura.
+- Métricas por processo já existem; não é necessário implantar uma stack Prometheus para fechar o primeiro monitor de disponibilidade. Coleta de métricas/alertas continua dependente da configuração externa e do canal aprovado; não declarar monitoramento ativo apenas por `/health` retornar 200.
+- Após um alerta: responsável identifica instância/versão e horário, consulta diagnóstico sanitizado, distingue conexão de schema (`/health` versus `/ready`) e segue o runbook de `PLANO_RECUPERACAO_DESASTRES.md`. Não executar restore, migração, restart ou rotação de credenciais sem a autorização aplicável. Registrar reconhecimento, ação, recuperação e tempo total.
+- Fronteira pendente: URL pública final, conta/provedor do monitor e nome/canal do responsável operacional. RNF-17 permanece Parcial até configurar e comprovar recebimento real dos alertas.

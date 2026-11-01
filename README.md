@@ -388,6 +388,10 @@ O Blueprint seleciona `EMAIL_TRANSPORT=brevo_api`, pois o Free bloqueia as porta
 
 O build continua limitado à instalação de dependências. O launcher verifica migrações em cada início, inclusive após suspensão/reinício do Free; em head, Alembic não reaplica revisões. Novas migrações devem ser compatíveis com a versão anterior ainda atendendo tráfego durante o deploy (expand/contract). Como `/ready` exige revisão exata, avançar o schema pode tornar a instância antiga não pronta; este fluxo não garante zero downtime. Falha de deploy não desfaz migrações já confirmadas no banco; não faça downgrade automático. O fluxo pressupõe um único serviço migrador para esse banco e não instala migrations no lifespan ou em cada worker. Não compartilhe esse launcher entre serviços concorrentes sem coordenar a etapa de release. Migrações precisam terminar dentro da janela de inicialização do Render. O fluxo foi validado em SQLite e PostgreSQL 16 descartáveis, incluindo preservação de contas e bloqueio do servidor na falha de migração; o funcionamento online no Render continua pendente.
 
+Auditoria RF23/RNF-14: o catálogo de eventos, metadados, filtros e testes está em [docs/AUDITORIA_RF23_RNF14.md](docs/AUDITORIA_RF23_RNF14.md). A persistência best-effort foi mantida; retenção tem dry-run e expurgo, cujo agendamento cabe à operação da instalação.
+
+Operação inicial: backup/restauração com PostgreSQL 16, age, checksum e cópia por rsync foram validados em infraestrutura descartável; a retenção mínima de 30 dias é exigida pelo script. RNF-15, RNF-17 e RNF-18 permanecem parciais até definir executor/destino externo, configurar e testar alertas e identificar os responsáveis. Procedimentos e evidências em [monitoramento](docs/MONITORAMENTO.md) e [recuperação](docs/PLANO_RECUPERACAO_DESASTRES.md).
+
 ## Equipe
 
 Projeto desenvolvido por estudantes de DSM da FATEC Itaquera. Consulte o histórico do repositório para autoria por alteração e contribuições.
