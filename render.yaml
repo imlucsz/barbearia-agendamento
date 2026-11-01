@@ -13,7 +13,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: >-
       PASSWORD_RESET_URL="${FRONTEND_ORIGIN}/pages/reset.html"
-      uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-proxy-headers
+      python -m app.render_start
     plan: free
     healthCheckPath: /ready
     envVars:
