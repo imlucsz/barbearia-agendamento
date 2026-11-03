@@ -1,5 +1,92 @@
 # Status de auditoria dos requisitos
 
+## Fechamento dos checks do laboratório — 2026-11-03
+
+Checks gerais 17/17 e vídeo 18/18 aprovados isoladamente após corrigir sincronização dos testes, sem alterar runtime ou assets. Justificativa em [validação do Lab](../frontend/e2e/motion-lab/VALIDACAO.md). A HOME pública não depende do Lab em runtime. Firefox/WebKit mantêm os limites registrados abaixo. Sem staging, commits, deploy ou alteração de banco.
+
+## Ritual contínuo universal — 2026-11-03
+
+- Removida a seleção de três stills por largura/altura. Com movimento normal,
+  `timeline.progress()` alimenta o seeker em todas as viewports; breakpoints
+  escolhem somente a apresentação. Preservados asset, GOP/codec, fila segura,
+  storytelling, cortes narrativos e destinos dos botões. Reduced-motion mantém
+  poster, capítulos completos e vídeo sem src/pin/corredor.
+- Mobile usa palco sticky e 310svh de seção (fallback 310vh); composição curta
+  ajustada após revisão visual para não esconder rosto/etiqueta sob o header
+  nem sobrepor texto e régua. Hero/Estrelinha/Serviços/backend não alterados.
+- Evidência: matriz de 11 viewports por canal instalado Chrome/Edge, 22/22;
+  regressão visual compacta posterior, 6/6; HOME existente, 44/44; Node, 27/27.
+  Validados tempos 0/12/25/38/50/63/75/88/100%, rVFC, reverso, touch, resize,
+  reduced-motion, ausência de overflow e acesso à seção seguinte.
+- Edge tablet: 12 gestos isolados convergiram em 2,5s; zero writes durante seek.
+  Desvio antigo de ~0,33s não reproduzido como falha persistente. Corrida de
+  resize comprovada no teste (alvo final 7,333s, vídeo convergente); ajustada
+  sincronização do teste, sem alteração do seeker. Três repetições posteriores
+  passaram. Probe final Chrome/Edge em 1440×900/640: centenas de frames reais,
+  zero writes concorrentes e zero dropped frames reportados.
+- Firefox: 2 falhas em newPage, reproduzidas também em about:blank. WebKit:
+  2 falhas de mídia antes de scrub; asset isolado também retorna error4,
+  readyState0/duração NaN, apesar de canPlayType=probably. Firefox/Safari real
+  continuam sem compatibilidade demonstrada neste ambiente. Sem fallback por UA.
+  Fallback/reduced-motion WebKit: 4/4 aprovados, sem equivaler a scrub validado.
+- Comandos, arquivos, capturas e limites: [relatório atual](HOME_MOTION_INTEGRATION.md#ritual-contínuo-universal--2026-11-03).
+  Testes Python/SQLite/PostgreSQL não executados; validação estática com dados
+  fictícios interceptados, sem iniciar backend ou banco. Sem commit/push/deploy.
+
+## Laboratório de motion — fase 1 — 2026-11-02
+
+**Concluído como prova visual isolada; integração com a HOME pendente.** Direção
+"Precisão que transforma" aprovada pelo usuário. Código em
+`frontend/e2e/motion-lab/`, já excluído do build estático pela exclusão existente de
+`e2e`. Nenhuma alteração desta rodada em index.html, backend, API, banco ou auth.
+
+- Cenas: intro → hero de 3,5s/2,3s mobile, tesoura SVG articulada com reação Canvas,
+  espelho PREPARO → TÉCNICA → ACABAMENTO em uma timeline reversível com um pin desktop,
+  e CTA editorial final. Pointer move iluminação; CTA permanece estável.
+- Comparação real de pole SVG/CSS versus Three procedural, independente das cenas;
+  fallback SVG em falhas, inclusive perda de contexto. Preferência técnica/visual
+  inicial por SVG: Three ainda não mostrou vantagem suficiente para integração.
+- Dependências exclusivas do laboratório: GSAP 3.15.0 e Three.js 0.187.0, lockfile
+  local, imports locais sem CDN. Não há fotos/stock, pessoas inventadas ou APIs.
+- Evidência: `rtk proxy node frontend/e2e/motion-lab/checks.mjs`: **17/17 checks
+  aprovados no Google Chrome**, incluindo intro, skip/Escape/Tab, pointer, scroll nos
+  dois sentidos, viewports 320/390/768/820/1000/1440, reduced-motion inicial/em sessão,
+  falhas de GSAP/Three, montagem parcial, perda/recuperação de WebGL e desmontagem.
+  `rtk proxy node --test "frontend/tests/*.test.mjs"`: **26/26 aprovados**.
+- Console da navegação normal sem erros, sem requisições a backend/API ou recursos
+  externos; falhas induzidas verificadas em contextos próprios. Nenhum teste de banco
+  executado. Screenshots e relatório em `frontend/e2e/motion-lab/artifacts/` (ignorado).
+- Comparação lado a lado executada com o Temaki original em modo full. Referência
+  permanece mais complexa em nuvem WebGL e variedade de cenas; laboratório demonstra
+  causalidade e transformação visual com instrumentos/espelho, sem copiar identidade.
+- Instrumentação distingue um consumidor compartilhado do ticker GSAP dos RAF
+  internos de GSAP/ScrollTrigger. Até 62 partículas desktop/23 mobile, um contexto
+  WebGL sob demanda, cinco ScrollTriggers, 18 listeners próprios/19 com Three.
+  Canvas fora de uso param de renderizar; teardown verificado com zero contextos,
+  triggers, listeners próprios e RAF pendentes.
+- Fontes visuais próprias: cerca de 77 KB (23 KB gzip concatenado estimado). Módulos
+  de desenvolvimento são servidos sem minificação/compressão; bytes no HUD significam
+  subrecursos descomprimidos, sem o documento HTML. Não são números de bundle final.
+- Revisão independente levou a correções de cleanup transacional e retry em canvas
+  novo. A validação visual corrigiu stacking da intro e sobreposição mobile. Um
+  timeout de teste foi resolvido encerrando contextos de navegador já concluídos;
+  rodada final completa passou. Métricas de campo, Firefox/WebKit e aparelho físico
+  não foram medidos. Nenhum commit, push ou deploy.
+
+## Home editorial — 2026-11-02
+
+Implementada a evolução da apresentação: entrada não bloqueante do hero (até 990 ms), transição editorial, etapas conectadas, Ritual cuidado → técnica → resultado e CTA final no fluxo existente. `home.js`, widget, recursos opcionais, backend e contratos permanecem intactos. Estrelas fixas do hero substituídas por ornamento, sem alegação de média.
+
+- Camada independente: `frontend/assets/css/home-experience.css` e `frontend/assets/js/home-experience.mjs`; conteúdo visível por padrão, sem polling, Canvas, WebGL ou dependências adicionais.
+- Ritual: apenas visual sticky em desktop >=1000px/altura >=650px; textos sempre lineares e disponíveis. Mobile e reduced-motion sem pinning; mudanças de preferência em sessão cancelam animações.
+- Evidência: `rtk proxy node --test "frontend/tests/*.test.mjs"`: **26/26 aprovados**. `rtk proxy node node_modules/@playwright/test/cli.js test --config frontend/e2e/home-experience.config.mjs`: **36/36 aprovados**, Chromium 1440×900, 820×1180, 390×844 e 320×568. Fixtures fictícias interceptam API; nenhum banco ou migration executado.
+- Cobertura: skeleton, falha/retry, catálogo, links, contatos, avaliações ocultas/média, iframe sem ancestrais transformados, menu, âncoras, teclado, overflow, reduced-motion inicial/em sessão, ausência/falha de APIs e módulo, progressão/resize do Ritual. Smoke adicional com Estrelinha habilitada e Enter: um Canvas existente e nenhum erro de console/pageerror.
+- Revisão visual desktop e 320px realizada; texto do espelho cabe em 320px. Revisão independente sem achados críticos/importantes. O teste da progressão detectou e permitiu corrigir margens verticais do observer (percentuais são relativos à largura); teste de teclado ajustado para navegação real por Tab/Shift+Tab.
+- Tamanho medido: JS 6.467 bytes / 2.121 gzip; CSS 7.852 bytes / 2.253 gzip. Até dois observers ativos; seis listeners; um RAF sob demanda do ponteiro, sem loop. Zero assets gráficos novos. Métricas de campo LCP/INP e Firefox/WebKit não foram medidas nesta rodada.
+- O primeiro comando Node com diretório falhou por resolução do runner; comando corrigido com glob passou. `git diff --check` global mantém aviso preexistente em `AGENTS.md:29`; arquivo protegido não foi corrigido. Não houve commit, push ou deploy.
+
+Esta evidência é de apresentação com API interceptada, não uma nova validação integral da release ou de produção.
+
 ## Parecer v1.0.0-rc.1 — 2026-11-01
 
 **RELEASE CANDIDATE: APROVADA COM RESSALVAS**, para UAT controlado com dados fictícios/contas próprias. Não equivale a liberação irrestrita da primeira instalação comercial com dados reais.
@@ -175,3 +262,17 @@ Os registros abaixo preservam evidência datada. Contagens, indisponibilidade an
 - IP para rate limit/auditoria: `direct` ignora headers e usa o peer do socket; o Blueprint Render define explicitamente `cf-connecting-ip`, validado como um IP único, e Uvicorn inicia com `--no-proxy-headers`. A confiança depende do comportamento documentado da borda Render/Cloudflare; precisa de confirmação operacional no primeiro deploy, sem registrar IPs em logs. A CSP do frontend está limitada a `frame-ancestors 'none'` até validar o import map inline, jsDelivr, logos externos e Google Maps.
 - O Blueprint Free resolve hosts e URLs por `fromService` e compõe `/pages/reset.html` na inicialização, sem Alembic ou `preDeployCommand`. Usa `EMAIL_TRANSPORT=brevo_api`; somente `BREVO_API_KEY` e `EMAIL_FROM` são solicitados no painel. SMTP continua como padrão para outras instalações. Provisionamento, remetente autorizado/chave no Render, migrations operacionais, criação interativa do primeiro administrador e validação online seguem pendentes.
 - Validação da adaptação Brevo: 68 testes Python relevantes aprovados (7 Brevo, 18 configuração, 21 configuração da aplicação/produção, 8 recuperação, 7 segurança/rate limiting e 7 JWT), com SQLite temporário; 4 testes Node de build estático e fragmento aprovados. YAML e referências entre serviços validados localmente com PyYAML; CLI/validação online Render, PostgreSQL e entrega externa não executados. `git diff --check` dos arquivos da implementação sem erros; a verificação global aponta somente whitespace preexistente em `AGENTS.md:19`, preservado.
+
+Integração HOME/motion: catálogo, auth e contatos mantidos em home.js; apresentação GSAP e vídeo separados. Evidências e testes em docs/HOME_MOTION_INTEGRATION.md. Sem publicação.
+
+Estrelinha cinematográfica: três aparições decorativas, com flag por instalação, canvas compartilhado e reduced-motion; detalhes e validação em docs/ESTRELINHA_CINEMATICA.md.
+
+## Workflow Codex — 2026-11-02
+
+- Regras atuais preservadas em `AGENTS.md`, com plano explícito apenas para mudanças complexas e reforço de banco descartável de teste; marcador vazio com whitespace removido.
+- Área existente `docs/superpowers/plans/` reutilizada com modelo curto; decisões confirmadas da HOME em `specs/home-experience.md`. `GUIA.md` alinhado à arquitetura single-tenant, sem reescrita geral.
+- Hook do Graphify preservado; check de whitespace após `apply_patch` acrescentado em `.codex/hooks.json`, sem testes pesados automáticos. Ativação depende da revisão de confiança via `/hooks`; comando validado diretamente.
+- Diferença entre instruções e sandbox/aprovações documentada em `tools/codex-helpers/README.md`. Sem mudança de permissões globais, dependências, banco, produção ou aplicação.
+- Validação: JSON dos hooks e preservação exata do handler Graphify conferidos com Python; UTF-8/whitespace dos oito arquivos (incluindo untracked) e quatro links locais validados; `rtk proxy git diff --check` com código 0. Arquivos de frontend previamente modificados preservados por comparação de hashes. Suítes Python/Node da aplicação, Playwright e PostgreSQL não executadas: mudança restrita a documentação/configuração de hook.
+
+Diagnóstico Ritual Chrome/Edge (2026-11-02): sem correção na HOME. Probe em ambos os canais instalados: scrub contínuo em 1440x900; três tempos em 1440x640 por seleção responsiva. Zero writes durante seeking. Playwright HOME desktop/mobile: 4/4. Causa da sessão manual pendente de confirmação da viewport/modo; evidência e coleta em docs/RITUAL_CROSS_BROWSER_DIAGNOSTICO.md.
