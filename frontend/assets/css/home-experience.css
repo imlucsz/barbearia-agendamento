@@ -1,0 +1,157 @@
+/* Home-only presentation. Every chapter is readable without JavaScript. */
+.chapter-bridge {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 3rem);
+  padding-block: 1rem 2.5rem;
+}
+.chapter-bridge p { margin: 0; color: var(--color-muted); font-family: var(--font-display); text-align: center; }
+.chapter-bridge em { color: var(--color-primary-strong); }
+.chapter-bridge-line { flex: 1; height: 1px; background: var(--color-border); }
+.chapter-bridge-line:first-child { background: linear-gradient(90deg, transparent, var(--color-primary)); }
+.chapter-bridge-line:last-child { background: linear-gradient(90deg, var(--color-primary), transparent); }
+
+.ritual-section {
+  border-block: 1px solid var(--color-border);
+  background: var(--color-surface-deep);
+}
+.ritual-section .section-heading { margin-bottom: clamp(2rem, 5vw, 4rem); }
+.ritual-section h2 em,
+.final-booking h2 em { color: var(--color-primary-strong); font-weight: 500; }
+.ritual-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: clamp(3rem, 8vw, 8rem); }
+.ritual-visual { min-width: 0; }
+.ritual-mirror {
+  position: relative;
+  display: grid;
+  min-height: 420px;
+  overflow: hidden;
+  align-content: center;
+  padding: clamp(2rem, 5vw, 4rem);
+  border: 1px solid var(--color-border);
+  border-radius: 48% 48% 2px 2px;
+  background: radial-gradient(ellipse at 65% 20%, var(--color-hero-mid), transparent 65%), var(--color-surface-inset);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, .3);
+  isolation: isolate;
+}
+.ritual-mirror::before {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ritual-reflection {
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  opacity: .45;
+  background: linear-gradient(115deg, transparent 36%, var(--color-primary) 49%, transparent 52%);
+}
+.ritual-rule { position: absolute; left: 18%; right: 18%; bottom: 22%; height: 1px; background: var(--color-primary); opacity: .45; }
+.ritual-inscription .eyebrow { font-size: .6rem; letter-spacing: .19em; }
+.ritual-inscription strong { display: block; margin-top: 1rem; font-family: var(--font-display); font-weight: 500; font-size: clamp(2.6rem, 4.5vw, 4.3rem); line-height: 1.04; letter-spacing: -.04em; }
+.ritual-inscription em { color: var(--color-primary-strong); }
+.ritual-signature { position: absolute; bottom: 2rem; left: 0; right: 0; text-align: center; font-size: .58rem; letter-spacing: .24em; color: var(--color-muted); }
+.ritual-markers { display: flex; justify-content: space-between; gap: .5rem; margin-top: 1.3rem; color: var(--color-muted); font: .65rem Consolas, monospace; letter-spacing: .1em; }
+.ritual-chapter { padding: 1.8rem 0 2.4rem; border-top: 1px solid var(--color-border); }
+.ritual-number { color: var(--color-primary-strong); font: .75rem Consolas, monospace; letter-spacing: .13em; }
+.ritual-chapter h3 { margin: 1.1rem 0; font-size: clamp(1.8rem, 3vw, 2.8rem); letter-spacing: -.035em; }
+.ritual-chapter p { max-width: 34ch; margin-bottom: 0; color: var(--color-muted); }
+
+.final-booking { position: relative; border-top: 1px solid var(--color-border); background: var(--color-surface-deep); text-align: center; padding-block: clamp(5rem, 11vw, 10rem); }
+.final-booking::before { content: ""; display: block; width: 3rem; height: 1px; margin: 0 auto 2rem; background: var(--color-primary); }
+.final-booking h2 { margin: 1rem 0 1.5rem; font-size: clamp(2.7rem, 6.5vw, 6rem); line-height: 1.02; letter-spacing: -.045em; }
+.final-booking p { max-width: 38ch; margin: 0 auto 2rem; color: var(--color-muted); }
+.final-booking-note { display: block; margin-top: 2rem; font-size: .62rem; letter-spacing: .22em; color: var(--color-muted); }
+
+/* A fine connector stays behind the opaque step cards. */
+.process-section .steps { position: relative; }
+.process-section .steps::before { content: ""; position: absolute; top: 2rem; left: 2rem; right: 2rem; height: 1px; background: var(--color-primary); opacity: .35; }
+.process-section .step-card { position: relative; background: var(--color-surface); }
+.process-section .step-number { position: relative; padding-right: .7rem; background: inherit; }
+.process-section .step-card.is-revealed { border-top-color: var(--color-primary); }
+
+@media (max-width: 900px) {
+  .ritual-layout { gap: 2rem; }
+  .ritual-mirror { min-height: 360px; }
+}
+@media (max-width: 680px) {
+  /* Prioritize the existing headline and booking action on short screens. */
+  .hero .hero-copy { order: 0; }
+  .hero .hero-art { order: 1; }
+  .hero-proof { flex-wrap: wrap; gap: .5rem; }
+  .chapter-bridge { gap: .7rem; padding-block: .5rem 2rem; }
+  .chapter-bridge p { max-width: 20ch; font-size: .95rem; }
+  .ritual-layout { grid-template-columns: 1fr; }
+  .ritual-visual { max-width: 380px; width: 100%; margin-inline: auto; }
+  .ritual-mirror { min-height: 320px; padding: 2.7rem; }
+  .ritual-inscription strong { font-size: 3.2rem; }
+  .ritual-chapter { padding-block: 1.6rem 2rem; }
+  .ritual-chapter p { max-width: none; }
+  .process-section .steps::before { width: 1px; height: auto; top: 1rem; bottom: 1rem; left: 1.6rem; right: auto; }
+  .final-booking .btn { width: 100%; max-width: 350px; }
+  .final-booking .eyebrow { font-size: .65rem; letter-spacing: .14em; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .experience-ready .art-glow {
+    transform: translate(calc(-50% + var(--hero-light-x, 0px)), var(--hero-light-y, 0px));
+    transition: transform .25s ease-out;
+  }
+  .experience-ready .chapter-bridge-line { animation: home-line .9s ease-out both; }
+  @keyframes home-line { from { transform: scaleX(.7); opacity: .5; } to { transform: scaleX(1); opacity: 1; } }
+}
+
+/* Only the decorative mirror sticks; all three texts stay in reading order. */
+@media (min-width: 1000px) and (min-height: 650px) and (prefers-reduced-motion: no-preference) {
+  .ritual-enhanced .ritual-visual { position: sticky; top: 110px; }
+  .ritual-enhanced .ritual-chapter { min-height: 280px; padding-block: 2.5rem; }
+  .ritual-enhanced .ritual-chapter.is-current { border-top-color: var(--color-primary); }
+  .ritual-enhanced .ritual-reflection { transition: transform .65s ease, opacity .65s ease; }
+  .ritual-enhanced .ritual-rule { transition: transform .65s ease; }
+  .ritual-visual[data-stage="1"] .ritual-reflection { transform: translateX(12%) rotate(-8deg); opacity: .65; }
+  .ritual-visual[data-stage="1"] .ritual-rule { transform: translateY(-35px); }
+  .ritual-visual[data-stage="2"] .ritual-reflection { transform: translateX(-8%) rotate(8deg); opacity: .3; }
+  .ritual-visual[data-stage="2"] .ritual-rule { transform: translateY(12px) scaleX(.7); }
+  .ritual-enhanced .ritual-markers span { transition: color .25s; }
+  .ritual-visual[data-stage="0"] .ritual-markers span:nth-child(1),
+  .ritual-visual[data-stage="1"] .ritual-markers span:nth-child(2),
+  .ritual-visual[data-stage="2"] .ritual-markers span:nth-child(3) { color: var(--color-primary-strong); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .service-book { transition: background .2s, border-color .2s, transform .2s; }
+  .service-book:hover { transform: translate(2px, -2px); }
+  .review-card { transition: border-color .2s; }
+  .review-card:hover { border-color: var(--color-primary); }
+  .final-booking .btn span { transition: transform .2s; }
+  .final-booking .btn:hover span { transform: translate(2px, -2px); }
+}
+.review-card::before { content: "“"; height: 1.3rem; color: var(--color-primary); font: 2.5rem/.9 var(--font-display); }
+.service-price, .service-duration, .schedule-table td { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ritual-visual { position: static !important; }
+  .ritual-reflection, .ritual-rule, .service-book, .final-booking .btn span { transform: none !important; }
+}
+
+.intro-shell { position: fixed; inset: 0; z-index: 80; pointer-events: none; overflow: hidden; }.intro-panel { position: absolute; top: 0; bottom: 0; width: 50.1%; background: radial-gradient(ellipse at 100% 45%,#38423333,transparent 70%),linear-gradient(115deg,#080d0b,#111a15 65%,#080e0b); }.intro-panel-left { left: 0; border-right: 1px solid #b2a07926; }.intro-panel-right { right: 0; background: radial-gradient(ellipse at 0% 45%,#38423333,transparent 70%),linear-gradient(245deg,#080d0b,#111a15 65%,#080e0b); border-left: 1px solid #b2a07926; }.intro-seam { position: absolute; width: 1px; left: 50%; top: 17%; height: 66%; background: linear-gradient(transparent,#fff0c2,transparent); box-shadow: 0 0 18px 3px #e9d19366; opacity: 0; }.intro-mark { position: absolute; z-index: 1; left: 50%; top: 17%; transform: translateX(-50%); text-align: center; width: 300px; color: #d5bf8e; }.intro-mark>span { display: block; font: 100px/.9 var(--serif); letter-spacing: -.09em; padding-right: 12px; text-shadow: 0 1px #ffedbf,0 6px 30px #000; }.intro-mark strong { display: block; font: 13px var(--mono); letter-spacing: .36em; padding-left: .36em; margin: 20px 0 10px; }.intro-mark small { font: 7px var(--mono); color: #a9a387; letter-spacing: .22em; }.intro-caption { position: absolute; bottom: 11%; left: 0; right: 0; text-align: center; font: 8px var(--mono); letter-spacing: .27em; color: #b1ad91; }.skip-intro { position: fixed; z-index: 120; right: 5vw; bottom: 75px; background: transparent; border: 0; border-bottom: 1px solid var(--hairline); padding: 15px 0; color: var(--muted); font: 9px var(--mono); letter-spacing: .1em; }.skip-intro span { margin-left: 18px; }
+
+
+/* Integrated approved motion vocabulary; business selectors retain their behavior. */
+:root{--serif:var(--font-display,Georgia,serif);--mono:Consolas,monospace;--hairline:var(--color-border);--deep:var(--color-surface-deep)}
+.hero{position:relative;isolation:isolate;min-height:calc(100svh - 95px);overflow:clip}.hero-title{font-size:clamp(48px,7.4vw,118px);line-height:.94;letter-spacing:-.065em}.headline-line{display:block}.hero-art{position:relative}.art-frame{overflow:visible;background:none;border:0;box-shadow:none}.art-copy,.art-caption{display:none}.hero-pole{position:absolute;right:10%;top:8%;height:85%;width:40%}.hero-pole svg,.hero-tool svg{width:100%;height:100%;overflow:visible}.hero-tool{position:absolute;width:85%;right:-9%;top:50%;transform:rotate(-24deg);z-index:4;pointer-events:none}.estrela-mount{z-index:5;position:absolute;bottom:0;left:0;max-width:36%}#dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}.hero-copy{z-index:6}.hero-beam{position:absolute;inset:-20%;background:radial-gradient(ellipse at 70% 40%,#d5c27b30,transparent 70%);pointer-events:none}.intro-playing .hero-tool,.intro-playing .hero-pole{position:relative}.intro-playing .hero-tool{position:absolute}.intro-playing .hero-pole{position:absolute}.site-header{z-index:100}.skip-intro{z-index:110}.services-section,.location-section,.reviews-section{background:var(--color-surface-deep)}.steps{gap:0}.step-card{background:transparent;border-width:0 0 0 1px;border-radius:0}.service-card,.location-card{border-radius:0}.final-booking h2{font-size:clamp(44px,7.5vw,120px);line-height:.98;letter-spacing:-.06em}.final-booking{background:radial-gradient(ellipse at 50% 45%,#9f91621c,transparent 65%),var(--color-surface-deep);padding-block:clamp(85px,12vw,170px)}
+.ritual-video .ritual-stage{position:relative;overflow:hidden}.ritual-video .ritual-chapters{margin:0}.ritual-video .ritual-chapter .eyebrow{color:var(--color-primary)}.ritual-video .ritual-rail{display:flex;position:absolute;left:7.5%;align-items:center}.ritual-video .ritual-rail button{border:0;background:none;min-height:44px;color:#bfc8b1}.ritual-progress{position:absolute;top:-15px;left:0;right:0;height:1px}.ritual-progress span{display:block;height:1px;background:#d7c18b}.ritual-video .ritual-heading{clip:rect(0,0,0,0)}
+@media(max-width:680px){.hero-title{font-size:clamp(43px,11vw,74px)}.hero-art{min-height:400px}.hero-pole{height:90%;width:40%;right:18%}.hero-tool{width:75%;top:54%}.steps{display:block}.step-card{border-width:1px 0 0}.ritual-video .ritual-rail{left:8%}}
+@media(prefers-reduced-motion:reduce){.intro-shell,.skip-intro{display:none!important}}
+.hero-title{font-family:Georgia,serif;font-weight:400;font-size:clamp(44px,6.1vw,96px);text-transform:uppercase;line-height:1.01}.hero-title em{font-weight:400}.hero-pole{left:auto;bottom:auto;transform:none;image-rendering:auto}.art-frame::before,.art-frame::after{display:none}.art-frame{min-height:550px}.hero{padding-block:60px}.hero-tool{right:0;top:55%}
+.final-booking h2{font-family:Georgia,serif;font-weight:400;text-transform:uppercase}.final-booking h2 span,.final-booking .huge-word{display:block}.final-booking .huge-word{font-size:1.8em;line-height:.97;font-weight:400}.btn{border-radius:0}.hero-art{pointer-events:auto}
+/* The real product header remains available above the cinematic stage. */
+@media(max-width:999px){.ritual-mobile .ritual-chapters{top:max(14%,120px)}}
+.estrela-mount{width:36%;height:220px}
+.hero{isolation:auto}.ritual-video.ritual-mobile .ritual-stage{position:sticky;top:0}
+/* ScrollTrigger's native setters require immediate positions, including focus
+   and chapter buttons. Avoid competing with the base stylesheet's smooth scroll. */
+html.experience-ready{scroll-behavior:auto}
+@media(max-width:680px){.hero-title{font-size:clamp(39px,10.5vw,64px)}.art-frame{min-height:380px}.hero{padding-block:40px}}

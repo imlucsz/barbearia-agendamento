@@ -49,7 +49,10 @@ test("home encerra skeletons, simplifica filtros e oferece contatos seguros", as
   await expect(page.locator("#phone a")).toHaveAttribute("href","https://wa.me/5511999990000");
   await expect(page.locator("#address a")).toHaveAttribute("href","https://www.google.com/maps/place/Teste");
   if (testInfo.project.name.startsWith("mobile")) {
-    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("smooth");
+    // The integrated ScrollTrigger controls need native immediate scrolling;
+    // CSS smooth scrolling competed with focus and Ritual chapter navigation.
+    await page.waitForFunction(() => window.homeExperience?.snapshot());
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     await page.emulateMedia({ reducedMotion: "reduce" });
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe("auto");
     await page.getByRole("button", { name: "Abrir menu", exact: true }).click();

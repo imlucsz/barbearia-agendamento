@@ -1,15 +1,41 @@
 # Sistema de Agendamento Online para Barbearia
 
-E-mails de identidade usam apenas trim + lowercase. A revisão Alembic `20261031_01` recusa conflitos existentes sem unir contas. Minha conta mantém exportação JSON e oferece PDF, além de exclusão confirmada em modal com senha atual. Limites e plano futuro de confirmação de e-mail: [rodada UX](docs/UX_RODADA_20261031.md).
+Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
+
+**Status:** versão candidata em homologação. Recursos implementados e resultados locais não equivalem a prontidão de produção; confira [requisitos e evidências](docs/REQUISITOS_STATUS.md), [rastreabilidade](docs/RASTREABILIDADE.md) e [checklist operacional](docs/CHECKLIST_PRODUCAO.md).
 
 Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM) da FATEC Itaquera. O sistema reúne um site público, fluxo de agendamento para clientes e painel de gestão da barbearia.
 
-## Tecnologias
+## Funcionalidades e perfis
+
+| Perfil | Recursos |
+| --- | --- |
+| Visitante | Catálogo com preço/duração/descrição, contatos, mapa, informações da instalação e avaliações públicas. |
+| Cliente | Cadastro, login, recuperação de senha, escolha de serviço/profissional/data/horário, confirmação, histórico, cancelamento, reagendamento e avaliação de atendimento concluído. Conta com exportação JSON/PDF e solicitação autenticada de anonimização. |
+| Barbeiro | Própria agenda, registro de atendimento, agendamento avulso e gestão das próprias jornadas/bloqueios, conforme autorização da API. |
+| Administrador | Agenda da equipe, serviços e vínculos com profissionais, jornadas/bloqueios, clientes, informações institucionais, moderação, relatórios e consulta de auditoria. |
+
+O fluxo de reserva segue **serviço → profissional → data e horário → confirmação**. A API verifica jornada, bloqueios, conflitos e duração; a janela de reserva é de até 14 dias. Cancelamento/reagendamento pelo cliente exigem 24 horas de antecedência, com até dois reagendamentos. Preço e duração ficam registrados no agendamento.
+
+## Arquitetura e tecnologias
 
 - **Frontend:** HTML5, CSS3 responsivo e JavaScript ES Modules (Vanilla).
 - **Backend:** Python, FastAPI, Pydantic e SQLAlchemy.
-- **Banco de dados:** SQLite por padrão; PostgreSQL pode ser usado configurando a URL e instalando o driver correspondente.
+- **Banco de dados:** SQLite em desenvolvimento/testes; PostgreSQL em produção, com evolução do schema por Alembic.
 - **Autenticação:** JWT Bearer (PyJWT); senhas novas com Argon2id e verificação compatível com hashes bcrypt existentes.
+- **Apresentação:** GSAP local na HOME, vídeo WebM local no Ritual e Three.js na Estrelinha opcional. O import map da Estrelinha ainda usa CDN; a apresentação principal e os dados do negócio têm módulos independentes.
+
+O navegador consome a API HTTP; não há acesso direto do frontend ao banco. `home.js` mantém catálogo, autenticação, contatos e avaliações; `home-experience.mjs` controla apresentação. Personalização por instalação usa `installation-config.mjs`, tokens CSS e configuração do backend.
+
+## Experiência da página inicial
+
+A HOME combina intro pulável, hero editorial, conteúdo comercial e CTA de agendamento. O Ritual apresenta PREPARO → TÉCNICA → ACABAMENTO em vídeo conduzido pelo scroll, com scrub contínuo e reversível em todas as larguras/alturas. Desktop usa pin; viewports compactas usam palco sticky e composição própria. `prefers-reduced-motion: reduce` mantém poster e os três capítulos legíveis, sem scrub obrigatório. Falha de mídia também preserva a narrativa estática.
+
+A Estrelinha é uma assinatura visual opcional, com até três aparições breves e decorativas; não é chatbot. A flag `features.estrelinhaWidget` controla sua presença. Detalhes em [integração HOME](docs/HOME_MOTION_INTEGRATION.md), [decisões de produto](specs/home-experience.md) e [Estrelinha](docs/ESTRELINHA_CINEMATICA.md).
+
+Chrome e Edge tiveram scrub validado nas viewports registradas no relatório. Firefox falha ao criar páginas neste ambiente, e WebKit Windows rejeita o mesmo asset em um vídeo isolado. Isso não demonstra compatibilidade total com Firefox/Safari ou aparelhos físicos. Não há fallback específico por navegador.
+
+O [Motion Lab](frontend/e2e/motion-lab/README.md) permanece como laboratório separado, com estudos de espelho/vídeo e SVG/Three que originaram a integração. Não integra o build público. Suas comparações com `/reference` dependem de um HTML externo de referência, que não faz parte do produto nem é necessário à HOME.
 
 ## Implantação por instalação
 
@@ -19,7 +45,8 @@ Para criar um checkout limpo por barbearia, mapear personalizações e aplicar a
 
 ## Requisitos
 
-- Python 3.10 ou superior (recomendado Python 3.11+).
+- Python compatível com as dependências do backend; a versão de referência está em [`backend/.python-version`](backend/.python-version).
+- Node.js 22 e npm para build estático e testes frontend; versão em [`frontend/.node-version`](frontend/.node-version).
 - Navegador moderno.
 - Git, para clonar o repositório.
 - Opcional: PostgreSQL instalado e seu driver Python, caso não use SQLite.
@@ -44,9 +71,17 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+```
+
+Antes de iniciar, edite `backend/.env`: mantenha `APP_ENV=development`, configure uma `SECRET_KEY` privada e persistente (sem valor padrão) e confira banco/origem do frontend. Copie `.env.example` somente na primeira configuração; preserve um `.env` existente. Depois aplique as migrações e inicie a API:
+
+```powershell
+python -m alembic upgrade head
 uvicorn app.main:app --reload
 ```
+
+Esses comandos de instalação alteram o banco configurado; use somente o banco local intencionalmente escolhido. Não execute migrações de demonstração contra dados reais.
 
 No macOS/Linux, a ativação do ambiente virtual é:
 
@@ -68,11 +103,11 @@ O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambi
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descricao publica dos servicos; `20261029_06` adiciona indices para consultas de disponibilidade. O schema atual tem treze tabelas. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
+`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descrição pública dos serviços; `20261029_06` adiciona índices de disponibilidade; `20261031_01` normaliza identidade de e-mail por trim/lowercase e recusa conflitos sem unir contas. O schema atual tem treze tabelas. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
 
 Procedimento de adoção:
 
-- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas e `20261029_01` completa o schema atual com as duas tabelas de sessão/consentimento.
+- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas; as revisões posteriores completam as treze tabelas e os controles atuais.
 - **Banco local de desenvolvimento SQLite existente:** pare a API e, no diretório `backend`, faça backup e prepare um novo arquivo sem apagar o antigo:
 
   ```powershell
@@ -222,22 +257,22 @@ A Tabela 2 apresenta os 18 Requisitos Não-Funcionais, organizados por categoria
 | **Código** | **Categoria** | **Requisito Não-Funcional** | **Detalhamento Técnico** |
 | --- | --- | --- | --- |
 | RNF-01 | Desempenho | Serialização e Isolamento de Agendamentos | Garantir a atomicidade na reserva/reagendamento utilizando locks de software na aplicação (booking.py) ou transações isoladas no banco, eliminando o double booking. |
-| RNF-02 | Segurança | Proteção Criptográfica de Credenciais | Hash de senhas via bcrypt antes da persistência. Tokens de acesso JWT assinados com HS256, com expiração curta e configurável (ACCESS_TOKEN_EXPIRE_MINUTES, padrão 15 minutos, faixa de 5 a 60) e renovação por refresh token opaco, aleatório, rotativo e revogável (persistir somente SHA-256; detectar reuso e revogar a família). O refresh token deve ser enviado em cookie HttpOnly, SameSite=Lax e Secure em produção; refresh/logout validam Origin contra CORS. A SECRET_KEY não possui valor padrão: a aplicação não inicia sem ela em produção. |
+| RNF-02 | Segurança | Proteção Criptográfica de Credenciais | Senhas novas usam Argon2id; bcrypt legado continua verificável e é atualizado no login. JWT tem expiração curta e configurável (ACCESS_TOKEN_EXPIRE_MINUTES, padrão 15 minutos, faixa de 5 a 60) e refresh token opaco, aleatório, rotativo e revogável, persistido somente como SHA-256. Cookie HttpOnly, SameSite=Lax e Secure em produção; refresh/logout validam Origin contra CORS. SECRET_KEY é obrigatória em todos os ambientes. |
 | RNF-03 | Usabilidade | Responsividade Mobile-First | Interface desenvolvida em HTML5/CSS3 Vanilla responsiva com Media Queries, sem quebras de layout em telas a partir de 320px de largura. |
 | RNF-04 | Confiabilidade | Conformidade Técnica com LGPD | Registro explícito do consentimento no cadastro (versão dos termos, data/hora, IP e origem) e endpoint DELETE /users/me para anonimização irreversível dos dados pessoais do cliente, preservando os registros financeiros sem identificação. Exportação dos dados do titular (RF24). |
 | RNF-05 | Segurança | Controle de Acesso por Perfis (RBAC) | Interceptação das requisições privadas no FastAPI validando o perfil (RoleEnum: CLIENTE, BARBEIRO, ADMIN) por dependência centralizada e a propriedade do recurso: o cliente acessa apenas os próprios agendamentos e o barbeiro, apenas a própria agenda. |
 | RNF-06 | Segurança | Comunicação Criptografada | Toda comunicação entre o frontend JavaScript e a API FastAPI deve utilizar obrigatoriamente HTTPS/TLS 1.3 em produção, com cabeçalho HSTS, redirecionamento de HTTP para HTTPS e cabeçalhos de segurança (CSP e X-Content-Type-Options). |
 | RNF-07 | Segurança | Proteção contra Força Bruta | Rate Limiting nas rotas /auth/login, /auth/register, /auth/esqueci-senha e /auth/redefinir-senha, bloqueando requisições do IP por período configurável após 5 tentativas incorretas consecutivas. |
 | RNF-08 | Desempenho | Tempo de Resposta da API | Endpoint GET /appointments/disponiveis deve processar e responder em tempo máximo de 500ms em condições normais de rede. |
-| RNF-09 | Compatibilidade | Compatibilidade de Navegadores | Frontend construído com ES Modules nativos, executando sem necessidade de transpilação nas versões estáveis de Chrome, Firefox, Safari e Edge. |
+| RNF-09 | Compatibilidade | Compatibilidade de Navegadores | Meta: frontend com ES Modules nativos em Chrome, Firefox, Safari e Edge. A validação do Ritual está demonstrada em Chrome/Edge; Firefox/Safari continuam com limites de evidência registrados em docs/HOME_MOTION_INTEGRATION.md. |
 | RNF-10 | Arquitetura | Persistência e Migração Transparente | Abstração ORM via SQLAlchemy permitindo transição transparente entre SQLite (desenvolvimento) e PostgreSQL (produção). Evolução do esquema por migrations versionadas (Alembic), com scripts de upgrade e downgrade que permitam rollback. |
 | RNF-11 | Segurança | Validação e Sanitização de Entradas | Validação de tipos, formatos e tamanhos de todos os campos por schemas Pydantic; escape do conteúdo enviado por usuários (ex.: comentários de avaliações) na saída do frontend; consultas exclusivamente parametrizadas via ORM, sem concatenação de SQL, prevenindo SQL Injection e XSS. |
-| RNF-12 | Segurança | Política de CORS Restrita | A API aceita requisições apenas das origens listadas em ALLOWED_ORIGINS, sem uso de curinga (*) em produção, com métodos e cabeçalhos explicitamente permitidos. |
+| RNF-12 | Segurança | Política de CORS Restrita | A API aceita requisições apenas das origens listadas em CORS_ALLOWED_ORIGINS, sem uso de curinga (*) em produção, com métodos e cabeçalhos explicitamente permitidos. |
 | RNF-13 | Segurança | Gestão de Segredos | Segredos (SECRET_KEY, DATABASE_URL, credenciais de e-mail) mantidos somente em variáveis de ambiente, fora do repositório, com valores distintos por ambiente, validação na inicialização e rotação periódica. Dados de demonstração (seed) desabilitados em produção. |
 | RNF-14 | Confiabilidade | Registro de Logs e Auditoria | Registro estruturado de eventos de autenticação (sucesso e falha), cancelamentos e ações administrativas, com usuário, ação, entidade, IP e data/hora, sem armazenar senhas ou tokens, e com período de retenção definido. |
 | RNF-15 | Confiabilidade | Backup e Retenção de Dados | Backup automático diário do banco de dados, com retenção mínima de 30 dias, armazenamento em local distinto do servidor de aplicação e teste periódico de restauração. |
 | RNF-16 | Manutenibilidade | Gestão de Dependências | Versões fixadas em requirements.txt, auditoria periódica de vulnerabilidades (pip-audit) e atualização automatizada de dependências (Dependabot). |
-| RNF-17 | Operação | Monitoramento e Observabilidade | Endpoint /health com verificação de conectividade do banco, coleta de métricas básicas (latência e taxa de erros 5xx) e alertas em caso de indisponibilidade. |
+| RNF-17 | Operação | Monitoramento e Observabilidade | /health verifica o processo; /ready verifica banco e revisão Alembic. Métricas de latência/erros e procedimentos estão implementados; configuração e teste de alertas externos dependem da operação. |
 | RNF-18 | Confiabilidade | Plano de Recuperação de Desastres | Plano documentado de recuperação com RPO máximo de 24 horas e RTO máximo de 4 horas, incluindo procedimento de restauração passo a passo e responsáveis. |
 
 ## Regras de negócio (RN)
@@ -270,7 +305,7 @@ Todos os endpoints são servidos pelo FastAPI na porta `8000`. Rotas protegidas 
 | Grupo | Rotas principais | Acesso |
 | --- | --- | --- |
 | Saude | `GET /`, `GET /health`, `GET /ready` | Publico; `/health` verifica o processo e `/ready` exige banco e revisao Alembic atual |
-| Autenticação | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/esqueci-senha`, `POST /auth/redefinir-senha` | Conforme operação |
+| Autenticação | `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/esqueci-senha`, `POST /auth/redefinir-senha` | Conforme operação |
 | Serviços | `GET /services/`, `GET /services/{service_id}` | Público |
 | Serviços (gestão) | `POST /services/`, `PUT /services/{service_id}`, `DELETE /services/{service_id}` | Administrador |
 | Agendamentos | `GET /appointments/`, `GET /appointments/disponiveis`, `POST /appointments/`, `GET/PUT/DELETE /appointments/{appointment_id}` | Autenticado e/ou dono/equipe |
@@ -279,6 +314,7 @@ Todos os endpoints são servidos pelo FastAPI na porta `8000`. Rotas protegidas 
 | Moderação | `GET /admin/avaliacoes`, `PATCH /admin/avaliacoes/{avaliacao_id}/ocultar` | Administrador |
 | Institucional | `GET /informacoes/`, `POST /informacoes/`, `PUT /informacoes/` | Leitura pública; escrita administrativa |
 | Usuários | `GET /users/`, `GET /users/barbeiros`, `GET/PUT /users/{user_id}`, `DELETE /users/me` | Operações administrativas ou próprio usuário |
+| Portabilidade | `GET /users/me/export`, `GET /users/me/export.pdf` | Cliente autenticado, dados da própria conta |
 | Jornadas/bloqueios | `/horario/jornadas`, `/horario/bloqueios` | Administrador ou barbeiro dono |
 | Serviços por barbeiro | `/barbeiro-servico/`, `/barbeiro-servico/barbeiro/{barbeiro_id}`, `/barbeiro-servico/servico/{service_id}/barbeiros` | Conforme perfil |
 | Demonstração | `GET /seed` | Somente desenvolvimento |
@@ -293,21 +329,31 @@ Consulte `/docs` para parâmetros, corpos de requisição e respostas completos.
 backend/
 ├── app/
 │   ├── main.py                 # Inicialização do FastAPI, CORS e routers
-│   ├── database.py             # Engine SQLAlchemy, sessão e atualizações de schema
+│   ├── database.py             # Engine/sessão e leitura da revisão; sem DDL no startup
 │   ├── dependencies.py         # Dependência de usuário autenticado
 │   ├── booking.py              # Validação de horário, conflito e serialização
 │   ├── core/security.py        # Hash de senha e operações JWT
 │   ├── models/user.py          # Modelos ORM e enums do domínio
 │   ├── schemas/                # Schemas Pydantic de entrada e resposta
 │   └── routers/                # Endpoints por domínio
+├── alembic/                    # Revisões de schema
+├── tests/                      # Testes Python e suporte a bancos descartáveis
 └── requirements.txt
 
 frontend/
 ├── assets/
 │   ├── css/                    # Estilos gerais, home, cliente e painel admin
 │   ├── js/                     # API, autenticação, agendamento e gestão
+│   ├── media/home/             # Vídeo e poster locais do Ritual
 │   └── images/
+├── e2e/                        # Testes Playwright e Motion Lab (fora do build público)
+├── tests/                      # Testes Node
+├── scripts/                    # Build estático
 └── pages/                      # Páginas HTML
+
+docs/                          # Contratos, operação, evidências e material comercial
+specs/                         # Decisões de produto confirmadas
+tools/                         # Backup, novas instalações e helpers
 ```
 
 ## Classes do domínio (SQLAlchemy)
@@ -325,6 +371,10 @@ Definidas em `backend/app/models/user.py`:
 | `BloqueioHorario` | Período indisponível para folga, feriado ou outro bloqueio. |
 | `BarbearioServico` | Associação entre barbeiro e serviço que ele executa. |
 | `PasswordResetToken` | Token de redefinição de senha, validade e uso. |
+| `ConsentimentoLGPD` | Evidência de consentimento e versão dos termos. |
+| `RefreshToken` | Sessão renovável, rotação, expiração e revogação. |
+| `LoginAttempt` | Registro de tentativas para os controles de autenticação. |
+| `AuditLog` | Eventos de autenticação e ações do domínio, com retenção configurável. |
 
 Enums do domínio:
 
@@ -368,9 +418,27 @@ Para validar também o PostgreSQL, configure `BOOKING_TEST_BACKEND=postgresql` e
 
 Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados locais de demonstração.
 
-### Resultado da última validação local
+### Executar verificações frontend
 
-Registro de 2026-10-29: a suíte Python com SQLite temporário executou 185 testes (179 passaram e 6 testes PostgreSQL foram ignorados); os testes Node tiveram 20 aprovações. Playwright teve 51 aprovações; 6 casos não iniciaram porque Firefox e WebKit não estavam instalados. O `pip-audit` não encontrou vulnerabilidades conhecidas. PostgreSQL descartável e CI remota não foram executados nesta rodada. Consulte `docs/REQUISITOS_STATUS.md` para detalhes e pendências; esses resultados não substituem a validação no ambiente de implantação.
+Na raiz, instale as dependências fixadas no lockfile. Os testes da Estrelinha usam Three.js local do laboratório como fixture de rede; isso não muda a versão do import map de produção.
+
+```powershell
+npm ci --ignore-scripts
+npm --prefix frontend/e2e/motion-lab ci --ignore-scripts
+node node_modules/@playwright/test/cli.js install chromium firefox webkit
+node --test "frontend/tests/*.test.mjs"
+node node_modules/@playwright/test/cli.js test --config=frontend/e2e/home-experience.config.mjs --grep-invert "Ritual universal"
+node node_modules/@playwright/test/cli.js test --config=frontend/e2e/ritual-continuous.config.mjs --project="chrome-*" --project="msedge-*"
+node node_modules/@playwright/test/cli.js test --config=frontend/e2e/estrelinha-cinematic.config.mjs
+```
+
+As suites de apresentação acima servem arquivos estáticos e interceptam API fictícia; não iniciam backend nem banco. Os canais `chrome`/`msedge` requerem os navegadores correspondentes instalados. O config do Ritual também oferece Firefox/WebKit: executar sem filtro de projetos tenta todos os motores e atualmente registra as limitações de mídia/criação de página descritas no relatório.
+
+A suíte completa de fluxos usa `frontend/e2e/playwright.config.mjs` e seu próprio ambiente de API/SQLite descartável; leia [as instruções E2E](frontend/e2e/README.md) antes de executá-la. Ela não deve usar banco local de desenvolvimento ou produção. Não há formatter/lint configurado no package.json raiz.
+
+### Evidências e limites
+
+Na rodada completa anterior de 2026-11-03: Node 27/27, HOME 44/44 e Ritual Chrome/Edge 22/22, com tempos intermediários, rVFC, reverso, touch e resize; fallback/reduced-motion WebKit 4/4. Reexecuções posteriores confirmaram o smoke Chrome/Edge; Firefox/WebKit continuam com os impedimentos documentados. Registros de backend/infraestrutura ficam em [requisitos](docs/REQUISITOS_STATUS.md); detalhes da HOME em [integração](docs/HOME_MOTION_INTEGRATION.md). Nada disso equivale a teste de produção ou em aparelhos físicos.
 
 ## Limitações e cuidados antes de produção
 
@@ -395,3 +463,9 @@ Operação inicial: backup/restauração com PostgreSQL 16, age, checksum e cóp
 ## Equipe
 
 Projeto desenvolvido por estudantes de DSM da FATEC Itaquera. Consulte o histórico do repositório para autoria por alteração e contribuições.
+
+## Desenvolvimento e documentação
+
+Leia [AGENTS.md](AGENTS.md), [planos curtos](docs/superpowers/plans/README.md) e [workflow local](tools/codex-helpers/README.md#workflow-local-do-codex) para alterações assistidas por Codex. Graphify é uma ferramenta de navegação do código, sem dependência no runtime da aplicação. Outputs e caches locais precisam de triagem antes de versionamento.
+
+O [material comercial](docs/business/notebooklm/00_INDICE.md) separa fatos do produto, hipóteses e planejamento; não descreve um SaaS multi-tenant implementado.

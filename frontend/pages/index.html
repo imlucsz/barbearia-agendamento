@@ -8,6 +8,8 @@
   <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/home.css">
+  <link rel="stylesheet" href="../assets/css/home-ritual.css">
+  <link rel="stylesheet" href="../assets/css/home-experience.css">
   <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
   </script>
@@ -36,35 +38,41 @@
   </header>
 
   <main>
-    <section class="hero container" aria-labelledby="hero-title">
+    <section class="hero container" id="hero" aria-labelledby="hero-title">
       <div class="hero-copy">
-        <span class="eyebrow hero-eyebrow"><span class="live-dot"></span> <span data-installation-copy="homeHeroEyebrow">Seu próximo visual começa aqui</span></span>
-        <h1 id="hero-title" class="hero-title"><span data-installation-copy="homeHeroTitleLead">O clássico nunca sai de</span> <em data-installation-copy="homeHeroTitleAccent">cena.</em></h1>
+        <span class="eyebrow hero-eyebrow hero-kicker"><span class="live-dot"></span> <span data-installation-copy="homeHeroEyebrow">Seu próximo visual começa aqui</span></span>
+        <h1 id="hero-title" class="hero-title"><span class="headline-line" data-installation-copy="homeHeroTitleLead">O clássico nunca sai de</span> <em class="headline-line" data-installation-copy="homeHeroTitleAccent">cena.</em></h1>
         <p class="hero-text" data-installation-copy="homeHeroDescription">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
-        <div class="hero-actions">
+        <div class="hero-actions hero-detail">
           <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large"><span data-installation-copy="homePrimaryAction">Escolher meu horário</span> <span aria-hidden="true">↗</span></a>
           <a href="#services" class="btn btn-large btn-ghost" data-installation-copy="homeSecondaryAction">Explorar serviços</a>
         </div>
-        <div class="hero-proof">
-          <span class="proof-stars" aria-label="Avaliações dos clientes">★★★★★</span>
+        <div class="hero-proof hero-footer">
+          <span class="proof-stars" aria-hidden="true">✦</span>
           <span>Atendimento com cuidado em cada detalhe</span>
         </div>
       </div>
-      <div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
+      <canvas id="dust" aria-hidden="true"></canvas><div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
         <div class="art-frame">
-          <div class="art-glow"></div>
-          <img class="hero-pole" data-barber-pole
+          <div class="art-glow hero-beam"></div><div class="hero-pole" data-home-pole aria-hidden="true"></div><div class="hero-tool" aria-hidden="true"></div>
+          <img class="legacy-pole" hidden data-barber-pole
             src="../assets/images/barbershopPole-recortado.gif"
             data-animated-src="../assets/images/barbershopPole-recortado.gif"
             data-still-src="../assets/images/barbershopPole-primeiro-frame.png"
             alt="" aria-hidden="true">
-          <div class="estrela-mount" data-estrelinha-barbeiro></div>
           <div class="art-copy"><span>DESDE O PRIMEIRO CORTE</span><strong>TRADIÇÃO<br>NO SEU ESTILO.</strong></div>
           <div class="art-bottom-line" aria-hidden="true"></div>
         </div>
         <span class="art-caption">Técnica, personalidade e aquele acabamento impecável.</span>
       </div>
     </section>
+
+    <div class="chapter-bridge container" aria-label="Tradição em cada detalhe">
+      <span class="estrela-cameo estrela-cameo--opening" data-estrelinha-barbeiro data-estrelinha-cameo="opening" aria-hidden="true"></span>
+      <span class="chapter-bridge-line" aria-hidden="true"></span>
+      <p>Tradição no gesto. <em>Cuidado no detalhe.</em></p>
+      <span class="chapter-bridge-line" aria-hidden="true"></span>
+    </div>
 
     <section id="services" class="home-section services-section" aria-labelledby="services-title">
       <div class="container">
@@ -87,6 +95,7 @@
     </section>
 
     <section id="how-it-works" class="home-section process-section" aria-labelledby="process-title">
+      <span class="estrela-cameo estrela-cameo--passage" data-estrelinha-cameo="passage" aria-hidden="true"></span>
       <div class="container">
         <div class="section-heading section-heading-centered">
           <div><span class="eyebrow">SEM ENROLAÇÃO</span><h2 id="process-title">Seu horário em <em>3 passos.</em></h2></div>
@@ -97,6 +106,26 @@
           <article class="step-card"><span class="step-number">02</span><h3>Encontre seu horário</h3><p>Selecione o profissional, a data e um horário disponível.</p></article>
           <article class="step-card"><span class="step-number">03</span><h3>Chegue no estilo</h3><p>Confirme seu agendamento e venha viver a experiência.</p></article>
         </div>
+      </div>
+    </section>
+
+    <section id="ritual" class="ritual ritual-video ritual-static" aria-labelledby="ritual-title">
+      <div class="ritual-stage">
+        <div class="ritual-atmosphere" aria-hidden="true"></div>
+        <figure class="ritual-film ritual-visual" data-ritual-visual aria-label="Cena estilizada de um barbeiro realizando um corte, conduzida pela rolagem.">
+          <div class="film-content"><img class="ritual-poster" src="../assets/media/home/ritual-poster.webp" alt="" width="1280" height="720"><video id="ritual-video" muted playsinline preload="none" poster="../assets/media/home/ritual-poster.webp" aria-hidden="true"></video></div>
+          <div class="film-vignette" aria-hidden="true"></div><div class="film-gold-reflection" aria-hidden="true"></div>
+        </figure>
+        <div class="ritual-heading"><span class="eyebrow">CENA B / O RITUAL DA CASA</span><h2 id="ritual-title">A arte está<br>no <em>processo.</em></h2></div>
+        <div class="ritual-readout" aria-hidden="true"><span class="stage-index">01</span><span class="stage-name">PREPARO</span><span class="stage-percent">000</span></div>
+        <div class="ritual-chapters">
+          <article class="ritual-chapter" data-chapter="0"><span class="eyebrow">01 — PREPARO</span><h3>Antes da técnica,<br>vem entender você.</h3><p>Uma pausa. Um olhar.<br>Cada detalhe encontra o seu lugar.</p></article>
+          <article class="ritual-chapter" data-chapter="1"><span class="eyebrow">02 — TÉCNICA</span><h3>Cada movimento<br>tem intenção.</h3><p>O gesto é decidido.<br>A linha é precisa.<br>Nada está ali por acaso.</p></article>
+          <article class="ritual-chapter" data-chapter="2"><span class="eyebrow">03 — ACABAMENTO</span><h3>O corte termina.<br>O estilo fica.</h3><p>O último gesto encontra<br>o seu equilíbrio.</p></article>
+        </div>
+        <span class="video-stage-caption" aria-hidden="true">01 / PREPARO</span>
+        <div class="ritual-rail" aria-label="Etapas do Ritual"><div class="ritual-progress" aria-hidden="true"><span></span></div><button data-stage="0">01 <span>PREPARO</span></button><button data-stage="1">02 <span>TÉCNICA</span></button><button data-stage="2">03 <span>ACABAMENTO</span></button></div>
+        <span class="ritual-scroll-note">ROLE PARA TRANSFORMAR <span aria-hidden="true">↓</span></span>
       </div>
     </section>
 
@@ -139,6 +168,16 @@
         <div id="reviews-list" class="reviews-grid" aria-live="polite"><p class="text-muted">Carregando avaliações…</p></div>
       </div>
     </section>
+    <section class="home-section final-booking" aria-labelledby="final-booking-title">
+      <span class="estrela-cameo estrela-cameo--finale" data-estrelinha-cameo="finale" aria-hidden="true"></span>
+      <div class="container" data-home-reveal>
+        <span class="eyebrow">A CADEIRA ESTÁ À SUA ESPERA</span>
+        <h2 id="final-booking-title"><span>Seu próximo</span> <strong class="huge-word">corte</strong><span>começa <em>aqui.</em></span></h2>
+        <p>Escolha seu serviço. Encontre seu horário. O resto é com a gente.</p>
+        <a class="btn btn-large" href="client-services.html">Agendar meu horário <span aria-hidden="true">↗</span></a>
+        <span class="final-booking-note">TRADIÇÃO NO SEU ESTILO.</span>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -148,7 +187,10 @@
       <a href="client-services.html">Agende sua visita <span aria-hidden="true">↗</span></a>
     </div>
   </footer>
+  <div class="intro-shell" hidden aria-hidden="true"><div class="intro-panel intro-panel-left"></div><div class="intro-panel intro-panel-right"></div><div class="intro-seam"></div><div class="intro-mark"><span>B.</span><strong>BARBEARIA</strong><small>PRECISÃO QUE TRANSFORMA</small></div><span class="intro-caption">UM GESTO. UMA TRANSFORMAÇÃO.</span></div>
+  <button id="skip-intro" class="skip-intro" hidden>PULAR INTRO <span aria-hidden="true">↗</span></button>
   <script type="module" src="../assets/js/home.js"></script>
   <script type="module" src="../assets/js/optional-features.mjs"></script>
+  <script type="module" src="../assets/js/home-experience.mjs"></script>
 </body>
 </html>

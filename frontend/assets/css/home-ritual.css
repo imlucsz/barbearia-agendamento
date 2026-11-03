@@ -1,0 +1,95 @@
+/* Scoped to the new Ritual. Approved intro/hero/finale and legacy art are untouched. */
+.ritual-video { background:#09150e; overflow-anchor:none; }
+.ritual-video .ritual-stage { height:100svh; min-height:0; isolation:isolate; background:#09150e; }
+.ritual-video .ritual-atmosphere { background:radial-gradient(ellipse at 80% 38%,#88834c18,transparent 68%),#09150e; }
+.ritual-film { position:absolute; inset:0; margin:0; z-index:0; overflow:hidden; background:#09150e; }
+.film-content { position:absolute; inset:0; transform-origin:82% 50%; }
+.film-content video,.ritual-poster { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:100% 50%; }
+.film-content video { opacity:0; }
+.has-video-frame video { opacity:1; }
+.film-vignette { position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,#09150e99, #09150e30 34%,transparent 57%),linear-gradient(0deg,#09150e8c,transparent 16%,transparent 92%,#09150e26); }
+.film-gold-reflection { position:absolute; top:-30%; bottom:-30%; width:24%; left:35%; background:linear-gradient(90deg,transparent,#ead99b26,transparent); transform:rotate(24deg); pointer-events:none; opacity:.04; }
+.ritual-video .ritual-heading { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.ritual-video .ritual-readout,.ritual-video .video-stage-caption,.ritual-video .ritual-scroll-note,.ritual-video .ritual-compare-link { display:none; }
+.ritual-video .ritual-chapters { position:absolute; left:7.5%; top:35%; inset-inline-end:auto; width:45%; padding:0; z-index:3; }
+.ritual-video .ritual-chapter { position:absolute; inset:0 auto auto 0; width:100%; margin:0; padding:0; min-height:310px; border:0; }
+.ritual-video .ritual-chapter .eyebrow { font-size:10px; letter-spacing:.19em; }
+.ritual-video .ritual-chapter h3 { font-size:clamp(38px,4.15vw,72px); line-height:1.06; font-weight:400; letter-spacing:-.045em; color:#f0ecdc; margin:25px 0 28px; text-wrap:balance; }
+.ritual-video .ritual-chapter p { color:#c1c6b5; font-size:14px; line-height:1.8; max-width:31ch; margin:0; }
+.ritual-video .ritual-rail { z-index:5; bottom:76px; right:auto; width:180px; gap:20px; }
+.ritual-video .ritual-rail button { font-size:9px; }
+.ritual-video .ritual-rail button span { font-size:0; margin:0; }
+.ritual-video .ritual-rail button[aria-current="step"] span { font-size:8px; margin-left:10px; }
+.ritual-video .ritual-progress { background:#bdc6a926; }
+.ritual-video .ritual-progress span { transform-origin:left; }
+.ritual-video.ritual-mobile { height:310vh; height:310svh; min-height:0; }
+.ritual-mobile .ritual-stage { position:sticky; top:0; height:100svh; min-height:0; }
+.ritual-mobile .ritual-film { inset:0; height:100%; }
+/* Portrait art direction: keep the hands, both heads and the chair in view.
+   The film remains the entire stage; its dark negative space holds the titles. */
+.ritual-mobile .film-content video,.ritual-mobile .ritual-poster { top:auto; bottom:0; height:76%; object-position:84% center; mask-image:linear-gradient(180deg,transparent,#000 18%,#000 96%,transparent); }
+.ritual-mobile .film-vignette { background:linear-gradient(180deg,#09150e 15%,#09150e00 42%,transparent 81%,#09150e80),linear-gradient(90deg,#09150e30,transparent 70%); }
+.ritual-mobile .ritual-chapters { top:10%; left:8%; width:84%; }
+.ritual-mobile .ritual-chapter { min-height:230px; }
+.ritual-mobile .ritual-chapter .eyebrow { font-size:8px; }
+.ritual-mobile .ritual-chapter h3 { font-size:clamp(30px,7.8vw,48px); margin:17px 0 18px; line-height:1.07; }
+.ritual-mobile .ritual-chapter p { font-size:12px; line-height:1.7; }
+.ritual-mobile .ritual-rail { left:8%; right:auto; width:160px; bottom:68px; gap:20px; }
+.ritual-mobile .ritual-rail button { font-size:8px; }
+.ritual-mobile .ritual-rail button[aria-current="step"] span { font-size:7px; margin-left:6px; }
+@media(min-width:600px) and (max-width:999px) {
+  .ritual-mobile .ritual-chapters { top:14%; width:58%; left:8%; }
+  .ritual-mobile .ritual-chapter h3 { font-size:clamp(36px,5vw,48px); }
+}
+@media(min-aspect-ratio:4/3) {
+  .ritual-mobile .film-content video,.ritual-mobile .ritual-poster { height:100%; object-position:100% center; mask-image:none; }
+  .ritual-mobile .film-vignette { background:linear-gradient(90deg,#09150e99,transparent 62%),linear-gradient(0deg,#09150e70,transparent 20%); }
+  .ritual-mobile .ritual-chapters { top:12%; width:49%; left:6%; }
+  .ritual-mobile .ritual-chapter h3 { font-size:clamp(28px,4.3vw,40px); }
+  .ritual-mobile .ritual-chapter p { font-size:11px; line-height:1.65; }
+}
+@media(min-width:1000px) and (max-aspect-ratio:1/1) {
+  .ritual-video:not(.ritual-static):not(.video-error) .film-content video,.ritual-video:not(.ritual-static):not(.video-error) .ritual-poster { top:auto; bottom:0; height:85%; object-position:84% center; mask-image:linear-gradient(180deg,transparent,#000 18%); }
+  .ritual-video .ritual-chapters { top:15%; width:60%; }
+}
+
+/* Static/reduced/error: poster plus all HTML chapters, no reserved scroll corridor. */
+.ritual-video.ritual-static,.ritual-video.video-error { height:auto; min-height:0; }
+.ritual-static .ritual-stage,.video-error .ritual-stage { height:auto; min-height:100svh; padding:12vh 7.5% 110px; display:block; }
+.ritual-static .ritual-film,.video-error .ritual-film { position:absolute; inset:0; width:100%; height:100%; min-height:0; clip-path:none!important; }
+.ritual-static .film-content,.video-error .film-content { transform:none!important; }
+.ritual-static video,.video-error video { display:none; }
+.ritual-static .film-content .ritual-poster,.video-error .film-content .ritual-poster { object-position:85% center; }
+.ritual-static .ritual-chapters,.video-error .ritual-chapters { position:relative; inset:auto; padding:0; width:min(45%,600px); }
+.ritual-static .ritual-chapter,.video-error .ritual-chapter { position:relative; inset:auto; opacity:1!important; visibility:visible!important; transform:none!important; clip-path:none!important; margin:0 0 28px; min-height:0; }
+.ritual-static .ritual-chapter h3,.video-error .ritual-chapter h3 { font-size:30px; margin:10px 0; }
+.ritual-static .ritual-readout,.video-error .ritual-readout,.ritual-static .video-stage-caption,.video-error .video-stage-caption,.ritual-static .ritual-scroll-note,.video-error .ritual-scroll-note,.ritual-static .film-gold-reflection,.video-error .film-gold-reflection { display:none; }
+.ritual-static .ritual-rail,.video-error .ritual-rail { bottom:35px; left:7.5%; right:7.5%; }
+.ritual-static .ritual-compare-link,.video-error .ritual-compare-link { bottom:13px; }
+@media(max-width:999px) {
+  .ritual-static .ritual-stage,.video-error .ritual-stage { display:block; padding:45px 6% 110px; }
+  .ritual-static .ritual-film,.video-error .ritual-film { width:100%; height:100%; min-height:0; }
+  .ritual-static .ritual-chapters,.video-error .ritual-chapters { width:85%; }
+  .ritual-static .ritual-chapter,.video-error .ritual-chapter { padding:20px 0; border-top:1px solid var(--hairline); }
+}
+@media(max-height:700px) and (min-width:1000px) {
+  .ritual-video .ritual-chapter h3 { font-size:clamp(36px,3.7vw,54px); margin:18px 0; }
+  .ritual-video .ritual-chapters { top:27%; }
+}
+@media(max-height:700px) {
+  .ritual-video.ritual-mobile { min-height:0; height:310vh; height:310svh; }
+  .ritual-mobile .ritual-stage { min-height:0; }
+  .ritual-mobile .ritual-chapters { top:7%; }
+  .ritual-mobile .ritual-chapter h3 { margin:12px 0; }
+}
+/* Short landscape stages reserve room for the sticky product header. Keep the
+   complete subject in the film and separate copy from chapter navigation. */
+@media(max-height:700px) and (min-aspect-ratio:4/3) {
+  .ritual-video.ritual-mobile .ritual-chapters { top:96px; }
+  .ritual-mobile .film-content video,.ritual-mobile .ritual-poster { height:calc(100% - 80px); object-fit:contain; object-position:right bottom; }
+}
+@media(max-height:450px) and (min-aspect-ratio:4/3) {
+  .ritual-video.ritual-mobile .ritual-chapters { top:88px; }
+  .ritual-mobile .ritual-chapter h3 { font-size:clamp(26px,4vw,34px); }
+  .ritual-video.ritual-mobile .ritual-rail { bottom:24px; }
+}

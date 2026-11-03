@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "graphify hook-check"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk proxy git diff --check",
+            "timeout": 10,
+            "statusMessage": "Verificando whitespace do diff"
+          }
+        ]
+      }
+    ]
+  }
+}
