@@ -14,18 +14,73 @@ const report={passed:[],measurements:{},consoleErrors:[],externalRequests:[],gen
 let browser;
 const sha=data=>createHash('sha256').update(typeof data==='string'?data.replace(/\r\n/g,'\n'):data).digest('hex');
 const state=page=>page.evaluate(()=>motionLab.snapshot());
-async function ready(page,suffix='?nointro=1'){await page.goto(base+suffix,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.motionLab);}
+async function ready(page,suffix='?nointro=1'){
+  // Observe actual compositor publications; the runtime's presentedTime may also
+  // be published by its seeked fallback, so it alone does not prove a frame.
+  await page.addInitScript(()=>{
+    const frames=new WeakMap();window.__labPresentedFrames=frames;
+    document.addEventListener('loadstart',event=>{
+      const video=event.target;if(!(video instanceof HTMLVideoElement)||frames.has(video))return;
+      const observation={mediaTime:null,presentedFrames:0,id:null};frames.set(video,observation);
+      const observe=()=>{observation.id=video.requestVideoFrameCallback((_now,frame)=>{
+        observation.mediaTime=frame.mediaTime;observation.presentedFrames=frame.presentedFrames;observe();
+      });};
+      observe();
+      video.addEventListener('emptied',()=>{video.cancelVideoFrameCallback(observation.id);frames.delete(video);},{once:true});
+    },true);
+  });
+  await page.goto(base+suffix,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.motionLab);
+}
 async function snapshot(page,name){await page.evaluate(()=>document.activeElement?.blur());await page.screenshot({path:fileURLToPath(new URL(name+'.png',artifacts))});}
 async function check(name,fn){await fn();report.passed.push(name);console.log('PASS '+name);}
 function monitor(page){page.on('pageerror',error=>report.consoleErrors.push(error.message));page.on('console',message=>{if(message.type()==='error')report.consoleErrors.push(message.text());});page.on('request',request=>{if(!request.url().startsWith(origin)&&!request.url().startsWith('data:'))report.externalRequests.push(request.url());if(/\/services\/|\/informacoes\/|\/appointments|\/auth\//.test(request.url()))report.externalRequests.push(request.url());});}
-async function seek(page,progress,expectedTime){
-  await page.evaluate(p=>motionLab.seekRitual(p),progress);
+async function waitForPresentedSeek(page,progress,expectedTime){
   // Loading and seek convergence are distinct phases. The feature's existing
   // metadata watchdog remains authoritative; an event alone is not readiness.
   await page.waitForFunction(()=>{const v=motionLab.snapshot().ritualVideo;return v?.failed||(v?.readyState>=1&&Number.isFinite(v.duration));},null,{polling:100});
   assert.equal((await state(page)).ritualVideo.failed,false,'media failed before seek');
-  try{await page.waitForFunction(({p,time})=>{const m=motionLab.snapshot(),v=m.ritualVideo;return v&&!v.failed&&!v.inFlight&&!v.seeking&&Math.abs(v.currentTime-time)<.07&&Math.abs(m.ritualProgress-p)<.008;},{p:progress,time:expectedTime},{timeout:6000});}
+  try{
+    const result=await page.waitForFunction(({p,time})=>{
+      const m=motionLab.snapshot(),v=m.ritualVideo,video=document.querySelector('#ritual-video');
+      const frame=video&&window.__labPresentedFrames.get(video);
+      if(v?.failed||video?.error)throw new Error('Media failure: '+JSON.stringify(v));
+      return v&&!v.inFlight&&!v.seeking&&!video.seeking&&video.readyState>=2&&
+        Math.abs(v.currentTime-time)<.07&&Math.abs(m.ritualProgress-p)<.008&&
+        Math.abs(v.presentedTime-time)<.07&&frame?.presentedFrames>0&&Math.abs(frame.mediaTime-time)<.07;
+    },{p:progress,time:expectedTime},{polling:100,timeout:6000});
+    await result.dispose();
+  }
   catch(error){report.measurements.failure=await page.evaluate(()=>({m:motionLab.snapshot(),scrollY,viewport:[innerWidth,innerHeight],start:motionLab.ritual?.scrollTrigger?.start,end:motionLab.ritual?.scrollTrigger?.end}));console.log('Seek diagnostic',JSON.stringify(report.measurements.failure));await snapshot(page,'failure');throw error;}
+}
+async function seek(page,progress,expectedTime){
+  await page.evaluate(p=>motionLab.seekRitual(p),progress);
+  await waitForPresentedSeek(page,progress,expectedTime);
+}
+async function resizeAfterAutomaticRefresh(page,viewport){
+  await page.evaluate(async()=>{
+    const {ScrollTrigger}=await import('gsap/ScrollTrigger');
+    const watch={ScrollTrigger,refreshed:false,previous:null};
+    watch.onRefresh=()=>{watch.refreshed=true;watch.previous=null;};
+    window.__labResizeWatch=watch;ScrollTrigger.addEventListener('refresh',watch.onRefresh);
+  });
+  try{
+    await page.setViewportSize(viewport);
+    const result=await page.waitForFunction(({width,height})=>{
+      const watch=window.__labResizeWatch,ST=watch.ScrollTrigger;
+      const trigger=ST.getById('lab-ritual-mobile')||ST.getById('lab-ritual');
+      if(!watch.refreshed||ST.isRefreshing||!trigger||innerWidth!==width||innerHeight!==height)return false;
+      const bounds=document.querySelector('#ritual').getBoundingClientRect(),top=bounds.top+scrollY;
+      const end=trigger.pin?trigger.start+Math.round(innerHeight*2.1):Math.round(top+bounds.height-innerHeight);
+      // ScrollTrigger rounds scroll coordinates to pixels. Require the new DOM
+      // geometry and two unchanged observations, not a guessed resize delay.
+      if(Math.abs(trigger.start-Math.round(top))>1||Math.abs(trigger.end-end)>1)return false;
+      const signature=JSON.stringify([top,bounds.height,scrollY,trigger.start,trigger.end,trigger.progress]);
+      const stable=watch.previous===signature;watch.previous=signature;return stable;
+    },viewport,{polling:100,timeout:6000});
+    await result.dispose();
+  }finally{
+    await page.evaluate(()=>{const watch=window.__labResizeWatch;watch.ScrollTrigger.removeEventListener('refresh',watch.onRefresh);delete window.__labResizeWatch;});
+  }
 }
 try{
   await check('master intacto, asset VP9 720p/24 sem áudio e GOP 6 verificado',async()=>{
@@ -88,7 +143,7 @@ try{
     await seek(page,.525,5.25);assert.equal((await state(page)).ritualStage,'1');
   });
   await check('resize não duplica listeners/pin; reduced-motion remove vídeo ativo',async()=>{
-    const baseline=(await state(page)).listeners;await page.setViewportSize({width:1200,height:900});await page.waitForTimeout(350);await seek(page,.45,4.5);assert.equal((await state(page)).listeners,baseline);assert.equal(await page.locator('.pin-spacer').count(),1);
+    const baseline=(await state(page)).listeners;await resizeAfterAutomaticRefresh(page,{width:1200,height:900});await seek(page,.45,4.5);assert.equal((await state(page)).listeners,baseline);assert.equal(await page.locator('.pin-spacer').count(),1);
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.waitForFunction(()=>motionLab.snapshot().reduced&&motionLab.snapshot().scrollTriggers===0,null,{polling:100});const m=await state(page);
     assert.equal(m.scrollTriggers,0);assert.equal(m.ritualVideo.attached,false);assert.equal(m.ritualVideo.mode,'poster');assert.equal(m.activeCanvases,0);assert.equal(await page.locator('video').getAttribute('src'),null);assert.equal(await page.locator('.pin-spacer').count(),0);
@@ -113,7 +168,7 @@ try{
     let release;const pending=new Promise(resolve=>{release=resolve;});await p.route('**/assets/ritual-scrub.webm',async route=>{await pending;await route.continue();});
     await ready(p);await p.evaluate(()=>motionLab.seekRitual(.3));await p.waitForTimeout(100);await p.evaluate(()=>motionLab.seekRitual(.67));await p.waitForTimeout(150);
     const before=await state(p);assert.equal(before.ritualVideo.readyState,0);assert.equal(before.ritualVideo.seeks,0);release();
-    await p.waitForFunction(()=>{const v=motionLab.snapshot().ritualVideo;return v.duration===10&&!v.inFlight&&Math.abs(v.currentTime-6.7083333333)<.07;},null,{timeout:6000});report.measurements.delayedMetadata=await state(p);await context.close();
+    await waitForPresentedSeek(p,.67,6.7083333333);report.measurements.delayedMetadata=await state(p);assert.equal(report.measurements.delayedMetadata.ritualVideo.duration,10);await context.close();
   });
   await check('mobile usa três estados reversíveis, sem pin e sem busca contínua',async()=>{
     const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const p=await context.newPage();monitor(p);await ready(p);
@@ -122,7 +177,7 @@ try{
     for(const progress of [.13,.15,.18,.2,.22]){await p.evaluate(v=>motionLab.seekRitual(v),progress);await p.waitForTimeout(25);}
     assert.equal((await state(p)).ritualVideo.seeks,count);assert.equal(await p.locator('.pin-spacer').count(),0);assert.equal((await state(p)).ritualVideo.mode,'segmented');
     report.measurements.mobile=await state(p);
-    await p.setViewportSize({width:320,height:568});await p.waitForTimeout(350);await seek(p,.525,5.25);await p.waitForTimeout(400);const text=await p.locator('[data-chapter="1"]').boundingBox(),dock=await p.locator('.lab-dock').boundingBox();assert(text.y+text.height<dock.y);await snapshot(p,'small');
+    await resizeAfterAutomaticRefresh(p,{width:320,height:568});await seek(p,.525,5.25);await p.waitForTimeout(400);const text=await p.locator('[data-chapter="1"]').boundingBox(),dock=await p.locator('.lab-dock').boundingBox();assert(text.y+text.height<dock.y);await snapshot(p,'small');
     for(const width of [320,390,768,820,1000,1440]){await p.setViewportSize({width,height:900});await p.waitForTimeout(250);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow ${width}`);assert((await p.locator('.pin-spacer').count())<=1);}
     await context.close();
   });
