@@ -48,3 +48,13 @@ test("enabled mascot loads its stylesheet and widget", async () => {
   assert.match(documentRef.appended[0].href, /estrelinha\.css$/);
   assert.equal(loaded, true);
 });
+
+test("disabled cinematic mascot removes all three cameo mounts", async () => {
+  const documentRef = fakeDocument();
+  const mounts = Array.from({ length: 3 }, () => ({ removed: false, remove() { this.removed = true; } }));
+  documentRef.querySelector = () => mounts[0];
+  documentRef.querySelectorAll = () => mounts;
+  await initializeOptionalFeatures({ documentRef, features: { estrelinhaWidget: false }, loadWidget: async () => { throw new Error('unexpected load'); } });
+  assert(mounts.every(mount => mount.removed));
+  assert.equal(documentRef.appended.length, 0);
+});

@@ -7,12 +7,13 @@ export function installationFeatureEnabled(name, features = INSTALLATION_CONFIG.
 export async function initializeOptionalFeatures({
   documentRef = globalThis.document,
   features = INSTALLATION_CONFIG.features,
-  loadWidget = () => import("./estrelinha/widget.js"),
+  loadWidget = () => import("./estrelinha/cinematic.mjs"),
 } = {}) {
   if (!documentRef) return { widgetEnabled: false };
   const mount = documentRef.querySelector("[data-estrelinha-barbeiro]");
   if (!installationFeatureEnabled("estrelinhaWidget", features)) {
-    mount?.remove();
+    const mounts = documentRef.querySelectorAll?.("[data-estrelinha-cameo]") ?? (mount ? [mount] : []);
+    mounts.forEach(node => node.remove());
     return { widgetEnabled: false };
   }
   if (!mount) return { widgetEnabled: true };
@@ -27,7 +28,7 @@ export async function initializeOptionalFeatures({
 
 if (typeof document !== "undefined") {
   initializeOptionalFeatures().catch((error) => {
-    document.querySelector("[data-estrelinha-barbeiro]")?.remove();
+    document.querySelectorAll("[data-estrelinha-cameo]").forEach(node => node.remove());
     console.warn("Widget Estrelinha indisponível nesta instalação.", error);
   });
 }

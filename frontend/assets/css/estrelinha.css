@@ -1,4 +1,19 @@
-.estrela-mount { pointer-events: none; }
-.estrela-canvas { position: absolute; z-index: 2; top: 0; left: 0; display: block; width: 100%; height: 64%; background: transparent; cursor: pointer; pointer-events: auto; touch-action: manipulation; }
-.estrela-canvas:focus-visible { outline: 2px solid rgba(240, 200, 117, .8); outline-offset: -5px; }
-@media (prefers-reduced-motion: reduce) { .estrela-canvas { cursor: default; } }
+/* Existing interactive widget styles remain available for an opt-in mode. */
+.estrela-mount{pointer-events:none}
+.estrela-canvas{position:absolute;z-index:2;top:0;left:0;display:block;width:100%;height:64%;background:transparent;cursor:pointer;pointer-events:auto;touch-action:manipulation}
+.estrela-canvas:focus-visible{outline:2px solid rgba(240,200,117,.8);outline-offset:-5px}
+@media(prefers-reduced-motion:reduce){.estrela-canvas{cursor:default}}
+.estrela-cameo{position:absolute;z-index:2;width:clamp(64px,6vw,94px);aspect-ratio:1;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(8px) scale(.94);filter:saturate(.58) sepia(.18) drop-shadow(0 0 10px #dfbc7755)}
+.estrela-cameo::before{content:'';position:absolute;inset:9%;border-radius:50%;background:radial-gradient(circle,#d9bd8260,transparent 68%);transform:scale(.7)}
+.estrela-cameo-canvas{position:relative;display:block;width:100%;height:100%}
+.estrela-cameo.is-visible{visibility:visible;animation:estrela-signature 2.6s cubic-bezier(.2,.7,.2,1) both}
+.estrela-cameo.is-visible::before{animation:estrela-glint .9s ease-out both}
+.estrela-cameo--opening{right:2%;top:50%;margin-top:-47px}
+.estrela-cameo--passage{right:4%;bottom:1.5rem;width:clamp(52px,5vw,76px)}
+.estrela-cameo--finale{right:clamp(4%,10vw,15%);top:15%;width:clamp(78px,8vw,120px)}
+.estrela-cameo--finale.is-visible{animation-duration:3.6s}
+.chapter-bridge,.process-section{position:relative}
+@keyframes estrela-signature{0%{opacity:0;transform:translateY(8px) scale(.94)}20%,72%{opacity:.78;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-4px) scale(.98)}}
+@keyframes estrela-glint{0%{opacity:0;transform:scale(.5)}45%{opacity:.8;transform:scale(1.1)}100%{opacity:.25;transform:scale(1)}}
+@media(max-width:680px){.estrela-cameo--opening{right:0;width:58px;margin-top:-29px}.estrela-cameo--passage{right:3%;bottom:.5rem;width:54px}.estrela-cameo--finale{right:4%;top:3%;width:70px}}
+@media(prefers-reduced-motion:reduce){.estrela-cameo.is-visible{animation:none;opacity:.65;transform:none}.estrela-cameo.is-visible::before{animation:none;opacity:.25;transform:scale(1)}}
