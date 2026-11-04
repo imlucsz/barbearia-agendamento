@@ -47,7 +47,7 @@ export default async function startTestEnvironment() {
     PYTHON_DOTENV_DISABLED: "1",
     PYTHONPATH: backendRoot,
   };
-  for (const name of ["SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL"]) {
+  for (const name of ["SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM", "PASSWORD_RESET_URL", "EMAIL_TRANSPORT", "BREVO_API_KEY", "EMAIL_FROM", "EMAIL_TIMEOUT_SECONDS"]) {
     delete backendEnv[name];
   }
 

@@ -324,7 +324,10 @@ test("recuperação mantém resposta genérica e redefinição sem token não en
   await page.getByRole("button", { name: "Enviar instruções" }).click();
   const knownMessage = await page.getByRole("alert").innerText();
   expect(knownMessage.toLowerCase()).not.toContain("token");
+  await expect(page.getByRole("button", { name: /Solicitar novamente em/ })).toBeDisabled();
 
+  // A fresh page can bypass the visual timer; the backend must still enforce it.
+  await page.reload();
   await page.getByLabel("E-mail cadastrado").fill("inexistente.e2e@example.com");
   await page.getByRole("button", { name: "Enviar instruções" }).click();
   await expect(page.getByRole("alert")).toHaveText(knownMessage);

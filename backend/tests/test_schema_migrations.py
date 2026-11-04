@@ -94,13 +94,13 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261031_01",
+                "20261103_01",
             )
 
     def test_supported_create_all_legacy_schema_is_adopted_without_losing_rows(self):
         legacy_tables = [
             table for table in Base.metadata.sorted_tables
-            if table.name not in {"consentimentos_lgpd", "refresh_tokens", "login_attempts", "audit_logs"}
+            if table.name not in {"consentimentos_lgpd", "refresh_tokens", "login_attempts", "audit_logs", "password_reset_limits"}
         ]
         Base.metadata.create_all(bind=self.engine, tables=legacy_tables)
         with self.engine.begin() as connection:
@@ -182,7 +182,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         self.assertEqual(inspect(self.engine).get_table_names(), [])
 
     def test_baseline_downgrade_is_refused_without_touching_schema(self):
-        self._upgrade()
+        self._upgrade("20261031_01")
         before = schema_snapshot(self.engine)
 
         with self.assertRaisesRegex(RuntimeError, "Downgrade is disabled"):
