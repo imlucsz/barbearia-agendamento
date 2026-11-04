@@ -436,6 +436,16 @@ As suites de apresentação acima servem arquivos estáticos e interceptam API f
 
 A suíte completa de fluxos usa `frontend/e2e/playwright.config.mjs` e seu próprio ambiente de API/SQLite descartável; leia [as instruções E2E](frontend/e2e/README.md) antes de executá-la. Ela não deve usar banco local de desenvolvimento ou produção. Não há formatter/lint configurado no package.json raiz.
 
+A agenda administrativa permite navegar por semanas mantendo o dia da semana
+selecionado. Nos botões de data, as setas esquerda/direita selecionam dias,
+PageUp/PageDown mudam sete dias e Home/End selecionam domingo/sábado. Falhas dos
+catálogos auxiliares não impedem a consulta da agenda; erros da própria agenda
+continuam visíveis. Clientes inativos/anonimizados não aparecem na gestão nem
+podem ser consultados ou alterados por ID; bloqueados ativos continuam disponíveis.
+As regressões de navegador dessa correção usam apenas servidor estático e API
+fictícia interceptada, sem backend/migrações:
+`node node_modules/@playwright/test/cli.js test --config=frontend/e2e/agenda-navigation.config.mjs`.
+
 ### Evidências e limites
 
 Na rodada completa anterior de 2026-11-03: Node 27/27, HOME 44/44 e Ritual Chrome/Edge 22/22, com tempos intermediários, rVFC, reverso, touch e resize; fallback/reduced-motion WebKit 4/4. Reexecuções posteriores confirmaram o smoke Chrome/Edge; Firefox/WebKit continuam com os impedimentos documentados. Registros de backend/infraestrutura ficam em [requisitos](docs/REQUISITOS_STATUS.md); detalhes da HOME em [integração](docs/HOME_MOTION_INTEGRATION.md). Nada disso equivale a teste de produção ou em aparelhos físicos.
