@@ -17,6 +17,8 @@ Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM)
 
 O fluxo de reserva segue **serviço → profissional → data e horário → confirmação**. A API verifica jornada, bloqueios, conflitos e duração; a janela de reserva é de até 14 dias. Cancelamento/reagendamento pelo cliente exigem 24 horas de antecedência, com até dois reagendamentos. Preço e duração ficam registrados no agendamento.
 
+Login, cadastro, nova senha e confirmação de senha atual para exclusão têm controles acessíveis de mostrar/ocultar senha, operáveis por teclado. Mantêm o campo original e seu autocomplete; reset e fechamento do diálogo voltam a ocultar a senha. A apresentação não altera as regras de autenticação. Evidências e limites de leitores de tela/autofill estão no [plano de qualidade e UX](docs/superpowers/plans/2026-11-03-qualidade-dados-auth-ux.md).
+
 ## Arquitetura e tecnologias
 
 - **Frontend:** HTML5, CSS3 responsivo e JavaScript ES Modules (Vanilla).
@@ -103,11 +105,11 @@ O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambi
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descrição pública dos serviços; `20261029_06` adiciona índices de disponibilidade; `20261031_01` normaliza identidade de e-mail por trim/lowercase e recusa conflitos sem unir contas. O schema atual tem treze tabelas. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
+`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descrição pública dos serviços; `20261029_06` adiciona índices de disponibilidade; `20261031_01` normaliza identidade de e-mail por trim/lowercase e recusa conflitos sem unir contas; `20261103_01` adiciona os limites compartilhados de recuperação de senha. O schema atual tem quatorze tabelas da aplicação. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
 
 Procedimento de adoção:
 
-- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas; as revisões posteriores completam as treze tabelas e os controles atuais.
+- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas; as revisões posteriores completam as quatorze tabelas da aplicação e os controles atuais.
 - **Banco local de desenvolvimento SQLite existente:** pare a API e, no diretório `backend`, faça backup e prepare um novo arquivo sem apagar o antigo:
 
   ```powershell
@@ -187,6 +189,10 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `CLIENT_IP_SOURCE` | Origem do IP para rate limit/auditoria: `direct` (padrão, ignora headers) ou `cf-connecting-ip` (um IP validado do edge confiável) | `direct` |
 | `RATE_LIMIT_MAX_ATTEMPTS` | Falhas consecutivas por IP e rota antes do bloqueio | `5` |
 | `RATE_LIMIT_BLOCK_MINUTES` | Duração do bloqueio das rotas de autenticação | `15` minutos |
+| `PASSWORD_RESET_COOLDOWN_SECONDS` | Intervalo mínimo por e-mail normalizado; controle compartilhado entre processos/IPs | `60` segundos |
+| `PASSWORD_RESET_ACCOUNT_MAX_REQUESTS` | Reservas aceitas por e-mail em cada janela de recuperação | `5` |
+| `PASSWORD_RESET_IP_MAX_REQUESTS` | Tentativas válidas por IP, incluindo pedidos suprimidos pelo cooldown | `20` |
+| `PASSWORD_RESET_WINDOW_SECONDS` | Janela ancorada na primeira tentativa/reserva por identidade | `3600` segundos |
 | `RETENTION_DAYS` | Retenção de eventos de auditoria antes de expurgo | `365` dias |
 | `METRICS_TOKEN` | Token bearer de pelo menos 32 caracteres aleatorios para scraping Prometheus | Vazio (desabilita `/metrics`) |
 | `FORCE_HTTPS` | Redireciona requisições HTTP; padrão ligado em produção e desligado em desenvolvimento/teste | Derivado de `APP_ENV` |
@@ -212,6 +218,8 @@ Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao in
 Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Em produção, `postgresql://` é normalizada para o driver `postgresql+psycopg`; a conexão remota adiciona `sslmode=require` quando nenhum modo TLS é informado e rejeita modos inseguros explícitos. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
 
 O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 60) e permanece em `localStorage` para a navegação entre páginas; JavaScript injetado na origem, como em um XSS, pode lê-lo. O refresh token aleatório é armazenado no servidor somente como SHA-256 e enviado ao frontend em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção. As chamadas usam `credentials: include`; em produção, site e API precisam compartilhar o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). `/auth/refresh` e `/auth/logout` aceitam somente `Origin` listado em `CORS_ALLOWED_ORIGINS`.
+
+Os controles locais de recuperação, a revisão Alembic `20261103_01`, os testes de concorrência e o procedimento futuro de migração estão descritos em [recuperação e barbeiros](docs/CORRECAO_RECUPERACAO_E_BARBEIROS_20261103.md). A aplicação da migração em homologação/produção e qualquer deploy exigem autorização separada.
 
 ## Funcionalidades e requisitos
 
@@ -382,6 +390,8 @@ Enums do domínio:
 - `AppointmentStatusEnum`: `PENDENTE`, `CONFIRMADO`, `CONCLUIDO`, `CANCELADO`, `FALTA`, `AVALIADO`.
 
 ## Schemas Pydantic
+
+Nomes enviados no cadastro e na atualização administrativa de usuários são normalizados em NFC, com espaços Unicode de separação reduzidos a um espaço simples e trim externo. São rejeitados controles, Unicode inválido, nomes sem conteúdo visível e mais de 120 caracteres após normalização; a entrada bruta tem teto de 4.096 caracteres. A regra não altera nomes persistidos ou schemas de resposta e não muda a normalização de e-mails e senhas.
 
 Os schemas validam os dados HTTP; não são tabelas do banco. `ORMModel` configura leitura de atributos dos modelos ORM.
 

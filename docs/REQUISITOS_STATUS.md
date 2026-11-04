@@ -1,5 +1,46 @@
 # Status de auditoria dos requisitos
 
+## Organização local autorizada em commits — 2026-11-04
+
+- Branch feat/qualidade-auth-ux criada da main a2e849e; índice inicial vazio e backup preservado. Cinco pacotes de código/testes separados por caminhos/trechos, na ordem autorizada; documentação no sexto. Hashes e evidências intermediárias na seção de execução do [relatório integrado](REVISAO_INTEGRADA_LOTES_1_2_3_20261104.md).
+- Testes executados sobre cópias exclusivas do índice: recuperação backend55/Node30 (2 ignorados PostgreSQL), barbeiros backend6/Node5, nomes18, e-mail SQLite21 (6 ignorados)/PostgreSQL27, visibilidade Node37/Playwright32; sem falhas. Nenhum código ainda não staged foi usado para validar esses estados.
+- Arquivos pessoais, skills, grafo e artefatos excluídos do índice; inventário/hashes preservados, com limitação de leitura registrada para subpasta de skill sem acesso. Sem instalação, banco real, mudança funcional adicional ou publicação. A validação completa posterior ao sexto commit é reportada na entrega final, sem antecipar resultados neste registro.
+
+## Revisão integrada dos Lotes 1–3 — 2026-11-04
+
+- [Matriz de arquivos, contratos, riscos e commits propostos](REVISAO_INTEGRADA_LOTES_1_2_3_20261104.md). Sem alteração de funcionalidade ou testes de produto nesta revisão; apenas documentação e artefatos de diagnóstico preservados em nova pasta.
+- SQLite completo: 319 executados, 306 aprovados/13 ignorados PostgreSQL. PostgreSQL 18.6 descartável completo: 319 executados, 317 aprovados/2 ignorados SQLite, cluster removido. Node 37/37; Playwright essenciais com API local/SQLite temporário 56/56; visibilidade multibrowser 32/32. Zero falhas finais e nenhum e-mail real.
+- Sintaxe Python/JS, dependências locais e diff --check aprovados; manifestos intactos, nenhuma credencial real identificada nos candidatos revisados. Sem instalação, banco real, staging ou alteração do histórico Git.
+- Nenhum defeito novo bloqueante. Antes de extrair commits, respeitar dependência do Lote 2 no cooldown preexistente ainda não commitado. Nome mínimo HTML 2/API 1, equivalências Unicode/SQL, entrega internacional e validações manuais de acessibilidade/autofill permanecem pendências separadas; Lote 4 e correções funcionais de e-mail/sessão não iniciados.
+
+## Visibilidade de senhas e acessibilidade — Lote 3 local — 2026-11-04
+
+- Módulo independente `password-visibility.mjs` integrado aos quatro campos existentes em login/cadastro/reset/exclusão. Botões type=button com nomes acessíveis dinâmicos, aria-controls, SVG decorativo e foco visível; preserva nó/valor/seleção/autocomplete, responde a disabled/fieldset e remascara em reset. CSS localizado usa os tokens existentes e alvo 46 px; sem medidor, dependência ou alteração de handlers/credenciais/backend.
+- Novos testes Node e Playwright estáticos, com API interceptada, sem banco/migração ou e-mails. Fechamento final: Node 37/37 e Playwright 32/32 em Chromium desktop/320 px, Firefox e WebKit, zero falhas/ignorados; evidências no [plano](superpowers/plans/2026-11-03-qualidade-dados-auth-ux.md). Cobertura de teclado, seleção, reinit, dinâmicos, payload/sucesso/erro, reset, contraste e ausência de persistência/log/rede pelo controle. Assistência de texto desativada nos campos reveláveis, sem mudar valor/autocomplete.
+- Revisão independente sem bloqueios e inspeção visual de login vazio desktop/mobile. Leitor de tela real, gerenciador externo de senhas, aparelhos físicos, canais Edge/Chrome e forced-colors pendentes. `essential-flows.spec.mjs` ajustado somente para o Tab adicional, não executado com banco neste lote. Lotes anteriores preservados; nenhuma publicação ou correção funcional de e-mail.
+
+## Identidade e unicidade de e-mail — Lote 2 de testes — 2026-11-04
+
+- Somente três novos arquivos de testes: `test_email_identity_contract.py`, `test_email_identity_postgres.py` e `test_email_identity_delivery.py`; runtime, normalização de credenciais e trabalho local anterior preservados. [Relatório com contratos, riscos e comandos](VALIDACAO_IDENTIDADE_EMAIL_20261104.md) e [plano atualizado](superpowers/plans/2026-11-03-qualidade-dados-auth-ux.md).
+- PostgreSQL 18.6 descartável real, UTF8/C: foco final 23/23, incluindo duas disputas HTTP concorrentes com conexões distintas, resultados 201/409 e uma conta por identidade. Índice funcional/SQLSTATE verificados no servidor; cluster removido. Não foram usados bancos reais ou mocks para comprovar atomicidade.
+- SQLite completo: 318 executados, 305 aprovados/13 ignorados de PostgreSQL, zero falhas; último método acrescentado depois dessa coleta passou no foco final (23 executados, 17 aprovados/6 ignorados). Node 35/35. Revisão independente confirmou reforço de recuperação por cada variante/destinatário/token. Completa PostgreSQL e Playwright não executados neste lote.
+- Limites confirmados em fixtures: ORM sem NFC pode tornar conta legada NFD não localizável; índice sob C não cobre todas as equivalências Unicode e trim SQL difere de Python para NBSP. Aceitação de endereço internacional não garante entrega: SMTPUTF8 testado sem socket e Brevo mockado. Correções somente propostas, não implementadas; nenhuma dependência, migração nova/real, envio real ou publicação. Lotes 3/4 não autorizados.
+
+## Qualidade de nomes — Lote 1 local — 2026-11-04
+
+- Helper específico `backend/app/core/person_name.py` aplicado somente a `UserCreate.nome` e `UserUpdate.nome`. NFC, colapso de whitespace Unicode após rejeição de controles, teto bruto 4.096 e limite normalizado 120; vazio visual rejeitado, joiners/caracteres de formato preservados em nomes com conteúdo visível.
+- `UserBase`/`UserResponse`, validadores globais, modelos persistidos e normalização de credenciais não foram alterados. Testes de atualização omitida, resposta e login/recuperação de conta legada verificam preservação do nome existente; atualização apenas de nome preserva e-mail/hash da fixture.
+- TDD: lacunas demonstradas antes da alteração; 14 testes focados de nomes/rotas passaram após a implementação com SQLite temporário e e-mail mockado. Fechamento Python: 302 executados, 294 aprovados/8 ignorados por exigirem PostgreSQL, zero falhas. Node existente: 35/35. PostgreSQL não executado neste lote; Graphify atualizado e `git diff --check` limpo. Comandos e evidências no plano.
+- Revisão independente somente leitura não encontrou bugs concretos no recorte. Sem frontend, dependências, schema/migração nova ou acesso a dados reais. Lote 2 e seguintes permanecem não autorizados.
+
+## Correção local de recuperação e seletores administrativos — 2026-11-03
+
+- RF06: implementados cooldown configurável de 60 s por e-mail normalizado, limites IP/conta compartilhados no banco, reserva atômica com lease/fencing, preservação do link anterior em falha, respostas genéricas e proteção visual acessível contra reentrada. A fase RED reproduziu dez envios concorrentes; testes GREEN incluem quatro processos reais disputando a mesma reserva, timeout/envio lento, recuperação de lease e chegada tardia preservando token novo/login. E-mail sempre mockado/desabilitado.
+- RF15/RF17: catálogo administrativo mantém ativos desbloqueados com/sem associação; agendamento central rejeita inativo/bloqueado e continua exigindo associação. Referências de serviços/barbeiros/clientes são tratadas independentemente, com falha específica nos campos afetados. Playwright desktop/mobile reproduz falha de clientes preservando barbeiros/serviços. Qual chamada falhou na ocorrência original em homologação ainda depende dos logs; conector Render exige confirmação de workspace, solicitada e pendente.
+- Migração aditiva **20261103_01**, anterior **20261031_01**: tabela `password_reset_limits`, sem alteração de registros existentes. Upgrade/downgrade e paridade testados em SQLite e PostgreSQL 18 reais descartáveis. Downgrade somente com tabela vazia, sob trava de escrita; a revisão encontrou uma corrida SELECT/DROP, reproduzida RED e corrigida GREEN com duas conexões PostgreSQL. Tabela populada é preservada e rollback recusado.
+- Validação final SQLite: 288 executados, 280 aprovados e 8 ignorados exclusivos de PostgreSQL. PostgreSQL 18 real completo: 288 executados, 286 aprovados e 2 ignorados exclusivos de SQLite; cluster encerrado/removido. Node: 35/35. Playwright focado: 6/6. PostgreSQL focado de recuperação/migração: 24/24, sem mock de banco/atomicidade. Zero falhas finais; Graphify AST atualizado e `git diff --check` limpo. Comandos e resultados no [plano](superpowers/plans/2026-11-03-recuperacao-e-barbeiros.md).
+- [Runbook, riscos e checklist](CORRECAO_RECUPERACAO_E_BARBEIROS_20261103.md). Nenhuma migração em homologação/produção, alteração de dado real, e-mail real, commit ou deploy. Entrega real, proveniência do IP no edge, ocorrência original e publicação permanecem pendentes. Minor documentado: cooldown visual fixo em 60 s pode divergir de outro valor configurado no backend.
+
 ## Fechamento dos checks do laboratório — 2026-11-03
 
 Checks gerais 17/17 e vídeo 18/18 aprovados isoladamente após corrigir sincronização dos testes, sem alterar runtime ou assets. Justificativa em [validação do Lab](../frontend/e2e/motion-lab/VALIDACAO.md). A HOME pública não depende do Lab em runtime. Firefox/WebKit mantêm os limites registrados abaixo. Sem staging, commits, deploy ou alteração de banco.
