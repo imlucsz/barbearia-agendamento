@@ -50,18 +50,39 @@ async function initialize() {
 }
 
 async function loadReferenceData() {
-  [services, barbers, clients] = await Promise.all([
+  const results = await Promise.allSettled([
     api.get("/services/"),
     api.get("/users/barbeiros"),
     api.get("/users/"),
   ]);
-  fillSelect("manual-client", clients, (client) => `${client.nome} · ${client.email}`, "Selecione um cliente cadastrado");
-  fillSelect("manual-service", services, (service) => service.nome);
-  fillSelect("manual-barber", barbers, (barber) => barber.nome);
-  fillSelect("barber-service-barber", barbers, (barber) => barber.nome);
-  fillSelect("barber-service-service", services, (service) => service.nome);
-  ["schedule-barber", "block-barber"].forEach((id) => fillSelect(id, barbers, (barber) => barber.nome));
-  if (barbers.length) {
+  const unauthorized = results.find(result => result.status === "rejected" && result.reason.status === 401);
+  if (unauthorized) throw unauthorized.reason;
+  const groups = [
+    { name: "serviços", ids: ["manual-service", "barber-service-service"], save: rows => { services = rows; }, label: row => row.nome },
+    { name: "barbeiros", ids: ["manual-barber", "barber-service-barber", "schedule-barber", "block-barber"], save: rows => { barbers = rows; }, label: row => row.nome },
+    { name: "clientes", ids: ["manual-client"], save: rows => { clients = rows; }, label: row => `${row.nome} · ${row.email}`, placeholder: "Selecione um cliente cadastrado" },
+  ];
+  results.forEach((result, index) => {
+    const group = groups[index];
+    if (result.status === "fulfilled" && Array.isArray(result.value)) {
+      group.save(result.value);
+      group.ids.forEach(id => fillSelect(id, result.value, group.label, group.placeholder));
+    } else {
+      const status = result.reason?.status;
+      const message = `Falha ao carregar ${group.name}${status ? ` (HTTP ${status})` : ""}. Recarregue a página para tentar novamente.`;
+      console.error(`Falha na referência de ${group.name}`, status || "resposta indisponível");
+      group.ids.forEach(id => {
+        fillSelect(id, [], group.label, message);
+        const select = byId(id);
+        if (select) {
+          select.disabled = true;
+          select.setAttribute("aria-invalid", "true");
+          select.title = message;
+        }
+      });
+    }
+  });
+  if (results[1].status === "fulfilled" && barbers.length) {
     byId("schedule-barber").value = String(barbers[0].id);
     byId("block-barber").value = String(barbers[0].id);
   }
@@ -518,6 +539,8 @@ function fillSelect(id, items, label, placeholder = null) {
   const select = byId(id);
   if (!select) return;
   select.replaceChildren();
+  select.removeAttribute("aria-invalid");
+  select.removeAttribute("title");
   if (placeholder) {
     const option = document.createElement("option");
     option.value = "";

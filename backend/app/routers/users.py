@@ -58,7 +58,7 @@ def get_barbers(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(RoleEnum.ADMIN, detail="Acesso negado. Apenas administradores podem gerenciar barbeiros."))
 ):
-    return db.query(User).filter(User.role == RoleEnum.BARBEIRO, User.ativo.is_(True)).all()
+    return db.query(User).filter(User.role == RoleEnum.BARBEIRO, User.ativo.is_(True), User.bloqueado.is_(False)).all()
 
 
 @router.get("/{user_id}", response_model=UserResponse)
