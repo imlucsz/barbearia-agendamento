@@ -52,15 +52,30 @@ test("public, client and admin screens fit viewport and support labeled keyboard
   // Start at a defined form control: browser defaults differ on whether Tab
   // includes links. Verify forward and backward traversal, not a fixed count
   // from the document (which can return to browser chrome in WebKit).
+  const passwordField = page.getByLabel("Senha", { exact: true });
+  const showPassword = page.getByRole("button", { name: "Mostrar senha", exact: true });
+  const hidePassword = page.getByRole("button", { name: "Ocultar senha", exact: true });
+  await expect(showPassword).toHaveAttribute("type", "button");
+  await expect(showPassword).toHaveAttribute("aria-controls", "login-password");
+  await expect(showPassword).toHaveAccessibleName("Mostrar senha");
+  await passwordField.fill(admin.password);
   await page.getByLabel("E-mail").focus();
-  for (const [key, target] of [
-    ["Tab", page.getByLabel("Senha", { exact: true })],
-    ["Tab", page.getByRole("button", { name: "Entrar na minha conta" })],
-    ["Shift+Tab", page.getByLabel("Senha", { exact: true })],
-    ["Shift+Tab", page.getByLabel("E-mail")],
+  for (const [key, target, inputType] of [
+    ["Tab", passwordField, "password"],
+    ["Tab", showPassword, "password"],
+    ["Enter", hidePassword, "text"],
+    ["Space", showPassword, "password"],
+    ["Tab", page.getByRole("button", { name: "Entrar na minha conta" }), "password"],
+    ["Shift+Tab", showPassword, "password"],
+    ["Space", hidePassword, "text"],
+    ["Enter", showPassword, "password"],
+    ["Shift+Tab", passwordField, "password"],
+    ["Shift+Tab", page.getByLabel("E-mail"), "password"],
   ]) {
     await page.keyboard.press(key);
     await expect(target).toBeFocused();
+    await expect(passwordField).toHaveAttribute("type", inputType);
+    expect(await passwordField.inputValue() === admin.password).toBe(true);
     const focused = await page.evaluate(() => {
       const element = document.activeElement;
       if (!(element instanceof HTMLElement) || element === document.body) return false;

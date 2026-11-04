@@ -146,7 +146,7 @@ def validate_booking_slot(
         raise HTTPException(status_code=400, detail="N?o ? poss?vel agendar em um hor?rio passado")
     if start > now + timedelta(days=BOOKING_WINDOW_DAYS):
         raise HTTPException(status_code=400, detail=f"Os agendamentos podem ser feitos com at? {BOOKING_WINDOW_DAYS} dias de anteced?ncia")
-    barber = db.query(User).filter(User.id == barber_id, User.role == RoleEnum.BARBEIRO, User.ativo.is_(True)).first()
+    barber = db.query(User).filter(User.id == barber_id, User.role == RoleEnum.BARBEIRO, User.ativo.is_(True), User.bloqueado.is_(False)).first()
     if barber is None:
         raise HTTPException(status_code=404, detail="Barbeiro n?o encontrado")
     association = db.query(BarbearioServico).filter(
