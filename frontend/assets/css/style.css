@@ -322,6 +322,33 @@ textarea::placeholder {
   color: var(--color-muted-strong);
 }
 
+.password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.password-control input { min-width: 0; }
+
+.password-visibility {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0;
+  color: var(--color-text);
+  background: var(--color-surface-inset);
+  cursor: pointer;
+}
+
+.password-visibility svg { width: 22px; height: 22px; }
+.password-visibility:hover:not(:disabled) { color: var(--color-primary-strong); border-color: currentColor; }
+.password-visibility:disabled { color: var(--color-muted); cursor: not-allowed; }
+
 .form-control:focus,
 select:focus,
 textarea:focus {
