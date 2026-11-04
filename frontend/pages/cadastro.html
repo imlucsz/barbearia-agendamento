@@ -22,7 +22,7 @@
       <form id="register-form" class="form-grid">
         <div class="form-field form-field--full"><label class="form-label" for="register-name">Nome completo</label><input id="register-name" name="nome" type="text" autocomplete="name" minlength="2" required></div>
         <div class="form-field form-field--full"><label class="form-label" for="register-email">E-mail</label><input id="register-email" name="email" type="email" autocomplete="email" required></div>
-        <div class="form-field form-field--full"><label class="form-label" for="register-password">Senha (mínimo 6 caracteres)</label><input id="register-password" name="senha" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="form-field form-field--full"><label class="form-label" for="register-password">Senha (mínimo 6 caracteres)</label><input id="register-password" name="senha" type="password" autocomplete="new-password" data-password-visibility minlength="6" required></div>
         <div class="form-field form-field--full consent-field"><label><input name="consentimento_lgpd" type="checkbox" required> <span data-installation-copy="consentText">Li e aceito o tratamento dos meus dados pessoais para cadastro e gestão dos agendamentos.</span></label></div>
         <div class="form-field form-field--full"><button class="btn w-100" type="submit">Criar minha conta</button></div>
       </form>
@@ -31,5 +31,6 @@
   </main>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/auth.js"></script>
+  <script type="module" src="../assets/js/password-visibility.mjs"></script>
 </body>
 </html>

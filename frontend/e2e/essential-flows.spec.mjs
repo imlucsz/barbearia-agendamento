@@ -299,11 +299,15 @@ test("conta baixa a exportação JSON e pede a senha atual antes de excluir", as
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByLabel("Senha atual", { exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Mostrar senha", exact: true })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Excluir conta", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(page.getByRole("button", { name: "Cancelar", exact: true })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByRole("button", { name: "Mostrar senha", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(page.getByLabel("Senha atual", { exact: true })).toBeFocused();
   await page.keyboard.press("Escape");

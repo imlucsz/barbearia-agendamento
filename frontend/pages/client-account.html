@@ -20,7 +20,7 @@
       <h2 id="delete-title">Excluir conta</h2>
       <p id="delete-description">A exclusão é permanente e não pode ser desfeita. Seus dados pessoais serão anonimizados.</p>
       <label for="delete-password">Senha atual</label>
-      <input id="delete-password" type="password" autocomplete="current-password" required autofocus>
+      <input id="delete-password" type="password" autocomplete="current-password" data-password-visibility required autofocus>
       <p id="delete-error" role="alert"></p>
       <button id="delete-cancel" class="btn btn-ghost" type="button">Cancelar</button>
       <button class="btn btn-danger" type="submit">Excluir conta</button>
@@ -28,5 +28,6 @@
   </dialog>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
+  <script type="module" src="../assets/js/password-visibility.mjs"></script>
 </body>
 </html>
