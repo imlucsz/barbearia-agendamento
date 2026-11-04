@@ -2,8 +2,7 @@
 // Lógica do painel administrativo: gera os dias da semana atual (domingo a sábado)
 // e busca na API (FastAPI) os agendamentos do dia selecionado.
 //
-// Por enquanto o admin só pode ver/gerenciar a semana atual — navegar para
-// outras semanas fica desativado até vocês decidirem liberar isso.
+// Navegação semanal com seleção de dias e proteção contra respostas antigas.
 //
 // Toda comunicação com o backend passa por api.js (apiGet/apiPost/...).
 // Este arquivo não conhece API_BASE nem faz fetch() diretamente.
@@ -27,6 +26,8 @@ let weekDays = [];
 let selectedDate = new Date();
 let currentUser = null;
 let referenceMaps = { services: new Map(), clients: new Map(), barbers: new Map() };
+let agendaRequestId = 0;
+let displayedAppointments = null;
 
 
 
@@ -111,23 +112,51 @@ function renderDateRoll() {
         }
 
         item.setAttribute("aria-pressed", String(sameDay(date, selectedDate)));
+        item.setAttribute("aria-label", formatDateForDisplay(date));
         item.innerHTML = `
             <span class="date-weekday">${DIAS_SEMANA[date.getDay()]}</span>
             <span class="date-number">${String(date.getDate()).padStart(2, "0")}</span>
         `;
 
-        item.addEventListener("click", () => selecionarDia(date));
+        item.addEventListener("click", () => {
+            selecionarDia(date);
+            focusSelectedDate();
+        });
+        item.addEventListener("keydown", (event) => {
+            const offsets = { ArrowLeft: -1, ArrowRight: 1, PageUp: -7, PageDown: 7 };
+            let offset = offsets[event.key];
+            if (event.key === "Home") offset = -date.getDay();
+            if (event.key === "End") offset = 6 - date.getDay();
+            if (offset == null) return;
+            event.preventDefault();
+            const target = new Date(date);
+            target.setDate(target.getDate() + offset);
+            selecionarDia(target);
+            focusSelectedDate();
+        });
         dateRoll.appendChild(item);
     });
 
-    if (prevBtn) prevBtn.disabled = true;
-    if (nextBtn) nextBtn.disabled = true;
+    if (prevBtn) prevBtn.disabled = false;
+    if (nextBtn) nextBtn.disabled = false;
+}
+
+function focusSelectedDate() {
+    const selected = Array.from(dateRoll.children).find(button => button.dataset.date === formatDateForAPI(selectedDate));
+    selected?.focus();
 }
 
 function selecionarDia(date) {
     selectedDate = new Date(date);
+    weekDays = generateWeekDays(selectedDate);
     renderDateRoll();
     carregarAgendaDoDia(selectedDate);
+}
+
+function navegarSemana(offset) {
+    const target = new Date(selectedDate);
+    target.setDate(target.getDate() + offset * 7);
+    selecionarDia(target);
 }
 
 
@@ -265,6 +294,8 @@ function renderizarAgendamentos(agendamentos) {
     `;
     agendaList.querySelectorAll("[data-appointment-status]").forEach((button) => {
         button.addEventListener("click", async () => {
+            const requestId = agendaRequestId;
+            displayedAppointments = null;
             button.disabled = true;
             try {
                 const update = { status: button.dataset.appointmentStatus };
@@ -274,8 +305,10 @@ function renderizarAgendamentos(agendamentos) {
                     update.valor_cobrado = amount;
                 }
                 await api.put(`/appointments/${encodeURIComponent(button.dataset.appointmentId)}`, update);
+                if (requestId !== agendaRequestId) return;
                 await carregarAgendaDoDia(selectedDate);
             } catch (error) {
+                if (requestId !== agendaRequestId) return;
                 console.error("Falha ao atualizar status do atendimento:", error);
                 renderAgendaMessage(error.message || "Não foi possível atualizar o atendimento.", "error");
                 button.disabled = false;
@@ -288,8 +321,11 @@ function renderizarAgendamentos(agendamentos) {
 async function carregarAgendaDoDia(date) {
     if (!agendaDayLabel) return;
 
+    const requestId = ++agendaRequestId;
+    displayedAppointments = null;
     const dataFormatada = formatDateForAPI(date);
     agendaDayLabel.textContent = formatDateForDisplay(date);
+    renderAgendaMessage("Carregando agenda…");
 
     if (!getToken()) {
         renderAgendaMessage("Sessão expirada. Faça login novamente.", "error");
@@ -299,9 +335,12 @@ async function carregarAgendaDoDia(date) {
     try {
         const endpoint = currentUser?.role === "barbeiro" ? "/admin/me/agenda" : "/admin/agenda";
         const responseBody = await api.get(endpoint, { params: { data: dataFormatada } });
+        if (requestId !== agendaRequestId) return;
         const agendamentos = normalizeAgendaResponse(responseBody);
+        displayedAppointments = agendamentos;
         renderizarAgendamentos(agendamentos);
     } catch (error) {
+        if (requestId !== agendaRequestId) return;
         console.error("Falha ao carregar agenda do dia:", error);
 
         let message = "Não foi possível carregar a agenda do dia.";
@@ -328,37 +367,32 @@ function init() {
     }
     setUserName();
     if (logoutLink) logoutLink.addEventListener("click", clearSession);
-    if (currentUser?.role === "admin") {
-        Promise.all([
-            api.get("/services/"),
-            api.get("/users/"),
-            api.get("/users/barbeiros"),
-        ]).then(([services, clients, barbers]) => {
-            referenceMaps.services = new Map(services.map((item) => [item.id, item.nome]));
-            referenceMaps.clients = new Map(clients.map((item) => [item.id, item.nome]));
-            referenceMaps.barbers = new Map(barbers.map((item) => [item.id, item.nome]));
-            return carregarAgendaDoDia(selectedDate);
-        }).catch((error) => {
-            console.error("Falha ao carregar dados de referência da agenda:", error);
-            renderAgendaMessage(error.message || "Não foi possível carregar os dados da agenda.", "error");
-        });
-    } else if (currentUser?.role === "barbeiro") {
-        api.get("/services/").then((services) => {
-            referenceMaps.services = new Map(services.map((item) => [item.id, item.nome]));
-            if (currentUser.id != null) {
-                referenceMaps.barbers = new Map([[currentUser.id, currentUser.nome || currentUser.name || "Você"]]);
-            }
-            return carregarAgendaDoDia(selectedDate);
-        }).catch((error) => {
-            console.error("Falha ao carregar os serviços da agenda:", error);
-            renderAgendaMessage(error.message || "Não foi possível carregar os dados da agenda.", "error");
-        });
-    }
+    // Once the user interacts with the table, keep their input and focus intact.
+    // Reference names will be used normally on the next agenda load.
+    agendaList?.addEventListener("focusin", () => { displayedAppointments = null; });
+    agendaList?.addEventListener("input", () => { displayedAppointments = null; });
+    prevBtn?.addEventListener("click", () => navegarSemana(-1));
+    nextBtn?.addEventListener("click", () => navegarSemana(1));
     weekDays = generateWeekDays(selectedDate);
     renderDateRoll();
-    if (currentUser?.role !== "admin" && currentUser?.role !== "barbeiro") {
-        carregarAgendaDoDia(selectedDate);
+    carregarAgendaDoDia(selectedDate);
+
+    const references = currentUser?.role === "admin"
+        ? [["services", "/services/"], ["clients", "/users/"], ["barbers", "/users/barbeiros"]]
+        : currentUser?.role === "barbeiro" ? [["services", "/services/"]] : [];
+    if (currentUser?.role === "barbeiro" && currentUser.id != null) {
+        referenceMaps.barbers = new Map([[currentUser.id, currentUser.nome || currentUser.name || "Você"]]);
     }
+    references.forEach(([key, endpoint]) => {
+        api.get(endpoint).then((items) => {
+            referenceMaps[key] = new Map(items.map((item) => [item.id, item.nome]));
+            // Only enrich the currently displayed successful response, never a
+            // pending day or an agenda error with an earlier day's appointments.
+            if (displayedAppointments !== null) renderizarAgendamentos(displayedAppointments);
+        }).catch((error) => {
+            console.error(`Falha ao carregar referência da agenda (${endpoint}):`, error);
+        });
+    });
 }
 
 document.addEventListener("DOMContentLoaded", init);

@@ -150,6 +150,13 @@ class LgpdPortabilityTests(unittest.TestCase):
         status, body = asgi_request(self.app, "DELETE", "/users/me", {"senha_atual": "current-password-123"},
                                     headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(status, 200, body)
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        clients_status, clients = asgi_request(self.app, "GET", "/users/", headers=admin_headers)
+        self.assertEqual(clients_status, 200)
+        self.assertNotIn(self.owner_id, [client["id"] for client in clients])
+        for method, payload in (("GET", None), ("PUT", {"nome": "Reativado", "bloqueado": False})):
+            self.assertEqual(asgi_request(self.app, method, f"/users/{self.owner_id}", payload,
+                                          headers=admin_headers)[0], 404)
         report_after = asgi_request(self.app, "GET", "/admin/relatorio?inicio=2025-01-15&fim=2025-01-15", headers={"Authorization": f"Bearer {admin_token}"})[1]
         self.assertEqual(report_after["total_receita"], report_before["total_receita"])
         self.assertEqual(report_after["total_agendamentos"], report_before["total_agendamentos"])

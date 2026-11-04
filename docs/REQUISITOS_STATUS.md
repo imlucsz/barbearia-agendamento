@@ -1,5 +1,38 @@
 # Status de auditoria dos requisitos
 
+## Correção da agenda administrativa — 2026-11-04
+
+- Branch `fix/admin-agenda-navigation`, criada de `origin/main` atualizado em
+  `f565c29`. Listagem e GET/PUT de clientes por ID exigem `ativo=True`, preservando
+  bloqueados ativos, anonimização e registros históricos. Sem mudança de schema,
+  autenticação ou CORS.
+- Agenda consultada independentemente dos catálogos auxiliares. Erros reais da
+  agenda permanecem visíveis; respostas antigas de consulta/alteração não
+  sobrescrevem a data selecionada. Referências tardias não redesenham a tabela
+  após interação, preservando foco, valor cobrado e erros de atualização.
+- Navegação semanal anterior/posterior mantém o dia da semana; seleção de datas,
+  nomes acessíveis completos e estado `aria-pressed`. Teclado: Enter/Space nos
+  botões; setas esquerda/direita, PageUp/PageDown e Home/End nas datas.
+- Evidências executadas (com prefixo `rtk proxy`):
+  - Na pasta `backend`, `.venv/Scripts/python.exe -m unittest discover -s tests -p test_authorization.py`: **14/14**.
+  - Na pasta `backend`, mesmo comando com `-p test_lgpd_portability.py`: **6/6**,
+    incluindo exclusão real de conta fictícia seguida de GET/PUT administrativos
+    e preservação dos históricos/valores financeiros.
+  - Na pasta `backend`, mesmo comando com `-p test_booking_integrity.py`: **9/9**.
+  - `node --test frontend/tests/agenda-admin.test.mjs`: **9/9**.
+  - `node --test frontend/tests/*.test.mjs`: **43/43**, incluindo os nove acima.
+  - `node --check frontend/e2e/agenda-navigation.spec.mjs`: sem erro de sintaxe.
+- Testes Python usaram exclusivamente SQLite temporário; o sandbox bloqueou a
+  abertura inicial e as execuções bem-sucedidas ocorreram com permissão elevada.
+  Nenhuma migração executada ou dado real acessado. PostgreSQL: **não executado**.
+- Playwright preparado para desktop/mobile, porém **não executado**: CLI ausente
+  e `node_modules` vazio; tentativa de npm retornou `ENOTFOUND registry.npmjs.org`.
+  Instalação não repetida após orientação de retomada. Sintaxe não equivale a
+  validação em navegador; interação/visual continuam pendentes dessa execução.
+- Revisão independente concluída sem bloqueadores após preservar edições contra
+  referências tardias. `git diff --check` sem erros; `graphify update .` concluído
+  por AST, sem LLM. Sem commits locais, push, merge ou deploy.
+
 ## Fechamento dos checks do laboratório — 2026-11-03
 
 Checks gerais 17/17 e vídeo 18/18 aprovados isoladamente após corrigir sincronização dos testes, sem alterar runtime ou assets. Justificativa em [validação do Lab](../frontend/e2e/motion-lab/VALIDACAO.md). A HOME pública não depende do Lab em runtime. Firefox/WebKit mantêm os limites registrados abaixo. Sem staging, commits, deploy ou alteração de banco.

@@ -46,7 +46,7 @@ def get_users(
     # Only return users with role = CLIENTE for client management
     # (Barbeiros and Admins are managed separately if needed)
     users = db.query(User)\
-        .filter(User.role == RoleEnum.CLIENTE)\
+        .filter(User.role == RoleEnum.CLIENTE, User.ativo.is_(True))\
         .offset(skip)\
         .limit(limit)\
         .all()
@@ -67,7 +67,7 @@ def get_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(RoleEnum.ADMIN, detail="Acesso negado. Apenas administradores podem gerenciar clientes."))
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id, User.ativo.is_(True)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
@@ -89,7 +89,7 @@ def update_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(RoleEnum.ADMIN, detail="Acesso negado. Apenas administradores podem gerenciar clientes."))
 ):
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id, User.ativo.is_(True)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
 
