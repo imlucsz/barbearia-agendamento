@@ -469,3 +469,12 @@ Projeto desenvolvido por estudantes de DSM da FATEC Itaquera. Consulte o histór
 Leia [AGENTS.md](AGENTS.md), [planos curtos](docs/superpowers/plans/README.md) e [workflow local](tools/codex-helpers/README.md#workflow-local-do-codex) para alterações assistidas por Codex. Graphify é uma ferramenta de navegação do código, sem dependência no runtime da aplicação. Outputs e caches locais precisam de triagem antes de versionamento.
 
 O [material comercial](docs/business/notebooklm/00_INDICE.md) separa fatos do produto, hipóteses e planejamento; não descreve um SaaS multi-tenant implementado.
+
+
+## Qualidade e acessibilidade — integração independente
+
+Inclui nomes Unicode NFC em novas entradas, contratos de identidade de e-mail,
+visibilidade acessível e seleção/elegibilidade administrativa de barbeiros.
+Não inclui cooldown, fila ou mudanças de recuperação, JWT ou sessões.
+Evidências e ressalvas em
+[integração independente](docs/INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md).

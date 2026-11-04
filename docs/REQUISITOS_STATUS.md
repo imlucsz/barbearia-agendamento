@@ -276,3 +276,16 @@ Estrelinha cinematográfica: três aparições decorativas, com flag por instala
 - Validação: JSON dos hooks e preservação exata do handler Graphify conferidos com Python; UTF-8/whitespace dos oito arquivos (incluindo untracked) e quatro links locais validados; `rtk proxy git diff --check` com código 0. Arquivos de frontend previamente modificados preservados por comparação de hashes. Suítes Python/Node da aplicação, Playwright e PostgreSQL não executadas: mudança restrita a documentação/configuração de hook.
 
 Diagnóstico Ritual Chrome/Edge (2026-11-02): sem correção na HOME. Probe em ambos os canais instalados: scrub contínuo em 1440x900; três tempos em 1440x640 por seleção responsiva. Zero writes durante seeking. Playwright HOME desktop/mobile: 4/4. Causa da sessão manual pendente de confirmação da viewport/modo; evidência e coleta em docs/RITUAL_CROSS_BROWSER_DIAGNOSTICO.md.
+
+
+## Integração independente — 2026-11-04
+
+Implementados: nomes NFC; testes de identidade sem dependência de cooldown;
+visibilidade acessível; correções administrativas.
+SQLite:290 aprovados/12 ignorados; PostgreSQL descartável:300/2;
+Node:34; visibilidade Playwright:32; essenciais finais:56.
+Primeira rodada essencial55/56, com corrida preexistente de redirecionamento
+documentada. Recuperação/JWT/sessões/migrações iguais a main.
+Evidências em
+[integração independente](INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md).
+Sem publicação, migração real, e-mail real ou instalação de dependências.
