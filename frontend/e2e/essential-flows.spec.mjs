@@ -516,6 +516,18 @@ test("histórico e avaliação de atendimento concluído", async ({ page }, test
   await expect(ratedCard.getByRole("link", { name: "Avaliar atendimento" })).toHaveCount(0);
 });
 
+test("falha na referência de clientes preserva barbeiros e serviços administrativos", async ({ page }) => {
+  await page.route('**/users/', route => route.fulfill({ status: 500, json: { detail: 'Falha de teste' } }));
+  await signIn(page, admin);
+  await page.waitForURL(/admin\.html$/);
+  await expect(page.locator('#barber-service-barber')).toBeEnabled();
+  await expect(page.locator('#barber-service-barber option')).toContainText(['Barbeiro E2E Fictício']);
+  await expect(page.locator('#barber-service-service')).toBeEnabled();
+  await expect(page.locator('#block-barber')).toBeEnabled();
+  await expect(page.locator('#manual-client')).toBeDisabled();
+  await expect(page.locator('#manual-client option')).toContainText('Falha ao carregar clientes (HTTP 500)');
+});
+
 test("painel administrativo carrega e gerencia serviços, equipe, clientes, horários e informações", async ({ page }, testInfo) => {
   await signIn(page, admin);
   await page.waitForURL(/admin\.html$/);
