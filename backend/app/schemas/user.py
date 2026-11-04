@@ -2,10 +2,12 @@ from pydantic import EmailStr, Field, StrictBool, StrictStr, field_validator
 from typing import Annotated, Literal, Optional
 from pydantic import BeforeValidator
 from app.core.email_identity import normalize_email
+from app.core.person_name import normalize_person_name
 from datetime import datetime
 from app.schemas.base import ORMModel, SchemaModel
 
 NormalizedEmail = Annotated[EmailStr, BeforeValidator(lambda value: normalize_email(value) if isinstance(value, str) else value)]
+NormalizedPersonName = Annotated[StrictStr, BeforeValidator(normalize_person_name)]
 
 
 class UserBase(ORMModel):
@@ -14,6 +16,7 @@ class UserBase(ORMModel):
 
 
 class UserCreate(UserBase):
+    nome: NormalizedPersonName = Field(min_length=1, max_length=120)
     senha: StrictStr = Field(..., min_length=6, max_length=128)
     consentimento_lgpd: StrictBool
 
@@ -33,7 +36,7 @@ class UserResponse(UserBase):
     bloqueado: bool = False
 
 class UserUpdate(SchemaModel):
-    nome: Optional[StrictStr] = Field(default=None, min_length=1, max_length=120)
+    nome: Optional[NormalizedPersonName] = Field(default=None, min_length=1, max_length=120)
     email: Optional[NormalizedEmail] = Field(default=None, max_length=254)
     # Note: Password changes should use a separate endpoint for security
     bloqueado: Optional[bool] = None
