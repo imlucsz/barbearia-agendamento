@@ -175,7 +175,6 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
         "user": db_user,
         "access_token": access_token,
         "token_type": "bearer",
-        "refresh_token": refresh_token,
     }
 
 

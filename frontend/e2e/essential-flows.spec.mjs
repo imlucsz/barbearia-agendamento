@@ -124,10 +124,15 @@ test("cadastro, login, refresh silencioso após sessão expirada e logout", asyn
 
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill("E2E-Registration-Only-2026!");
+  const loginResponsePromise = page.waitForResponse((response) => response.url().endsWith("/auth/login") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Entrar na minha conta" }).click();
+  const loginPayload = await (await loginResponsePromise).json();
+  expect(Object.hasOwn(loginPayload, "refresh_token")).toBe(false);
   await page.waitForURL(/client-dashboard\.html$/);
   const refreshCookie = (await context.cookies("http://127.0.0.1:4174/auth/refresh")).find((cookie) => cookie.name === "refresh_token");
   expect(refreshCookie?.httpOnly).toBe(true);
+  expect(refreshCookie?.sameSite).toBe("Lax");
+  expect(refreshCookie?.path).toBe("/auth");
 
   await page.evaluate(() => {
     localStorage.setItem("token", "expired-e2e-token");

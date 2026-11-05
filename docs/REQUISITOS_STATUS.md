@@ -1,5 +1,14 @@
 # Status de auditoria dos requisitos
 
+## SEC-01 — Refresh exclusivo em cookie
+
+- Login não expõe mais refresh token no JSON nem no schema público. Cadastro já não emitia tokens; refresh já rotacionava exclusivamente no cookie. Frontend usa cookie e não dependia desse campo. Testes passaram a extrair o cookie; rotação, revogação, Origin, autorização e rate limiting preservados.
+- Cookie: HttpOnly, Secure em produção, SameSite=Lax, host-only, Path=/auth, Max-Age=2592000; logout mantém atributos e zera Max-Age. Auditoria de login/reuso não recebe segredo; teste verifica logs e mensagens sem token.
+- Evidência: `rtk proxy C:/Users/Aluno/Documents/barbearia-agendamento/backend/.venv/Scripts/python.exe -m unittest discover -s tests -p test_auth_sessions.py`: 13 aprovados. Mesmo comando com `-p test_auth*.py`: 31 aprovados, exclusivamente SQLite temporário. Regressão reproduzida antes da correção (1 falha de exposição); primeira execução no sandbox teve 10 erros por bloqueio do SQLite, reexecuções fora do sandbox passaram.
+- Playwright: tentativa `node ../../node_modules/@playwright/test/cli.js test --config frontend/e2e/playwright.config.mjs --grep "cadastro, login|agendamento" --project desktop-1280x800` bloqueada por MODULE_NOT_FOUND; teste existente ampliado para ausência do campo JSON e atributos de cookie. Sintaxe verificada com `node --check frontend/e2e/essential-flows.spec.mjs`, sem erro. Renovação real em navegador e Render permanece não comprovada nesta entrega.
+- Incompatibilidade estrutural preexistente: hosts distintos de onrender.com são cross-site (Public Suffix List); Lax impede fetch com cookie. README propõe domínio próprio compartilhado HTTPS ou proxy na mesma origem antes de implantação. Atributos e arquitetura não alterados. Access token em localStorage continua sujeito a XSS; esta correção reduz exposição do segredo de longa duração.
+- PostgreSQL não executado: nenhum BOOKING_TEST_POSTGRES_URL descartável configurado. Sem schema/migração, dados reais ou publicação.
+
 ## Correção da agenda administrativa — 2026-11-04
 
 - Branch `fix/admin-agenda-navigation`, criada de `origin/main` atualizado em

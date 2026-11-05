@@ -73,4 +73,3 @@ class UserTokenResponse(ORMModel):
     user: UserResponse
     access_token: StrictStr = Field(min_length=1, max_length=4096)
     token_type: StrictStr = Field(min_length=1, max_length=32)
-    refresh_token: StrictStr = Field(min_length=1, max_length=256)
