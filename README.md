@@ -215,6 +215,8 @@ O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 6
 
 Subdomínios distintos de `onrender.com` são cross-site: `onrender.com` consta na [Public Suffix List](https://publicsuffix.org/list/public_suffix_list.dat). Nesse cenário, `SameSite=Lax` impede refresh por fetch, mesmo com CORS e `credentials: include` ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)). Antes de implantar o fluxo de sessão, configure HTTPS em domínio próprio compartilhado entre frontend/API ou proponha um proxy na mesma origem. Nenhuma dessas mudanças de infraestrutura foi realizada por esta correção, nem houve validação autenticada no Render. Não relaxe `SameSite` para contornar essa incompatibilidade.
 
+Na seleção de data do cliente, o frontend valida `YYYY-MM-DD`, o calendário e a janela de hoje até o dia 14 em `America/Sao_Paulo` antes de consultar disponibilidade. Digitação incompleta não consulta a API e remove horários antigos. Na confirmação, o limite considera o horário exato atual mais 14 dias; o backend permanece responsável por disponibilidade, concorrência e todas as regras definitivas. O relógio do dispositivo pode divergir do servidor.
+
 ## Funcionalidades e requisitos
 
 ## Requisitos funcionais (RF)

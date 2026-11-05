@@ -1,5 +1,15 @@
 # Status de auditoria dos requisitos
 
+## UX-01 — Datas completas antes de chamadas HTTP
+
+- Validação de formato e calendário rejeita anos 0002/0202/0020, valores parciais, dias inexistentes e datas fora de hoje até o dia 14, usando America/Sao_Paulo. Min/max preservados para o seletor nativo; input invalida horários e respostas antigas, change só consulta datas válidas; feedback com aria-invalid, aria-describedby e alert.
+- Confirmação valida data/hora também antes de carregar dados e antes de criar/reagendar, respeitando instante atual até instante +14 dias na hora local do estabelecimento (o último dia não é todo liberado). Backend inalterado e definitivo; relógio incorreto do dispositivo pode causar divergência, sem reduzir proteção do servidor.
+- `rtk proxy node --test frontend/tests/booking-date.test.mjs frontend/tests/schedule-date.test.mjs`: 8/8. Inclui calendários/bissexto, virada mês/ano, limites temporais, timezone diferente, nenhum HTTP para input/change inválido, resposta tardia descartada, confirmação inválida sem HTTP e criação com data/hora válidas.
+- `rtk proxy node --test frontend/tests/*.test.mjs`: 51/51 aprovados.
+- Na pasta backend, `rtk proxy C:/Users/Aluno/Documents/barbearia-agendamento/backend/.venv/Scripts/python.exe -m unittest discover -s tests -p test_booking*.py`: 32/32 aprovados, com SQLite temporário exclusivo. A suíte inclui exercícios de migrações históricas no banco temporário; nenhuma migração aplicada em banco de desenvolvimento/produção, nenhum arquivo de migração alterado.
+- Playwright não executado: dependência ausente, tentativa detalhada em SEC-01. PostgreSQL não executado: sem banco descartável configurado. Não há comprovação browser/mobile nesta entrega; preservar seletor nativo não substitui essa validação.
+- `git diff --check`: sem erros. Revisão independente sem bloqueadores. Sem alterações na agenda administrativa, recuperação de senha ou infraestrutura.
+
 ## SEC-01 — Refresh exclusivo em cookie
 
 - Login não expõe mais refresh token no JSON nem no schema público. Cadastro já não emitia tokens; refresh já rotacionava exclusivamente no cookie. Frontend usa cookie e não dependia desse campo. Testes passaram a extrair o cookie; rotação, revogação, Origin, autorização e rate limiting preservados.
