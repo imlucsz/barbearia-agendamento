@@ -1,4 +1,5 @@
 import hashlib
+from http.cookies import SimpleCookie
 import os
 import unittest
 from datetime import timedelta
@@ -11,6 +12,12 @@ from app.core.clock import utc_now_naive
 from app.core.security import get_password_hash
 from app.models.user import ConsentimentoLGPD, RefreshToken, RoleEnum, User
 from app.routers.auth import _set_refresh_cookie
+
+
+def cookie_token(headers):
+    cookie = SimpleCookie()
+    cookie.load(headers["set-cookie"])
+    return cookie["refresh_token"].value
 
 
 class AuthenticationSessionTests(unittest.TestCase):
@@ -86,11 +93,15 @@ class AuthenticationSessionTests(unittest.TestCase):
 
         status, body, headers = self.login("consent@example.com", "client-pass-123")
         self.assertEqual(status, 200, body)
-        raw_token = body["refresh_token"]
+        self.assertFalse("refresh_token" in body)
+        raw_token = cookie_token(headers)
         self.assertIn(raw_token, headers["set-cookie"])
         self.assertIn("httponly", headers["set-cookie"].lower())
         self.assertIn("samesite=lax", headers["set-cookie"].lower())
         self.assertIn("path=/auth", headers["set-cookie"].lower())
+        self.assertIn("max-age=2592000", headers["set-cookie"].lower())
+        self.assertTrue(bool(body.get("access_token")))
+        self.assertEqual(body["token_type"], "bearer")
         db = main.SessionLocal()
         try:
             stored = db.query(RefreshToken).one()
@@ -103,9 +114,10 @@ class AuthenticationSessionTests(unittest.TestCase):
         self.create_user("rotate@example.com")
         status, body, _headers = self.login("rotate@example.com")
         self.assertEqual(status, 200, body)
-        first = body["refresh_token"]
+        first = cookie_token(_headers)
 
         status, _body, headers = self.refresh(first, self.origin)
+        self.assertFalse("refresh_token" in _body)
         self.assertEqual(status, 200)
         second = headers["set-cookie"].split("refresh_token=", 1)[1].split(";", 1)[0]
         self.assertNotEqual(first, second)
@@ -123,7 +135,7 @@ class AuthenticationSessionTests(unittest.TestCase):
     def test_logout_revokes_refresh_token(self):
         self.create_user("logout@example.com")
         status, body, _headers = self.login("logout@example.com")
-        token = body["refresh_token"]
+        token = cookie_token(_headers)
         status, _body, headers = asgi_request(
             self.application, "POST", "/auth/logout", headers={
                 "Cookie": f"refresh_token={token}", "Origin": self.origin,
@@ -143,19 +155,19 @@ class AuthenticationSessionTests(unittest.TestCase):
             db.commit()
         finally:
             db.close()
-        self.assertEqual(self.refresh(body["refresh_token"], self.origin)[0], 401)
+        self.assertEqual(self.refresh(cookie_token(_headers), self.origin)[0], 401)
 
     def test_blocking_client_revokes_refresh_tokens(self):
         client_id = self.create_user("blocked@example.com")
         self.create_user("admin@example.com", RoleEnum.ADMIN)
-        _status, client_login, _headers = self.login("blocked@example.com")
+        _status, client_login, client_headers = self.login("blocked@example.com")
         _status, admin_login, _headers = self.login("admin@example.com")
         status, _body = asgi_request(
             self.application, "PUT", f"/users/{client_id}", {"bloqueado": True},
             headers={"Authorization": f"Bearer {admin_login['access_token']}"},
         )
         self.assertEqual(status, 200)
-        self.assertEqual(self.refresh(client_login["refresh_token"], self.origin)[0], 401)
+        self.assertEqual(self.refresh(cookie_token(client_headers), self.origin)[0], 401)
         db = main.SessionLocal()
         try:
             self.assertTrue(all(row.revoked_at is not None for row in db.query(RefreshToken).filter_by(user_id=client_id)))
@@ -172,7 +184,7 @@ class AuthenticationSessionTests(unittest.TestCase):
             {"token": sender.call_args.args[1], "nova_senha": "new-pass-123"},
         )
         self.assertEqual(status, 200)
-        self.assertEqual(self.refresh(login_body["refresh_token"], self.origin)[0], 401)
+        self.assertEqual(self.refresh(cookie_token(_headers), self.origin)[0], 401)
 
     def test_account_deactivation_revokes_refresh_tokens(self):
         user_id = self.create_user("deactivate@example.com")
@@ -183,7 +195,7 @@ class AuthenticationSessionTests(unittest.TestCase):
             headers={"Authorization": f"Bearer {login_body['access_token']}"},
         )
         self.assertEqual(status, 200)
-        self.assertEqual(self.refresh(login_body["refresh_token"], self.origin)[0], 401)
+        self.assertEqual(self.refresh(cookie_token(_headers), self.origin)[0], 401)
         db = main.SessionLocal()
         try:
             erased_tokens = db.query(RefreshToken).filter(RefreshToken.token_hash.is_not(None)).all()
@@ -194,10 +206,10 @@ class AuthenticationSessionTests(unittest.TestCase):
     def test_refresh_and_logout_reject_unlisted_origin(self):
         self.create_user("csrf@example.com")
         _status, body, _headers = self.login("csrf@example.com")
-        self.assertEqual(self.refresh(body["refresh_token"], "https://attacker.invalid")[0], 403)
+        self.assertEqual(self.refresh(cookie_token(_headers), "https://attacker.invalid")[0], 403)
         status, _body = asgi_request(
             self.application, "POST", "/auth/logout",
-            headers={"Cookie": f"refresh_token={body['refresh_token']}", "Origin": "https://attacker.invalid"},
+            headers={"Cookie": f"refresh_token={cookie_token(_headers)}", "Origin": "https://attacker.invalid"},
         )
         self.assertEqual(status, 403)
 
@@ -211,6 +223,45 @@ class AuthenticationSessionTests(unittest.TestCase):
             production = Response()
             _set_refresh_cookie(production, "prod-token")
         self.assertIn("secure", production.headers["set-cookie"].lower())
+
+    def test_cookie_clear_preserves_production_security_and_scope(self):
+        with patch.dict(os.environ, {"APP_ENV": "production"}):
+            response = Response()
+            _set_refresh_cookie(response, None)
+        cookie = SimpleCookie()
+        cookie.load(response.headers["set-cookie"])
+        refresh = cookie["refresh_token"]
+        self.assertEqual(refresh.value, "")
+        self.assertTrue(refresh["secure"])
+        self.assertTrue(refresh["httponly"])
+        self.assertEqual(refresh["samesite"], "lax")
+        self.assertEqual(refresh["path"], "/auth")
+        self.assertEqual(refresh["max-age"], "0")
+        self.assertEqual(refresh["domain"], "")
+
+    def test_refresh_requires_origin_and_does_not_accept_json_token(self):
+        self.create_user("cookie-only@example.com")
+        _, _, headers = self.login("cookie-only@example.com")
+        token = cookie_token(headers)
+        self.assertEqual(self.refresh(token)[0], 403)
+        status, _ = asgi_request(self.application, "POST", "/auth/refresh",
+                                 {"refresh_token": token}, headers={"Origin": self.origin})
+        self.assertEqual(status, 401)
+        self.assertEqual(self.refresh(token, self.origin)[0], 200)
+
+    def test_auth_audit_and_errors_do_not_include_refresh_secret(self):
+        self.create_user("audit-secret@example.com")
+        with self.assertLogs("security.audit", level="INFO") as captured:
+            _, body, headers = self.login("audit-secret@example.com")
+            token = cookie_token(headers)
+            status, refreshed, _ = self.refresh(token, self.origin)
+            self.assertEqual(status, 200)
+            status, error, _ = self.refresh(token, self.origin)
+            self.assertEqual(status, 401)
+        self.assertFalse(token in repr(body))
+        self.assertFalse(token in repr(refreshed))
+        self.assertFalse(token in repr(error))
+        self.assertFalse(token in " ".join(captured.output))
 
 
 if __name__ == "__main__":

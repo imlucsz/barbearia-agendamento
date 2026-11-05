@@ -1,4 +1,5 @@
 import { api, clearToken, getToken, logout } from "./api.js";
+import { bookingDateBounds, isBookableDate, isBookableDateTime } from "./booking-date.mjs";
 
 const params = new URLSearchParams(window.location.search);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -123,16 +124,28 @@ function setupDatePicker() {
     return;
   }
 
-  const today = localDateString(new Date());
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 14);
-  dateInput.min = today;
-  dateInput.max = localDateString(maxDate);
+  const dateMessage = "Escolha uma data válida entre hoje e os próximos 14 dias.";
+  let requestVersion = 0;
+  const updateBounds = () => Object.assign(dateInput, bookingDateBounds());
+  updateBounds();
+  dateInput.setAttribute("aria-describedby", "slots-container");
+  dateInput.addEventListener("input", () => {
+    requestVersion += 1;
+    slots.replaceChildren();
+    const valid = isBookableDate(dateInput.value);
+    dateInput.setAttribute("aria-invalid", String(!valid));
+    if (!valid) showError(slots, dateMessage);
+  });
   dateInput.addEventListener("change", () => loadSlots(dateInput.value));
 
   async function loadSlots(day) {
-    if (!day) {
-      showEmpty(slots, "Selecione uma data para ver os horários disponíveis.");
+    const version = ++requestVersion;
+    updateBounds();
+    const valid = isBookableDate(day);
+    dateInput.setAttribute("aria-invalid", String(!valid));
+    if (!valid) {
+      slots.replaceChildren();
+      showError(slots, day ? dateMessage : "Selecione uma data para ver os horários disponíveis.");
       return;
     }
     slots.replaceChildren();
@@ -144,6 +157,7 @@ function setupDatePicker() {
       const available = await api.get("/appointments/disponiveis", {
         params: { service_id: serviceId, data: day, barbeiro_id: barberId },
       });
+      if (version !== requestVersion || dateInput.value !== day) return;
       slots.replaceChildren();
       if (available.length === 0) return showEmpty(slots, "Nenhum horário disponível nesta data. Tente outro dia.");
       const list = document.createElement("div");
@@ -158,6 +172,7 @@ function setupDatePicker() {
       });
       slots.append(list);
     } catch (error) {
+      if (version !== requestVersion || dateInput.value !== day) return;
       console.error("Falha ao carregar horários:", error);
       handleAuthError(error);
       showError(slots, error.message);
@@ -175,6 +190,12 @@ async function loadConfirmation() {
   const button = document.getElementById("confirm-btn");
   if (!serviceId || !barberId || !dateTime) {
     window.location.href = "client-services.html";
+    return;
+  }
+
+  if (!isBookableDateTime(dateTime)) {
+    showError(container, "Escolha uma data e horário válidos nos próximos 14 dias.");
+    button.disabled = true;
     return;
   }
 
@@ -203,6 +224,7 @@ async function loadConfirmation() {
     button.addEventListener("click", async () => {
       button.disabled = true;
       try {
+        if (!isBookableDateTime(dateTime)) throw new Error("Esse horário expirou. Escolha uma nova data e horário.");
         if (appointmentId) {
           const previous = await api.get(`/appointments/${encodeURIComponent(appointmentId)}`);
           if (

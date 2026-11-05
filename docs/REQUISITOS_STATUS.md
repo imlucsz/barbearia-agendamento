@@ -1,5 +1,24 @@
 # Status de auditoria dos requisitos
 
+## UX-01 — Datas completas antes de chamadas HTTP
+
+- Validação de formato e calendário rejeita anos 0002/0202/0020, valores parciais, dias inexistentes e datas fora de hoje até o dia 14, usando America/Sao_Paulo. Min/max preservados para o seletor nativo; input invalida horários e respostas antigas, change só consulta datas válidas; feedback com aria-invalid, aria-describedby e alert.
+- Confirmação valida data/hora também antes de carregar dados e antes de criar/reagendar, respeitando instante atual até instante +14 dias na hora local do estabelecimento (o último dia não é todo liberado). Backend inalterado e definitivo; relógio incorreto do dispositivo pode causar divergência, sem reduzir proteção do servidor.
+- `rtk proxy node --test frontend/tests/booking-date.test.mjs frontend/tests/schedule-date.test.mjs`: 8/8. Inclui calendários/bissexto, virada mês/ano, limites temporais, timezone diferente, nenhum HTTP para input/change inválido, resposta tardia descartada, confirmação inválida sem HTTP e criação com data/hora válidas.
+- `rtk proxy node --test frontend/tests/*.test.mjs`: 51/51 aprovados.
+- Na pasta backend, `rtk proxy C:/Users/Aluno/Documents/barbearia-agendamento/backend/.venv/Scripts/python.exe -m unittest discover -s tests -p test_booking*.py`: 32/32 aprovados, com SQLite temporário exclusivo. A suíte inclui exercícios de migrações históricas no banco temporário; nenhuma migração aplicada em banco de desenvolvimento/produção, nenhum arquivo de migração alterado.
+- Playwright não executado: dependência ausente, tentativa detalhada em SEC-01. PostgreSQL não executado: sem banco descartável configurado. Não há comprovação browser/mobile nesta entrega; preservar seletor nativo não substitui essa validação.
+- `git diff --check`: sem erros. Revisão independente sem bloqueadores. Sem alterações na agenda administrativa, recuperação de senha ou infraestrutura.
+
+## SEC-01 — Refresh exclusivo em cookie
+
+- Login não expõe mais refresh token no JSON nem no schema público. Cadastro já não emitia tokens; refresh já rotacionava exclusivamente no cookie. Frontend usa cookie e não dependia desse campo. Testes passaram a extrair o cookie; rotação, revogação, Origin, autorização e rate limiting preservados.
+- Cookie: HttpOnly, Secure em produção, SameSite=Lax, host-only, Path=/auth, Max-Age=2592000; logout mantém atributos e zera Max-Age. Auditoria de login/reuso não recebe segredo; teste verifica logs e mensagens sem token.
+- Evidência: `rtk proxy C:/Users/Aluno/Documents/barbearia-agendamento/backend/.venv/Scripts/python.exe -m unittest discover -s tests -p test_auth_sessions.py`: 13 aprovados. Mesmo comando com `-p test_auth*.py`: 31 aprovados, exclusivamente SQLite temporário. Regressão reproduzida antes da correção (1 falha de exposição); primeira execução no sandbox teve 10 erros por bloqueio do SQLite, reexecuções fora do sandbox passaram.
+- Playwright: tentativa `node ../../node_modules/@playwright/test/cli.js test --config frontend/e2e/playwright.config.mjs --grep "cadastro, login|agendamento" --project desktop-1280x800` bloqueada por MODULE_NOT_FOUND; teste existente ampliado para ausência do campo JSON e atributos de cookie. Sintaxe verificada com `node --check frontend/e2e/essential-flows.spec.mjs`, sem erro. Renovação real em navegador e Render permanece não comprovada nesta entrega.
+- Incompatibilidade estrutural preexistente: hosts distintos de onrender.com são cross-site (Public Suffix List); Lax impede fetch com cookie. README propõe domínio próprio compartilhado HTTPS ou proxy na mesma origem antes de implantação. Atributos e arquitetura não alterados. Access token em localStorage continua sujeito a XSS; esta correção reduz exposição do segredo de longa duração.
+- PostgreSQL não executado: nenhum BOOKING_TEST_POSTGRES_URL descartável configurado. Sem schema/migração, dados reais ou publicação.
+
 ## Correção da agenda administrativa — 2026-11-04
 
 - Branch `fix/admin-agenda-navigation`, criada de `origin/main` atualizado em
