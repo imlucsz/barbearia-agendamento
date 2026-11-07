@@ -1,3 +1,4 @@
+from support import access_token_for_user
 import os
 import unittest
 from datetime import datetime, timedelta
@@ -5,7 +6,6 @@ from unittest.mock import patch
 from sqlalchemy import event
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -84,7 +84,7 @@ class BookingTemporalTests(unittest.TestCase):
         return user
 
     def _token(self, principal="client"):
-        return create_access_token({"sub": self.emails[principal]})
+        return access_token_for_user(self.emails[principal])
 
     def _book(self, start, principal="client", route="/appointments/"):
         return asgi_request(

@@ -1,10 +1,11 @@
+from support import access_token_for_user
 """Characterize the current contract without changing normalization policy."""
 import unittest
 from unittest.mock import patch
 
 from pydantic import ValidationError
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.models.user import User, RoleEnum, PasswordResetToken
 from app.schemas.user import UserCreate, UserUpdate, UserLogin, EsqueciSenhaRequest
 
@@ -108,7 +109,7 @@ class EmailIdentityContractTests(unittest.TestCase):
             db.add_all([admin, client, User(nome="Other", email="josé@example.com", senha_hash="fixture")])
             db.commit()
             user_id, original_hash = client.id, client.senha_hash
-        headers = {"Authorization": "Bearer " + create_access_token({"sub": "admin@example.com"})}
+        headers = {"Authorization": "Bearer " + access_token_for_user("admin@example.com")}
         status, body = asgi_request(self.app, "PUT", f"/users/{user_id}", {"email": "Jose\u0301@EXAMPLE.COM"}, headers=headers)
         self.assertEqual(status, 409)
         self.assertEqual(body, {"detail": "E-mail já cadastrado"})
@@ -148,7 +149,7 @@ class EmailIdentityContractTests(unittest.TestCase):
             db.add_all([admin, client])
             db.commit()
             user_id, original_hash = client.id, client.senha_hash
-        headers = {"Authorization": "Bearer " + create_access_token({"sub":"admin@example.com"})}
+        headers = {"Authorization": "Bearer " + access_token_for_user("admin@example.com")}
         status, _ = asgi_request(self.app, "PUT", f"/users/{user_id}", {"nome":"Updated"}, headers=headers)
         self.assertEqual(status, 200)
         with main.SessionLocal() as db:

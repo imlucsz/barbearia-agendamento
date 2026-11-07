@@ -1,9 +1,10 @@
+from support import access_token_for_user
 """Route regressions on the harness's temporary database; no real email."""
 import unittest
 from unittest.mock import patch
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.models.user import RoleEnum, User
 
 
@@ -44,7 +45,7 @@ class PersonNameFlowTests(unittest.TestCase):
             db.add_all([admin, client])
             db.commit()
             user_id, original_hash, email = client.id, client.senha_hash, client.email
-        headers = {"Authorization": "Bearer " + create_access_token({"sub": "admin@example.com"})}
+        headers = {"Authorization": "Bearer " + access_token_for_user("admin@example.com")}
         status, body = asgi_request(self.app, "PUT", f"/users/{user_id}", {}, headers=headers)
         self.assertEqual(status, 200)
         self.assertEqual(body["nome"], legacy_name)

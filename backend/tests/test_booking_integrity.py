@@ -1,3 +1,4 @@
+from support import access_token_for_user
 import threading
 import unittest
 import os
@@ -10,7 +11,6 @@ from sqlalchemy.exc import IntegrityError
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
-from app.core.security import create_access_token
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -86,7 +86,7 @@ class BookingIntegrityTests(unittest.TestCase):
         return user
 
     def _post_booking(self, client_index, barber_index, service_duration, start=None):
-        token = create_access_token({"sub": self.client_emails[client_index]})
+        token = access_token_for_user(self.client_emails[client_index])
         return asgi_request(
             self.application,
             "POST",
@@ -179,7 +179,7 @@ class BookingIntegrityTests(unittest.TestCase):
     def test_canceled_appointment_releases_its_exact_slot(self):
         status, created = self._post_booking(0, 0, 30)
         self.assertEqual(status, 201)
-        token = create_access_token({"sub": self.client_emails[0]})
+        token = access_token_for_user(self.client_emails[0])
         cancel_status, _ = asgi_request(
             self.application,
             "PUT",
@@ -203,7 +203,7 @@ class BookingIntegrityTests(unittest.TestCase):
         finally:
             db.close()
 
-        token = create_access_token({"sub": self.client_emails[0]})
+        token = access_token_for_user(self.client_emails[0])
         moved_start = self.start + timedelta(hours=1)
         moved_status, moved = asgi_request(
             self.application,
