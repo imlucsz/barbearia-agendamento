@@ -146,6 +146,9 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
 
 @router.post("/login", response_model=UserTokenResponse)
 def login_user(user: UserLogin, request: Request, response: Response, db: Session = Depends(get_db)):
+    # Browser login must also reject foreign origins (CLI clients may omit Origin).
+    if request.headers.get('origin') is not None:
+        _require_allowed_origin(request)
     # Find user by email
     db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
     verified_hash = db_user.senha_hash if db_user else None

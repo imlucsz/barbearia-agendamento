@@ -88,3 +88,6 @@ Reprodução anterior em SQLite: o corpo do logout de d4850cd9, executado sobre 
 Cookies de respostas já enviadas podem chegar tardiamente e reaparecer no navegador mesmo após parar workers. Com revogação aprovada após o encerramento de todos os emissores antigos, esses cookies não renovam sessão. Access JWTs já emitidos continuam válidos até expirar (padrão 15min, configurável até 60min); não há revogação imediata nesta etapa. Caso seja necessário eliminar também essa janela no cutover, a manutenção precisa cobrir a validade restante a partir do último emissor antigo encerrado, mais margem de relógio, antes de reabrir o tráfego.
 
 Nenhuma configuração Render, segredo, dado de produção/homologação ou infraestrutura foi acessada ou alterada para elaborar este procedimento.
+# Atualização F1: origem única
+
+Para a implantação desta etapa, usar o modo de origem única e a transição coordenada descritos em [AUTH_F1_SAME_ORIGIN.md](AUTH_F1_SAME_ORIGIN.md). O Blueprint foi preparado sem aplicar mudanças externas: o serviço Python publica as telas, e o estático antigo vira redirecionamento. Não manter a aplicação antiga fazendo fetch cross-site nem relaxar SameSite. As verificações de banco/versões mistas e rollback operacional abaixo continuam obrigatórias; não há migração nova de F1. Validação publicada pendente.

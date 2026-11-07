@@ -1,5 +1,12 @@
 # Status de auditoria dos requisitos
 
+## F1 — cookies em origem única
+
+- Implementado modo opt-in SERVE_FRONTEND para servir frontend no FastAPI, configuração da API pela própria origem, headers distintos para HTML/API e no-store em autenticação. Login passa a rejeitar Origin estrangeiro; refresh/logout preservam verificação estrita. Cookies/rotação/CAS/JWT/F2 e schema preservados.
+- Blueprint preparado com API na raiz do repositório, origem canônica self-reference e site estático legado como redirecionamento que preserva caminho/query/fragmento. Recursos existentes mantidos, sem aplicação remota.
+- Chromium 156 real com HTTPS local e cookies de terceiros restritos: login/tela, cookie Secure/HttpOnly/Lax host-only, access JWT expirado, rotação, single-flight, CORS/CSRF, replay, ausência de cookie e logout aprovados. Controle cross-site, apesar de CORS permitido, teve cookie rejeitado (UserPreferences) e refresh 401; mesma origem funcionou sob a mesma restrição.
+- Status operacional: **implementado e validado localmente; encerramento no Render pendente de implantação coordenada e teste real**. Procedimento, limites e reprodução em [AUTH_F1_SAME_ORIGIN.md](security/AUTH_F1_SAME_ORIGIN.md). Nenhum commit/deploy/DNS nesta rodada.
+
 ## Correção F2 — finalização após commit do login
 
 - Login publica um marcador interno somente após confirmar CAS, refresh e sucesso da reserva. O middleware dispensa a finalização redundante; antes do commit, mantém rollback e finalização condicional/idempotente. Sem migração ou alteração de JWT, limites e cookies.
