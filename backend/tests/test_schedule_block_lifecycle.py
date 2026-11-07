@@ -1,9 +1,9 @@
+from support import access_token_for_user
 import unittest
 from datetime import datetime, timedelta
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
-from app.core.security import create_access_token
 from app.models.user import BarbearioServico, RoleEnum, Service, User
 
 
@@ -31,7 +31,7 @@ class ScheduleBlockLifecycleTests(unittest.TestCase):
 
     def request(self, method, path, payload=None, role="barber"):
         email = self.admin_email if role == "admin" else self.barber_email
-        token = create_access_token({"sub": email})
+        token = access_token_for_user(email)
         return asgi_request(self.app, method, path, payload, headers={"Authorization": f"Bearer {token}"})
 
     def available(self):

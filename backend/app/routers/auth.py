@@ -135,8 +135,9 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
 def login_user(user: UserLogin, request: Request, response: Response, db: Session = Depends(get_db)):
     # Find user by email
     db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
+    verified_hash = db_user.senha_hash if db_user else None
     password_valid, upgraded_hash = (
-        verify_password_and_update(user.senha, db_user.senha_hash)
+        verify_password_and_update(user.senha, verified_hash)
         if db_user else (False, None)
     )
     if not db_user or not password_valid:
@@ -161,11 +162,23 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
         db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Conta bloqueada")
 
-    if upgraded_hash:
-        db_user.senha_hash = upgraded_hash
+    # Compare-and-swap also guards hashes that need no upgrade. The row lock
+    # remains held until the session is committed, ordering login against reset.
+    credential = db.execute(
+        update(User)
+        .where(User.id == db_user.id, User.senha_hash == verified_hash,
+               User.ativo.is_(True), User.bloqueado.is_(False))
+        .values(senha_hash=upgraded_hash or verified_hash)
+        .execution_options(synchronize_session=False)
+    )
+    if credential.rowcount != 1:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Email ou senha incorretos",
+                            headers={"WWW-Authenticate": "Bearer"})
 
     # Create access token
-    access_token = create_access_token(data={"sub": db_user.email})
+    access_token = create_access_token(data={"sub": str(db_user.id)})
     refresh_token, _refresh_row = _new_refresh_token(db, db_user.id)
     record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao")
     db.commit()
@@ -232,7 +245,7 @@ def refresh_session(
         raise HTTPException(status_code=401, detail="Sessão revogada")
     db.commit()
     _set_refresh_cookie(response, replacement_token)
-    return {"access_token": create_access_token(data={"sub": user.email}), "token_type": "bearer"}
+    return {"access_token": create_access_token(data={"sub": str(user.id)}), "token_type": "bearer"}
 
 
 @router.post("/logout")

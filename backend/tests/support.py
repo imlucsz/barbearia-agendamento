@@ -286,3 +286,19 @@ def reset_database():
         # DROP/CREATE replaces ENUM OIDs. Retire pooled connections and their
         # prepared statements before the next fixture opens a session.
         main.engine.dispose()
+
+
+def access_token_for_user(email):
+    """Resolve a fixture email to its immutable ID; not a production fallback."""
+    from app.core.email_identity import email_key, normalize_email
+    from app.core.security import create_access_token
+    from app.models.user import User
+
+    db = main.SessionLocal()
+    try:
+        user_id = db.query(User.id).filter(email_key(User.email) == normalize_email(email)).scalar()
+        if user_id is None:
+            raise AssertionError("Token fixture requires an existing user")
+        return create_access_token({"sub": str(user_id)})
+    finally:
+        db.close()

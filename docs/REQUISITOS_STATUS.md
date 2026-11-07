@@ -1,5 +1,22 @@
 # Status de auditoria dos requisitos
 
+## Identidade JWT e login/reset concorrente — 2026-11-05
+
+- Worktree `.worktrees/auth-identity-safe`, branch `fix/auth-identity-credential-cas`, base `64e48780bf23ca1b2504ce9e9ba08a6b5f968ca0`. Escopo de produção: somente security.py, dependencies.py e routers/auth.py. Sem mudanças de schema, cookies, formato de refresh/reset, frontend ou regras de negócio.
+- Access tokens de login e refresh emitem `sub=str(User.id)`, validado como ID positivo canônico no domínio Integer. Resolução exclusivamente por ID; JWTs legados por e-mail retornam 401 sem fallback. Assinatura/expiração/estado ativo/bloqueado e RBAC preservados. Sessão com refresh válido pode renovar para o novo formato; na ausência dele é necessário novo login. Mudança de e-mail mantém vínculo ao mesmo ID, não a outra conta que reutilize o endereço; exclusão/inatividade continua rejeitando o token.
+- Login verifica a credencial e realiza UPDATE condicional por ID/hash originalmente lido/ativo/desbloqueado. Atualiza hash legado ou mantém o mesmo valor para adquirir lock quando não há upgrade, até o commit que emite sessão. Zero linhas implica rollback e 401 genérico antes de qualquer token/cookie. Não há comparação apenas em memória nem gravação posterior do hash antigo pelo ORM.
+- Testes persistentes em `backend/tests/test_auth_security_regressions.py`: duas contas descartáveis; exclusão/reutilização e alteração de endereço; token de B e de A; legados, assinatura/expiração/exp ausente, IDs malformados, conta inativa/bloqueada/inexistente; refresh com ID. Corridas usam Event e sessões independentes, verificação real bcrypt/Argon2 e reset confirmado antes de retomar o login; senha nova preservada, antiga rejeitada, login atrasado 401, sem access token, cookie ou refresh persistido.
+- Antes da correção, os dois testes de reprodução falharam (token antigo autenticava B; login atrasado restaurava senha anterior). Depois, os 7 testes ampliados passaram. Fixtures existentes que fabricavam JWTs por e-mail foram adaptadas com helper exclusivamente de testes para localizar o ID; não há fallback desse tipo na aplicação.
+- Arquivos de fixtures adaptados em backend/tests/: support.py; test_authentication_regression.py; test_jwt_configuration.py; test_appointment_reviews.py; test_authorization.py; test_audit.py; test_barber_service_assignments.py; test_booking_integrity.py; test_booking_temporal.py; test_email_identity_contract.py; test_email_integrity_errors.py; test_financial_report.py; test_person_name_flows.py; test_review_moderation.py; test_rf14_service_record.py; test_schedule_block_lifecycle.py; test_services_crud.py. As regras testadas nesses módulos não foram alteradas.
+- Comandos executados na pasta backend, usando `rtk proxy C:/Users/Aluno/Documents/barbearia-agendamento/backend/.venv/Scripts/python.exe -B -m unittest discover -s tests`:
+  - `-p test_auth_security_regressions.py`: 7 aprovados, incluindo ajustes da revisão independente.
+  - `-p test_auth*.py`: 38 aprovados.
+  - `-p test_password_reset.py`: 8 aprovados.
+  - `-p test_jwt_configuration.py`: 7 aprovados.
+  - Sem `-p`, suíte Python completa: 313 testes em 255,167s, 301 aprovados e 12 ignorados, nenhuma falha. Bancos temporários exclusivos; exercícios de migrações históricas somente nesses bancos, sem nova revisão ou alteração em banco real. Avisos de reflexão do índice de expressão SQLite e evento de falha de auditoria simulado pelos testes não impediram aprovação.
+- `rtk proxy node --test frontend/tests/*.test.mjs`: 51 aprovados; frontend não alterado. PostgreSQL não executado: sem BOOKING_TEST_POSTGRES_URL descartável configurado; o teste concorrente está preparado para o harness PostgreSQL, mas a correção não foi validada nesse banco nesta entrega. Nenhum teste contra o Render ou dados reais.
+- Revisão independente não encontrou defeitos no código de produção; reforçou controle positivo dos testes criptográficos e exigência de 401 exato, ambos corrigidos e retestados. `git diff --check` sem erros; Graphify atualizado por AST no worktree, sem alterar o grafo original. Sem commit, push, PR ou deploy.
+
 ## UX-01 — Datas completas antes de chamadas HTTP
 
 - Validação de formato e calendário rejeita anos 0002/0202/0020, valores parciais, dias inexistentes e datas fora de hoje até o dia 14, usando America/Sao_Paulo. Min/max preservados para o seletor nativo; input invalida horários e respostas antigas, change só consulta datas válidas; feedback com aria-invalid, aria-describedby e alert.

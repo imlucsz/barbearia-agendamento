@@ -1,9 +1,9 @@
+from support import access_token_for_user
 import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -86,7 +86,7 @@ class ServiceRecordTests(unittest.TestCase):
         return user
 
     def _update(self, principal, appointment_id, payload):
-        token = create_access_token({"sub": self.emails[principal]})
+        token = access_token_for_user(self.emails[principal])
         return asgi_request(
             self.app,
             "PUT",

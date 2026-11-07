@@ -1,9 +1,10 @@
+from support import access_token_for_user
 import unittest
 from datetime import datetime, time, timedelta
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -90,7 +91,7 @@ class AuthorizationTests(unittest.TestCase):
     def request(self, method, path, payload=None, principal=None):
         headers = {}
         if principal is not None:
-            token = create_access_token({"sub": self.emails[principal]})
+            token = access_token_for_user(self.emails[principal])
             headers["Authorization"] = f"Bearer {token}"
         return asgi_request(
             self.application, method, path, payload, headers=headers
@@ -472,7 +473,7 @@ class AuthorizationTests(unittest.TestCase):
                     self.assertEqual(status, 403)
 
     def test_user_responses_do_not_expose_password_hash_or_consent_metadata(self):
-        token = create_access_token({"sub": self.emails["client_a"]})
+        token = access_token_for_user(self.emails["client_a"])
         status, user = asgi_request(
             self.application,
             "GET",

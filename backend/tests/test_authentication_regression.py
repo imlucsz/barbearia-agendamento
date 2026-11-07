@@ -39,7 +39,7 @@ class AuthenticationRegressionTests(unittest.TestCase):
 
         self.assertEqual(status, 200, body)
         self.assertEqual(body["token_type"], "bearer")
-        self.assertEqual(decode_access_token(body["access_token"])["sub"], "argon@example.com")
+        self.assertEqual(decode_access_token(body["access_token"])["sub"], str(body["user"]["id"]))
 
     def test_legacy_bcrypt_hash_logs_in_and_is_upgraded_to_argon2(self):
         legacy_hash = bcrypt.hashpw(b"legacy-password", bcrypt.gensalt(rounds=12)).decode("ascii")

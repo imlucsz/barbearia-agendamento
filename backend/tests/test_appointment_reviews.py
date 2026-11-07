@@ -1,8 +1,8 @@
+from support import access_token_for_user
 import unittest
 from datetime import datetime
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token
 from app.models.user import Appointment, AppointmentStatusEnum, RoleEnum, Service, User
 
 
@@ -44,7 +44,7 @@ class AppointmentReviewTests(unittest.TestCase):
         return appointment.id
 
     def _request(self, email, appointment_id, payload):
-        token = create_access_token({"sub": email})
+        token = access_token_for_user(email)
         return asgi_request(
             self.app, "POST", f"/appointments/{appointment_id}/avaliacao", payload,
             headers={"Authorization": f"Bearer {token}"},

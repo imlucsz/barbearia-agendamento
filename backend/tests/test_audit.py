@@ -1,3 +1,4 @@
+from support import access_token_for_user
 import json
 import os
 import unittest
@@ -182,9 +183,8 @@ class AuditTests(unittest.TestCase):
                 self.assertEqual(row.detalhes, {})
 
     def test_barber_cannot_query_audit_and_persistence_failure_logs_no_private_error(self):
-        from app.core.security import create_access_token
         self.add_user("barber@example.com", RoleEnum.BARBEIRO)
-        token = create_access_token({"sub": "barber@example.com"})
+        token = access_token_for_user("barber@example.com")
         self.assertEqual(asgi_request(self.app, "GET", "/admin/auditoria",
                          headers={"Authorization": f"Bearer {token}"})[0], 403)
         with self.assertLogs("security.audit", level="WARNING") as captured, patch(

@@ -1,9 +1,9 @@
+from support import access_token_for_user
 import unittest
 from datetime import timedelta
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
-from app.core.security import create_access_token
 from app.models.user import BarbearioServico, JornadaTrabalho, RoleEnum, Service, User
 
 
@@ -32,7 +32,7 @@ class BarberServiceAssignmentTests(unittest.TestCase):
 
     def request(self, method, path, payload=None, role="client"):
         email = self.admin_email if role == "admin" else self.client_email
-        token = create_access_token({"sub": email})
+        token = access_token_for_user(email)
         return asgi_request(self.app, method, path, payload, headers={"Authorization": f"Bearer {token}"})
 
     def test_admin_barber_catalog_includes_active_unlocked_barbers_with_or_without_services(self):
