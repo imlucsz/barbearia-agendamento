@@ -94,7 +94,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261031_01",
+                "20261107_02",
             )
 
     def test_supported_create_all_legacy_schema_is_adopted_without_losing_rows(self):
@@ -124,6 +124,56 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
                 "legacy@example.test",
             )
         assert_matches_models(self, self.engine)
+
+    def test_login_reservation_upgrade_preserves_existing_history(self):
+        self._upgrade('20261031_01')
+        with self.engine.begin() as connection:
+            connection.execute(text(
+                "INSERT INTO login_attempts (ip, rota, sucesso, ocorrido_em) "
+                "VALUES ('198.51.100.1', '/auth/login', 0, '2026-11-06 12:00:00')"
+            ))
+        self._upgrade()
+        with self.engine.connect() as connection:
+            row = connection.execute(text(
+                'SELECT ip, rota, sucesso, account_key, em_andamento, expira_em FROM login_attempts'
+            )).one()
+        self.assertEqual(tuple(row), ('198.51.100.1', '/auth/login', 0, None, 0, None))
+        assert_matches_models(self, self.engine)
+        with self.assertRaisesRegex(RuntimeError, 'Downgrade is disabled'):
+            with self.engine.connect() as connection:
+                command.downgrade(migration_config(connection), '20261031_01')
+        with self.engine.connect() as connection:
+            self.assertEqual(tuple(connection.execute(text(
+                'SELECT ip, rota, sucesso, account_key, em_andamento, expira_em FROM login_attempts'
+            )).one()), tuple(row))
+
+    def test_login_outcome_upgrade_preserves_rows_and_indexes(self):
+        self._upgrade('20261107_01')
+        with self.engine.begin() as connection:
+            for success in (False, True):
+                connection.execute(text(
+                    'INSERT INTO login_attempts (ip, rota, sucesso, ocorrido_em) '
+                    'VALUES (:ip, :path, :success, :time)'
+                ), {'ip': '198.51.100.1', 'path': '/auth/login', 'success': success,
+                    'time': '2026-11-06 12:00:00'})
+            before = connection.execute(text('SELECT * FROM login_attempts ORDER BY id')).all()
+        indexes = inspect(self.engine).get_indexes('login_attempts')
+        self._upgrade()
+        with self.engine.connect() as connection:
+            after = connection.execute(text('SELECT * FROM login_attempts ORDER BY id')).all()
+            results = connection.execute(text(
+                'SELECT resultado, motivo_finalizacao FROM login_attempts ORDER BY id')).all()
+        self.assertEqual([tuple(row[:len(before[0])]) for row in after], [tuple(row) for row in before])
+        self.assertEqual([tuple(row) for row in results], [(None, None), (None, None)])
+        self.assertEqual(inspect(self.engine).get_indexes('login_attempts'), indexes)
+        assert_matches_models(self, self.engine)
+        with self.assertRaisesRegex(RuntimeError, 'Downgrade is disabled'):
+            with self.engine.connect() as connection:
+                command.downgrade(migration_config(connection), '20261107_01')
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text('SELECT * FROM login_attempts ORDER BY id')).all(), after)
+            self.assertEqual(connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one(),
+                             '20261107_02')
 
     def test_incompatible_schema_fails_without_dropping_existing_table_or_data(self):
         with self.engine.begin() as connection:
@@ -193,7 +243,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261031_01",
+                "20261107_02",
             )
 
 
