@@ -13,6 +13,7 @@ from app.core.clock import utc_now_naive
 from app.core.request_context import get_client_ip
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
+from app.core.login_rate_limit import limit_login
 
 RATE_SETTINGS = load_settings()
 
@@ -40,6 +41,8 @@ def _cleanup_old_attempts():
 
 class AuthRateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.url.path.rstrip("/") == "/auth/login" and request.method == "POST":
+            return await limit_login(request, call_next, _cleanup_old_attempts)
         is_export = request.url.path in EXPORT_PATHS and request.method == "GET"
         is_auth = request.url.path in AUTH_PATHS and request.method == "POST"
         if not is_export and not is_auth:

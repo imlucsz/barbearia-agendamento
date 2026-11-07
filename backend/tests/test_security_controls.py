@@ -26,10 +26,11 @@ class SecurityControlTests(unittest.TestCase):
         os.environ.pop("CLIENT_IP_SOURCE", None)
 
     def post_login(self, ip="127.0.0.1", password="wrong", headers=None):
-        return asgi_request(self.app, "POST", "/auth/login", {"email": "none@example.com", "senha": password}, headers=headers, client_ip=ip, return_headers=True)
+        identity = (headers or {}).get("CF-Connecting-IP", ip).replace(".", "-")
+        return asgi_request(self.app, "POST", "/auth/login", {"email": f"none-{identity}@example.com", "senha": password}, headers=headers, client_ip=ip, return_headers=True)
 
     def test_five_failures_block_and_different_ips_are_independent(self):
-        for _ in range(4):
+        for _ in range(5):
             self.assertEqual(self.post_login()[0], 401)
         self.assertEqual(self.post_login("127.0.0.2")[0], 401)
         status, _body, headers = self.post_login()
@@ -39,8 +40,10 @@ class SecurityControlTests(unittest.TestCase):
         self.assertEqual(self.post_login("127.0.0.2")[0], 401)
 
     def test_forwarded_headers_cannot_change_rate_limit_bucket_in_direct_mode(self):
-        for _ in range(4):
-            self.assertEqual(self.post_login()[0], 401)
+        # Different identities exhaust the more tolerant IP failure budget.
+        for i in range(30):
+            status, _ = asgi_request(self.app, "POST", "/auth/login", {"email": f"none{i}@example.com", "senha": "wrong"})
+            self.assertEqual(status, 401)
         status = self.post_login(headers={
             "X-Forwarded-For": "127.0.0.2",
             "X-Real-IP": "127.0.0.2",
@@ -52,12 +55,12 @@ class SecurityControlTests(unittest.TestCase):
         os.environ["CLIENT_IP_SOURCE"] = "cf-connecting-ip"
         first = {"CF-Connecting-IP": "198.51.100.10"}
         second = {"CF-Connecting-IP": "198.51.100.11"}
-        for _ in range(4):
+        for _ in range(5):
             self.assertEqual(self.post_login(ip="10.0.0.5", headers=first)[0], 401)
         self.assertEqual(self.post_login(ip="10.0.0.5", headers=first)[0], 429)
         self.assertEqual(self.post_login(ip="10.0.0.5", headers=second)[0], 401)
 
-    def test_success_resets_consecutive_failure_count(self):
+    def test_success_for_other_account_does_not_reset_account_failures(self):
         for _ in range(4):
             self.post_login()
         db = main.SessionLocal()
@@ -69,6 +72,7 @@ class SecurityControlTests(unittest.TestCase):
         status = asgi_request(self.app, "POST", "/auth/login", {"email": "good@example.com", "senha": "secret123"})[0]
         self.assertEqual(status, 200)
         self.assertEqual(self.post_login()[0], 401)
+        self.assertEqual(self.post_login()[0], 429)
 
     def test_expired_block_allows_attempt_again(self):
         for _ in range(5):
@@ -93,6 +97,13 @@ class SecurityControlTests(unittest.TestCase):
             status, headers = _asgi_exchange(self.app, "GET", {})
         self.assertEqual(status, 200)
         self.assertIn("max-age=31536000", headers["strict-transport-security"])
+
+    def test_other_auth_route_keeps_legacy_limit(self):
+        for _ in range(4):
+            self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {})[0], 422)
+        status, _, headers = asgi_request(self.app, "POST", "/auth/register", {}, return_headers=True)
+        self.assertEqual(status, 429)
+        self.assertGreater(int(headers["retry-after"]), 0)
 
     def test_https_redirect_does_not_trust_forwarded_scheme_headers(self):
         configured = type("S", (), {"force_https": True, "app_env": "production"})()

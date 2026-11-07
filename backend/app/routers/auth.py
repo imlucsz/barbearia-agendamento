@@ -14,6 +14,7 @@ from app.core.email import send_password_reset_email
 from app.core.clock import utc_now_naive
 from app.core.security import verify_password_and_update, get_password_hash, create_access_token
 from app.core.request_context import get_client_ip
+from app.core.login_rate_limit import claim_login_reservation, record_login_outcome, Outcome, Reason
 from app.config import parse_cors_origins
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -43,7 +44,19 @@ def _new_refresh_token(db: Session, user_id: int, family_id: str | None = None):
     return token, row
 
 
+def _lock_refresh_user(db: Session, user_id: int | None) -> None:
+    """One distributed lock order: user, then refresh rows. Never refresh dirty User state."""
+    if user_id is None:
+        return
+    if db.get_bind().dialect.name == "sqlite":
+        db.execute(update(User).where(User.id == user_id).values(senha_hash=User.senha_hash)
+                   .execution_options(synchronize_session=False))
+    else:
+        db.query(User.id).filter(User.id == user_id).with_for_update().all()
+
+
 def revoke_user_refresh_tokens(db: Session, user_id: int, now=None) -> None:
+    _lock_refresh_user(db, user_id)
     now = now or utc_now_naive()
     db.query(RefreshToken).filter(
         RefreshToken.user_id == user_id,
@@ -133,14 +146,15 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
 
 @router.post("/login", response_model=UserTokenResponse)
 def login_user(user: UserLogin, request: Request, response: Response, db: Session = Depends(get_db)):
+    # Browser login must also reject foreign origins (CLI clients may omit Origin).
+    if request.headers.get('origin') is not None:
+        _require_allowed_origin(request)
     # Find user by email
     db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
     verified_hash = db_user.senha_hash if db_user else None
-    password_valid, upgraded_hash = (
-        verify_password_and_update(user.senha, verified_hash)
-        if db_user else (False, None)
-    )
+    password_valid, upgraded_hash = verify_password_and_update(user.senha, verified_hash)
     if not db_user or not password_valid:
+        record_login_outcome(request, Outcome.REJECTED, Reason.REJECTED)
         record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao", resultado="falha")
         db.commit()
         raise HTTPException(
@@ -150,6 +164,7 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
         )
     # Check if user is active
     if not db_user.ativo:
+        record_login_outcome(request, Outcome.NEUTRAL, Reason.ACCOUNT_UNAVAILABLE)
         record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao", resultado="falha", detalhes={"motivo": "conta_inativa"})
         db.commit()
         raise HTTPException(
@@ -158,6 +173,7 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
             headers={"WWW-Authenticate": "Bearer"},
         )
     if db_user.bloqueado:
+        record_login_outcome(request, Outcome.NEUTRAL, Reason.ACCOUNT_UNAVAILABLE)
         record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao", resultado="falha", detalhes={"motivo": "conta_bloqueada"})
         db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Conta bloqueada")
@@ -173,16 +189,35 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
     )
     if credential.rowcount != 1:
         db.rollback()
+        record_login_outcome(request, Outcome.NEUTRAL, Reason.CREDENTIAL_CHANGED)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Email ou senha incorretos",
                             headers={"WWW-Authenticate": "Bearer"})
+
+    # After any wait for User, consume admission before creating the session.
+    # Rollback also discards an upgraded hash if the attempt expired/cancelled.
+    if not claim_login_reservation(db, request):
+        db.rollback()
+        raise HTTPException(status_code=503,
+                            detail="Não foi possível entrar agora. Tente novamente em instantes.",
+                            headers={"Retry-After": "1"})
 
     # Create access token
     access_token = create_access_token(data={"sub": str(db_user.id)})
     refresh_token, _refresh_row = _new_refresh_token(db, db_user.id)
     record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao")
+    if request.state.login_cancelled.is_set():
+        db.rollback()
+        record_login_outcome(request, Outcome.NEUTRAL, Reason.CANCELLED)
+        raise HTTPException(status_code=503,
+                            detail="Não foi possível entrar agora. Tente novamente em instantes.",
+                            headers={"Retry-After": "1"})
     db.commit()
+    # The reservation's terminal success was committed atomically with this session.
+    # Publish only after commit returns: a rolled-back claim must still be finalized.
+    request.state.login_reservation_committed = True
     _set_refresh_cookie(response, refresh_token)
+    record_login_outcome(request, Outcome.SUCCESS, Reason.AUTHENTICATED)
 
     return {
         "user": db_user,
@@ -205,6 +240,10 @@ def refresh_session(
     current = db.query(RefreshToken).filter(RefreshToken.token_hash == _token_hash(raw_token)).first()
     if current is None:
         raise HTTPException(status_code=401, detail="Sessão expirada")
+    _lock_refresh_user(db, current.user_id)
+    # Another transaction may have rotated/revoked the row while we waited.
+    current = db.query(RefreshToken).filter(RefreshToken.id == current.id).populate_existing().one()
+    now = utc_now_naive()
     if current.replaced_by_id is not None:
         user = db.query(User).filter(User.id == current.user_id).first()
         record_audit(db, request, actor=user, acao="auth.refresh_reuse", entidade="refresh_token", resultado="falha")
@@ -235,7 +274,8 @@ def refresh_session(
     )
     if result.rowcount != 1:
         db.rollback()
-        current = db.query(RefreshToken).filter(RefreshToken.token_hash == _token_hash(raw_token)).first()
+        _lock_refresh_user(db, user.id)
+        current = db.query(RefreshToken).filter(RefreshToken.token_hash == _token_hash(raw_token)).populate_existing().first()
         if current is not None and current.replaced_by_id is not None:
             db.query(RefreshToken).filter(
                 RefreshToken.family_id == current.family_id,
@@ -254,11 +294,14 @@ def logout_session(request: Request, response: Response, db: Session = Depends(g
     raw_token = request.cookies.get(REFRESH_COOKIE_NAME)
     if raw_token:
         row = db.query(RefreshToken).filter(RefreshToken.token_hash == _token_hash(raw_token)).first()
+        if row is not None:
+            _lock_refresh_user(db, row.user_id)
         user = db.query(User).filter(User.id == row.user_id).first() if row else None
-        db.query(RefreshToken).filter(
-            RefreshToken.token_hash == _token_hash(raw_token),
-            RefreshToken.revoked_at.is_(None),
-        ).update({RefreshToken.revoked_at: utc_now_naive()}, synchronize_session=False)
+        if row is not None:
+            db.query(RefreshToken).filter(
+                RefreshToken.family_id == row.family_id,
+                RefreshToken.revoked_at.is_(None),
+            ).update({RefreshToken.revoked_at: utc_now_naive()}, synchronize_session=False)
         record_audit(db, request, actor=user, acao="auth.logout", entidade="sessao")
         db.commit()
     else:
@@ -326,6 +369,11 @@ def redefinir_senha(payload: RedefinirSenhaRequest, request: Request, db: Sessio
     ).first()
     if not reset:
         raise HTTPException(status_code=400, detail="Token inválido ou expirado")
+
+    # Account erasure holds User before touching recovery/refresh tokens. Acquire
+    # the same parent lock before consuming this token, then revalidate via CAS.
+    _lock_refresh_user(db, reset.user_id)
+    now = utc_now_naive()
 
     # Conditional update makes token consumption atomic and prevents reuse.
     consumed = db.query(PasswordResetToken).filter(
