@@ -210,6 +210,9 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
                             detail="Não foi possível entrar agora. Tente novamente em instantes.",
                             headers={"Retry-After": "1"})
     db.commit()
+    # The reservation's terminal success was committed atomically with this session.
+    # Publish only after commit returns: a rolled-back claim must still be finalized.
+    request.state.login_reservation_committed = True
     _set_refresh_cookie(response, refresh_token)
     record_login_outcome(request, Outcome.SUCCESS, Reason.AUTHENTICATED)
 

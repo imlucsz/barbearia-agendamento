@@ -247,6 +247,7 @@ async def limit_login(request, call_next, cleanup):
     except Exception:
         return unavailable()
     request.state.login_reservation_id = identifier
+    request.state.login_reservation_committed = False
     request.state.login_cancelled = Event()
     record_login_outcome(request, Outcome.NEUTRAL, initial_reason)
     try:
@@ -262,7 +263,8 @@ async def limit_login(request, call_next, cleanup):
         else:
             reason = Reason.AFTER_REJECTION_ERROR if outcome is Outcome.REJECTED else Reason.UNAVAILABLE
         try:
-            await run_in_threadpool(finish, identifier, outcome, reason)
+            if not request.state.login_reservation_committed:
+                await run_in_threadpool(finish, identifier, outcome, reason)
         except Exception:
             if isinstance(original, Exception):
                 return unavailable()
@@ -270,7 +272,10 @@ async def limit_login(request, call_next, cleanup):
             return unavailable()
         raise
     try:
-        await run_in_threadpool(finish, identifier, *request.state.login_outcome)
+        # Successful login finalized its reservation in the session transaction.
+        # A redundant write here must not replace its cookie-bearing response.
+        if not request.state.login_reservation_committed:
+            await run_in_threadpool(finish, identifier, *request.state.login_outcome)
     except Exception:
         return unavailable()
     tasks = BackgroundTasks()

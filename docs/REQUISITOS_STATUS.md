@@ -1,5 +1,10 @@
 # Status de auditoria dos requisitos
 
+## Correção F2 — finalização após commit do login
+
+- Login publica um marcador interno somente após confirmar CAS, refresh e sucesso da reserva. O middleware dispensa a finalização redundante; antes do commit, mantém rollback e finalização condicional/idempotente. Sem migração ou alteração de JWT, limites e cookies.
+- PostgreSQL 16.15 descartável: 41 aprovados, zero falhos/ignorados. SQLite temporário: 37 aprovados, quatro ignorados exclusivos de PostgreSQL, zero falhos. Evidências e limites em [F2_FIX.md](validation-stage2/postgresql/F2_FIX.md). Entrega HTTP após commit e pendências anteriores de navegador/implantação continuam sem garantia.
+
 ## Etapa 2 — classificação explícita e migração 20261107_02
 
 - Corrigida a inferência `status_code < 400`, que tratava saturação local sem verificação como falha de senha. A rota agora registra explicitamente o veredicto antes da auditoria; o middleware não deriva o resultado do HTTP. Saturação/indisponibilidade sem rejeição conhecida e payload inválido são neutros: contam no orçamento geral de 60 requisições/60s, sem consumir 5 falhas/60s por conta ou 30/300s por IP. Não são gravados como sucesso.

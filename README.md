@@ -223,6 +223,8 @@ Na seleção de data do cliente, o frontend valida `YYYY-MM-DD`, o calendário e
 
 ### Admissão de login e revogação de sessões
 
+Correção F2: o login publica um marcador interno após confirmar CAS, sessão e sucesso da reserva. O middleware dispensa a finalização redundante dessa reserva, preservando a resposta com cookie mesmo se o armazenamento de finalização estiver indisponível. Falhas anteriores mantêm rollback/finalização condicional. Entrega HTTP após commit e resultado de commit sem confirmação continuam sem garantia. Evidências em [F2_FIX.md](docs/validation-stage2/postgresql/F2_FIX.md).
+
 **Decisão da etapa 2:** admissão distribuída por conta/IP e limite estrito de verificações por processo. A lease do banco não libera capacidade de hash local. A ordem User antes do consumo de token de recuperação foi corrigida. Consulte [garantias e procedimento de implantação da etapa 2](docs/security/AUTH_STAGE2_ROLLOUT.md), incluindo a validação PostgreSQL pendente e a barreira necessária contra versões mistas.
 
 `POST /auth/login` reserva a tentativa em `login_attempts` antes da senha. O e-mail normalizado é guardado apenas como HMAC com separação de domínio e SECRET_KEY; contadores não recebem senhas, tokens nem e-mail em claro. Um sucesso não reinicia falhas de outras contas. Falhas/reservas por conta têm janela curta para limitar bloqueios provocados por terceiros, e o IP tem orçamento maior para redes compartilhadas.
