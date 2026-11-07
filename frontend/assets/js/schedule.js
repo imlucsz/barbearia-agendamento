@@ -1,5 +1,6 @@
 import { api, clearToken, getToken, logout } from "./api.js";
-import { bookingDateBounds, isBookableDate, isBookableDateTime } from "./booking-date.mjs";
+import { isBookableDateTime } from "./booking-date.mjs";
+import { mountBookingCalendar } from "./booking-calendar.mjs";
 
 const params = new URLSearchParams(window.location.search);
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -114,70 +115,11 @@ async function loadProfessionals() {
 
 function setupDatePicker() {
   if (!requireLogin()) return;
-  const serviceId = params.get("service_id");
-  const barberId = params.get("barbeiro_id");
-  const appointmentId = params.get("appointment_id");
-  const dateInput = document.getElementById("date-input");
-  const slots = document.getElementById("slots-container");
-  if (!serviceId || !barberId) {
+  if (!params.get("service_id") || !params.get("barbeiro_id")) {
     window.location.href = "client-services.html";
     return;
   }
-
-  const dateMessage = "Escolha uma data válida entre hoje e os próximos 14 dias.";
-  let requestVersion = 0;
-  const updateBounds = () => Object.assign(dateInput, bookingDateBounds());
-  updateBounds();
-  dateInput.setAttribute("aria-describedby", "slots-container");
-  dateInput.addEventListener("input", () => {
-    requestVersion += 1;
-    slots.replaceChildren();
-    const valid = isBookableDate(dateInput.value);
-    dateInput.setAttribute("aria-invalid", String(!valid));
-    if (!valid) showError(slots, dateMessage);
-  });
-  dateInput.addEventListener("change", () => loadSlots(dateInput.value));
-
-  async function loadSlots(day) {
-    const version = ++requestVersion;
-    updateBounds();
-    const valid = isBookableDate(day);
-    dateInput.setAttribute("aria-invalid", String(!valid));
-    if (!valid) {
-      slots.replaceChildren();
-      showError(slots, day ? dateMessage : "Selecione uma data para ver os horários disponíveis.");
-      return;
-    }
-    slots.replaceChildren();
-    const loading = document.createElement("p");
-    loading.className = "text-muted";
-    loading.textContent = "Buscando horários disponíveis…";
-    slots.append(loading);
-    try {
-      const available = await api.get("/appointments/disponiveis", {
-        params: { service_id: serviceId, data: day, barbeiro_id: barberId },
-      });
-      if (version !== requestVersion || dateInput.value !== day) return;
-      slots.replaceChildren();
-      if (available.length === 0) return showEmpty(slots, "Nenhum horário disponível nesta data. Tente outro dia.");
-      const list = document.createElement("div");
-      list.className = "slot-grid";
-      available.forEach((slot) => {
-        const button = document.createElement("a");
-        button.className = "btn btn-ghost slot-button";
-        const time = slot.horario || new Date(slot.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-        button.textContent = time;
-        button.href = `client-confirm.html?service_id=${encodeURIComponent(serviceId)}&barbeiro_id=${encodeURIComponent(barberId)}&date_time=${encodeURIComponent(slot.data_hora)}${appointmentId ? `&appointment_id=${encodeURIComponent(appointmentId)}` : ""}`;
-        list.append(button);
-      });
-      slots.append(list);
-    } catch (error) {
-      if (version !== requestVersion || dateInput.value !== day) return;
-      console.error("Falha ao carregar horários:", error);
-      handleAuthError(error);
-      showError(slots, error.message);
-    }
-  }
+  mountBookingCalendar(api, params, handleAuthError);
 }
 
 async function loadConfirmation() {

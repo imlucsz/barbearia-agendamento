@@ -413,3 +413,15 @@ documentada. Recuperação/JWT/sessões/migrações iguais a main.
 Evidências em
 [integração independente](INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md).
 Sem publicação, migração real, e-mail real ou instalação de dependências.
+
+## Agendamento inteligente — Parte 1 (2026-11-07)
+
+Implementado calendário de expediente individual com bloqueios/folgas, estados
+distintos para lotação, sugestões até três datas e proteção contra respostas
+atrasadas. Projeção e gravação compartilham regras; reagendamento preserva snapshot
+e ownership. Nenhuma migração ou mudança em Render/autenticação.
+Evidências: 63 Python no ambiente SQLite, 36 PostgreSQL reais, 56 Node e 29
+verificações Chromium. Entradas potencialmente maliciosas renderizadas como texto;
+nenhum XSS executável identificado nos caminhos revisados.
+Pins exatos e suíte geral de navegador continuam pendentes.
+Detalhes: [Parte 1](BOOKING_SMART_PART1.md).

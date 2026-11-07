@@ -18,7 +18,7 @@ function harness(search = "?service_id=1&barbeiro_id=2", get = async () => []) {
   const calls = [];
   const location = { search, pathname: "/pages/client-date.html" };
   const context = vm.createContext({ ...dates, Intl, URLSearchParams, console, window: { location },
-    getToken: () => "test-access", api: {
+    getToken: () => "test-access", mountBookingCalendar: (api, params) => calls.push({ calendar: true, params: params.toString() }), api: {
       get: async (path, options) => { calls.push({ path, options }); return get(path, options); },
       post: async (path, body) => { calls.push({ path, body }); },
     }, document: { addEventListener() {}, getElementById: id => nodes[id], createElement: node, createTextNode: text => text },
@@ -27,36 +27,19 @@ function harness(search = "?service_id=1&barbeiro_id=2", get = async () => []) {
   return { nodes, calls, context, location };
 }
 
-test("incomplete typing and invalid change never request HTTP or retain old slots", async () => {
-  const h = harness();
+test("date page delegates to accessible calendar and preserves rescheduling context", () => {
+  const h = harness("?service_id=1&barbeiro_id=2&appointment_id=7");
   h.context.setupDatePicker();
-  const input = h.nodes["date-input"];
-  assert.equal(input.min, dates.bookingDateBounds().min);
-  assert.equal(input.max, dates.bookingDateBounds().max);
-  for (const value of ["", "2026-11-", "0002-11-11", "0202-11-11", "0020-11-11", "2026-02-30"]) {
-    input.value = value;
-    h.nodes["slots-container"].children = [{ textContent: "old slot" }];
-    input.listeners.input();
-    await input.listeners.change();
-    assert.equal(input.attributes["aria-invalid"], "true");
-    assert.equal(h.nodes["slots-container"].children.length, 1);
-  }
-  assert.equal(h.calls.length, 0);
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0].calendar, true);
+  assert.equal(h.calls[0].params, "service_id=1&barbeiro_id=2&appointment_id=7");
 });
 
-test("valid date queries availability; stale response cannot restore invalid slots", async () => {
-  let resolve;
-  const h = harness(undefined, () => new Promise(done => { resolve = done; }));
+test("date page without required context makes no availability request", () => {
+  const h = harness("?service_id=1");
   h.context.setupDatePicker();
-  const input = h.nodes["date-input"];
-  input.value = dates.bookingDateBounds().max;
-  const pending = input.listeners.change();
-  assert.equal(h.calls.length, 1);
-  input.value = "0020-11-11";
-  input.listeners.input();
-  resolve([{ horario: "09:00", data_hora: `${dates.bookingDateBounds().max}T09:00:00` }]);
-  await pending;
-  assert.equal(h.nodes["slots-container"].children[0].attributes.role, "alert");
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.location.href, "client-services.html");
 });
 
 test("valid date and time submit booking; invalid confirmation makes no HTTP call", async () => {

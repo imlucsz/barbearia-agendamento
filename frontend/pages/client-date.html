@@ -6,14 +6,22 @@
   <meta name="theme-color" content="#15120f">
   <title>Escolha seu horário | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/booking-calendar.css">
 </head>
 <body data-page="date">
-  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-profissional.html">← Profissional</a></div></header>
+  <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a id="change-professional" class="btn btn-ghost" href="client-profissional.html">← Profissional</a></div></header>
   <main class="container client-page">
     <div class="page-heading"><span class="eyebrow">PASSO 3 · DATA E HORÁRIO</span><h1>Quando fica <em>melhor?</em></h1><p>Confira os horários disponíveis. A agenda abre para os próximos 14 dias.</p></div>
     <section class="card date-picker-card">
-      <label class="form-label" for="date-input">Selecione a data</label>
-      <input type="date" id="date-input" class="form-control">
+      <label class="form-label" for="booking-service">Serviço</label>
+      <select id="booking-service" class="form-control" disabled></select>
+      <label class="form-label" for="booking-barber">Profissional</label>
+      <select id="booking-barber" class="form-control" disabled></select>
+      <h2 id="calendar-label">Selecione a data</h2>
+      <p id="calendar-status" role="status" aria-live="polite">Carregando calendário…</p>
+      <button id="calendar-retry" type="button" class="btn btn-ghost">Atualizar disponibilidade</button>
+      <input type="hidden" id="date-input">
+      <div id="booking-calendar" class="booking-calendar" role="group" aria-labelledby="calendar-label" aria-describedby="calendar-status"></div>
     </section>
     <section id="slots-container" class="slots-container" aria-live="polite"><p class="empty-state">Selecione uma data para consultar os horários.</p></section>
   </main>

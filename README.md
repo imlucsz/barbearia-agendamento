@@ -538,3 +538,10 @@ visibilidade acessível e seleção/elegibilidade administrativa de barbeiros.
 Não inclui cooldown, fila ou mudanças de recuperação, JWT ou sessões.
 Evidências e ressalvas em
 [integração independente](docs/INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md).
+
+## Calendário individual de agendamento
+
+O cliente consulta a janela real por profissional/serviço, distingue dias sem
+expediente de dias sem vagas e recebe até três sugestões de próximas datas.
+Regras, contrato aditivo, testes locais e reprodução em PostgreSQL/Chromium:
+[agendamento inteligente — Parte 1](docs/BOOKING_SMART_PART1.md).

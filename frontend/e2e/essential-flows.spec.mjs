@@ -94,7 +94,7 @@ async function chooseSlot(page) {
   });
   await expect(professional).toHaveCount(1);
   await professional.getByRole("link", { name: "Ver horários", exact: true }).click();
-  await page.getByLabel("Selecione a data").fill(bookingDate);
+  await page.locator(`#booking-calendar [data-date="${bookingDate}"]`).click();
   await expect(page.locator(".slot-button").first()).toBeVisible();
   return page.locator(".slot-button").first();
 }
@@ -383,7 +383,7 @@ test("disponibilidade respeita duração longa, jornada e limites do bloqueio", 
   const longService = page.locator(".service-selection-card").filter({ hasText: "Serviço Longo E2E" });
   await longService.getByRole("link", { name: "Escolher profissional" }).click();
   await page.getByRole("link", { name: "Ver horários" }).click();
-  await page.getByLabel("Selecione a data").fill(bookingDate);
+  await page.locator(`#booking-calendar [data-date="${bookingDate}"]`).click();
   await expect(page.locator(".slot-button").first()).toBeVisible();
   await expect(page.getByRole("link", { name: "11:30", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "12:30", exact: true })).toBeVisible();
@@ -405,7 +405,7 @@ test("catálogo, disponibilidade respeitando bloqueio, criação, reagendamento 
   const createdCard = page.locator(".appointment-card").filter({ hasText: "pendente" }).first();
   const createdHeading = await createdCard.locator("h2").innerText();
   await createdCard.getByRole("link", { name: "Reagendar" }).click();
-  await page.getByLabel("Selecione a data").fill(bookingDate);
+  await page.locator(`#booking-calendar [data-date="${bookingDate}"]`).click();
   await expect(page.locator(".slot-button").first()).toBeVisible();
   await page.locator(".slot-button").first().click();
   await page.getByRole("button", { name: "Confirmar agendamento" }).click();
