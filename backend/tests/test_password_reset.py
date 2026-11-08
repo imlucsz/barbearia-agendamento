@@ -2,6 +2,9 @@ import hashlib
 import json
 import os
 import unittest
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -11,6 +14,11 @@ from app.core.security import get_password_hash, verify_password
 from app.models.user import PasswordResetToken, User
 from app.core.clock import utc_now_naive
 from app.core.email import send_password_reset_email
+from app.config import settings as load_settings
+from app.core.password_reset_limits import reserve_request, finish_reservation, prune_expired
+from app.models.user import PasswordResetLimit
+from sqlalchemy.exc import OperationalError
+from password_reset_process_worker import reserve_in_process
 
 
 def asgi_post(application, path, payload):
@@ -57,6 +65,236 @@ class PasswordResetTests(unittest.TestCase):
             return query.count()
         finally:
             db.close()
+
+    def test_ten_quick_requests_preserve_first_link_and_uniform_response(self):
+        self.create_user("known@example.com")
+        with patch("app.routers.auth.send_password_reset_email") as sender:
+            responses = [asgi_post(self.application, "/auth/esqueci-senha", {
+                "email": "KNOWN@example.com" if index % 2 else "known@example.com",
+            }) for index in range(10)]
+        self.assertTrue(all(response == responses[0] for response in responses))
+        self.assertEqual(responses[0][0], 200)
+        self.assertEqual(sender.call_count, 1)
+        self.assertEqual(self.reset_token_count(), 1)
+        status, _ = asgi_post(self.application, "/auth/redefinir-senha", {
+            "token": sender.call_args.args[1], "nova_senha": "new-password",
+        })
+        self.assertEqual(status, 200)
+
+    def test_cooldown_across_ips_and_request_allowed_at_sixty_seconds(self):
+        self.create_user("known@example.com")
+        now = utc_now_naive()
+        with patch("app.routers.auth.utc_now_naive", return_value=now) as clock, patch(
+            "app.routers.auth.send_password_reset_email"
+        ) as sender:
+            for index in range(4):
+                status, _ = asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                    {"email": "known@example.com"}, client_ip=f"192.0.2.{index + 1}")
+                self.assertEqual(status, 200)
+            self.assertEqual(sender.call_count, 1)
+            clock.return_value = now + timedelta(seconds=59)
+            asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(sender.call_count, 1)
+            clock.return_value = now + timedelta(seconds=60)
+            asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(sender.call_count, 2)
+
+    def test_simultaneous_requests_from_independent_sessions_send_once(self):
+        self.create_user("known@example.com")
+        def request(index):
+            return asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                {"email": "known@example.com"}, client_ip=f"192.0.2.{index + 1}")
+        with patch("app.routers.auth.send_password_reset_email") as sender:
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                responses = list(executor.map(request, range(10)))
+        self.assertTrue(all(response == responses[0] for response in responses))
+        self.assertEqual(responses[0][0], 200)
+        self.assertEqual(sender.call_count, 1)
+        self.assertEqual(self.reset_token_count(), 1)
+
+    def test_account_limit_applies_across_ips_and_expires(self):
+        self.create_user("known@example.com")
+        now = utc_now_naive()
+        with patch.dict(os.environ, {"PASSWORD_RESET_ACCOUNT_MAX_REQUESTS": "2"}), patch(
+            "app.routers.auth.utc_now_naive", return_value=now
+        ) as clock, patch("app.routers.auth.send_password_reset_email") as sender:
+            for index in range(3):
+                clock.return_value = now + timedelta(seconds=60 * index)
+                self.assertEqual(asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                    {"email": "known@example.com"}, client_ip=f"192.0.2.{index + 1}")[0], 200)
+            self.assertEqual(sender.call_count, 2)
+            clock.return_value = now + timedelta(hours=1)
+            asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(sender.call_count, 3)
+
+    def test_ip_limit_covers_different_existing_and_unknown_accounts(self):
+        for index in range(3):
+            self.create_user(f"person{index}@example.com")
+        with patch.dict(os.environ, {"PASSWORD_RESET_IP_MAX_REQUESTS": "2"}), patch(
+            "app.routers.auth.send_password_reset_email"
+        ) as sender:
+            responses = [asgi_post(self.application, "/auth/esqueci-senha", {"email": email})
+                for email in ["unknown@example.com", "person0@example.com", "person1@example.com", "person2@example.com"]]
+        self.assertTrue(all(response == responses[0] for response in responses))
+        self.assertEqual(responses[0][0], 200)
+        self.assertEqual(sender.call_count, 1)
+
+    def test_failed_delivery_preserves_previous_link_and_reserves_cooldown(self):
+        self.create_user("known@example.com")
+        now = utc_now_naive()
+        with patch("app.routers.auth.utc_now_naive", return_value=now) as clock, patch(
+            "app.routers.auth.send_password_reset_email"
+        ) as sender:
+            original = asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            first_token = sender.call_args.args[1]
+            clock.return_value = now + timedelta(seconds=60)
+            sender.side_effect = TimeoutError("simulated delivery timeout")
+            failed = asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            repeated = asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(original, failed)
+            self.assertEqual(failed, repeated)
+            self.assertEqual(sender.call_count, 2)
+            self.assertEqual(self.reset_token_count(), 1)
+            with main.SessionLocal() as db:
+                stored = db.query(PasswordResetToken).one()
+                self.assertFalse(stored.used)
+                self.assertEqual(stored.token, hashlib.sha256(first_token.encode()).hexdigest())
+            clock.return_value = now + timedelta(seconds=120)
+            sender.side_effect = None
+            self.assertEqual(asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"}), original)
+            self.assertEqual(sender.call_count, 3)
+
+    def test_configurable_cooldown_and_unknown_account_are_indistinguishable(self):
+        self.create_user("known@example.com")
+        now = utc_now_naive()
+        with patch.dict(os.environ, {"PASSWORD_RESET_COOLDOWN_SECONDS": "90"}), patch(
+            "app.routers.auth.utc_now_naive", return_value=now
+        ) as clock, patch("app.routers.auth.send_password_reset_email") as sender:
+            responses = [asgi_post(self.application, "/auth/esqueci-senha", {"email": email})
+                for email in ["known@example.com", "unknown@example.com", "known@example.com", "unknown@example.com"]]
+            self.assertTrue(all(response == responses[0] for response in responses))
+            clock.return_value = now + timedelta(seconds=60)
+            asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(sender.call_count, 1)
+            clock.return_value = now + timedelta(seconds=90)
+            asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            self.assertEqual(sender.call_count, 2)
+
+    def test_sender_still_running_after_cooldown_does_not_allow_second_send(self):
+        self.create_user("known@example.com")
+        entered, release = Event(), Event()
+        now = utc_now_naive()
+        def slow_sender(*_args):
+            entered.set()
+            if not release.wait(10):
+                raise TimeoutError("test synchronization timed out")
+        with patch("app.routers.auth.utc_now_naive", return_value=now) as clock, patch(
+            "app.routers.auth.send_password_reset_email", side_effect=slow_sender
+        ) as sender, ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(asgi_post, self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            try:
+                self.assertTrue(entered.wait(5))
+                clock.return_value = now + timedelta(seconds=61)
+                second = asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                    {"email": "known@example.com"}, client_ip="192.0.2.50")
+                self.assertEqual(second[0], 200)
+                self.assertEqual(sender.call_count, 1)
+            finally:
+                release.set()
+            self.assertEqual(first.result(timeout=5), second)
+
+    def test_abandoned_lease_expires_and_old_owner_cannot_release_new_reservation(self):
+        configured, now = load_settings(), utc_now_naive()
+        with main.SessionLocal() as db:
+            original = reserve_request(db, "known@example.com", "192.0.2.1", now, configured)
+            self.assertIsNotNone(original)
+            self.assertIsNone(reserve_request(db, "known@example.com", "192.0.2.2", now + timedelta(seconds=61), configured))
+            later = now + timedelta(seconds=8 * configured.smtp_timeout_seconds + 61)
+            renewed = reserve_request(db, "known@example.com", "192.0.2.3", later, configured)
+            self.assertIsNotNone(renewed)
+            self.assertFalse(finish_reservation(db, original, later))
+            self.assertTrue(finish_reservation(db, renewed, later))
+            db.commit()
+
+    def test_expired_limit_rows_are_pruned_without_deleting_current_reservations(self):
+        configured, now = load_settings(), utc_now_naive()
+        with main.SessionLocal() as db:
+            reserve_request(db, "old@example.com", "192.0.2.1", now - timedelta(hours=3), configured)
+            current = reserve_request(db, "current@example.com", "192.0.2.2", now, configured)
+            prune_expired(db, now, configured)
+            db.commit()
+            self.assertEqual(db.query(PasswordResetLimit).count(), 2)
+            self.assertIsNotNone(db.query(PasswordResetLimit).filter_by(key=current[0]).first())
+            self.assertTrue(all("@" not in row.key and "192.0.2" not in row.key for row in db.query(PasswordResetLimit)))
+
+    def test_database_admission_failure_fails_closed_without_email_or_secret(self):
+        self.create_user("known@example.com")
+        with patch("app.routers.auth.reserve_request", side_effect=OperationalError("private SQL", {}, Exception())), patch(
+            "app.routers.auth.send_password_reset_email"
+        ) as sender:
+            response = asgi_post(self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+        self.assertEqual(response[0], 200)
+        self.assertNotIn("private", json.dumps(response))
+        sender.assert_not_called()
+
+    def test_four_processes_compete_for_one_real_database_reservation(self):
+        context = multiprocessing.get_context("spawn")
+        barrier, results = context.Barrier(4), context.Queue()
+        url = main.engine.url.render_as_string(hide_password=False)
+        now = utc_now_naive()
+        processes = [context.Process(target=reserve_in_process, args=(
+            url, "parallel@example.com", f"192.0.2.{index + 1}", now, barrier, results,
+        )) for index in range(4)]
+        try:
+            for process in processes:
+                process.start()
+            outcomes = [results.get(timeout=35) for _ in processes]
+            self.assertTrue(all(state == "ok" for state, _ in outcomes), outcomes)
+            self.assertEqual(sum(bool(accepted) for _, accepted in outcomes), 1)
+            for process in processes:
+                process.join(timeout=10)
+                self.assertEqual(process.exitcode, 0)
+        finally:
+            for process in processes:
+                if process.is_alive():
+                    process.terminate()
+                    process.join(timeout=5)
+            results.close()
+
+    def test_late_sender_cannot_invalidate_newer_link_and_login_still_works(self):
+        self.create_user("known@example.com")
+        entered, release = Event(), Event()
+        tokens = []
+        now = utc_now_naive()
+        configured = load_settings()
+        def sender(_recipient, token):
+            tokens.append(token)
+            if len(tokens) == 1:
+                entered.set()
+                if not release.wait(10):
+                    raise TimeoutError("test synchronization timed out")
+        with patch("app.routers.auth.utc_now_naive", return_value=now) as clock, patch(
+            "app.routers.auth.send_password_reset_email", side_effect=sender
+        ), ThreadPoolExecutor(max_workers=2) as executor:
+            first = executor.submit(asgi_post, self.application, "/auth/esqueci-senha", {"email": "known@example.com"})
+            try:
+                self.assertTrue(entered.wait(5))
+                clock.return_value = now + timedelta(seconds=8 * configured.smtp_timeout_seconds + 61)
+                second = asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                    {"email": "known@example.com"}, client_ip="192.0.2.60")
+                self.assertEqual(second[0], 200)
+                self.assertEqual(len(tokens), 2)
+            finally:
+                release.set()
+            self.assertEqual(first.result(timeout=5), second)
+        with main.SessionLocal() as db:
+            self.assertEqual(db.query(PasswordResetToken).one().token, hashlib.sha256(tokens[1].encode()).hexdigest())
+        self.assertEqual(asgi_post(self.application, "/auth/redefinir-senha",
+            {"token": tokens[0], "nova_senha": "wrong-new-password"})[0], 400)
+        self.assertEqual(asgi_post(self.application, "/auth/redefinir-senha",
+            {"token": tokens[1], "nova_senha": "new-password"})[0], 200)
+        self.assertEqual(asgi_post(self.application, "/auth/login",
+            {"email": "known@example.com", "senha": "new-password"})[0], 200)
 
     def test_recovery_response_is_uniform_and_contains_no_secret(self):
         self.create_user("known@example.com")

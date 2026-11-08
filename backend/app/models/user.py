@@ -166,6 +166,17 @@ class PasswordResetToken(Base):
     used = Column(Boolean, default=False)
 
 
+class PasswordResetLimit(Base):
+    __tablename__ = "password_reset_limits"
+
+    key = Column(String(80), primary_key=True)
+    window_started_at = Column(DateTime, nullable=False, index=True)
+    requests = Column(Integer, nullable=False)
+    next_allowed_at = Column(DateTime, nullable=False)
+    lease_until = Column(DateTime, nullable=False)
+    reservation = Column(String(64), nullable=True)
+
+
 class ConsentimentoLGPD(Base):
     __tablename__ = "consentimentos_lgpd"
 

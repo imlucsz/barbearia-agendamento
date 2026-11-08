@@ -2,6 +2,8 @@ import http.client
 import json
 import secrets
 import re
+import os
+from datetime import timedelta
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -113,10 +115,13 @@ class BrevoDeliveryTests(unittest.TestCase):
     def test_recovery_rate_limit_still_blocks_repeated_requests(self):
         reset_database()
         application = load_app_for_environment("development").app
-        with patch("app.core.email.http.client.HTTPSConnection") as factory:
+        with main.SessionLocal() as db:
+            db.add(User(nome="Test", email="limited@example.com", senha_hash="test"))
+            db.commit()
+        with patch.dict(os.environ, {"PASSWORD_RESET_IP_MAX_REQUESTS": "4"}), patch("app.core.email.http.client.HTTPSConnection") as factory:
             for _ in range(4):
                 self.assertEqual(asgi_request(application, "POST", "/auth/esqueci-senha", {"email": "unknown@example.com"})[0], 200)
-            self.assertEqual(asgi_request(application, "POST", "/auth/esqueci-senha", {"email": "unknown@example.com"})[0], 429)
+            self.assertEqual(asgi_request(application, "POST", "/auth/esqueci-senha", {"email": "limited@example.com"})[0], 200)
             factory.assert_not_called()
 
     def test_recovery_with_brevo_preserves_expiry_invalidation_rollback_and_single_use(self):
@@ -135,7 +140,8 @@ class BrevoDeliveryTests(unittest.TestCase):
         def recover(address="client@example.com"):
             return asgi_request(application, "POST", "/auth/esqueci-senha", {"email": address})
 
-        with patch("app.core.email.http.client.HTTPSConnection") as factory:
+        now = utc_now_naive()
+        with patch("app.routers.auth.utc_now_naive", return_value=now) as clock, patch("app.core.email.http.client.HTTPSConnection") as factory:
             connection = factory.return_value
             connection.request.side_effect = request
             connection.getresponse.return_value.status = 201
@@ -143,11 +149,15 @@ class BrevoDeliveryTests(unittest.TestCase):
             self.assertEqual(first[0], 200)
             self.assertEqual(first, recover("unknown@example.com"))
             recover()
+            self.assertEqual(len(tokens), 1)  # Repeated click preserves the first link.
+            clock.return_value = now + timedelta(seconds=60)
+            recover()
             with main.SessionLocal() as db:
                 rows = db.query(PasswordResetToken).order_by(PasswordResetToken.id).all()
                 self.assertEqual([row.used for row in rows], [True, False])
-                self.assertTrue(3590 < (rows[-1].expires_at - utc_now_naive()).total_seconds() <= 3600)
+                self.assertEqual((rows[-1].expires_at - clock.return_value).total_seconds(), 3600)
             connection.getresponse.return_value.status = 500
+            clock.return_value = now + timedelta(seconds=120)
             self.assertEqual(first, recover())
             with main.SessionLocal() as db:
                 rows = db.query(PasswordResetToken).order_by(PasswordResetToken.id).all()

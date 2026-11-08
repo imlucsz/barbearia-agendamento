@@ -1,8 +1,6 @@
 # Status de auditoria dos requisitos
 
-## PR36 — preservação histórica
 
-Conflitos resolvidos mantendo integralmente a produção da main. Dois scripts antigos arquivados como texto em docs/archive/pr36, sem execução automática. Histórico de commits preservado, sem novo schema, contrato ou funcionalidade.
 
 ## F1 — cookies em origem única
 
