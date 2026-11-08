@@ -9,6 +9,8 @@
 
 import { api, getCurrentUser, getToken, logout } from "./api.js";
 import { escapeHtml } from "./escape-html.mjs";
+import { summarizeDay } from "./staff-summary.mjs";
+import { openStaffAction } from "./staff-action.mjs";
 
 const USER_KEY = "user";
 
@@ -139,6 +141,16 @@ function renderDateRoll() {
 
     if (prevBtn) prevBtn.disabled = false;
     if (nextBtn) nextBtn.disabled = false;
+    revealSelectedDate();
+}
+
+function revealSelectedDate() {
+    // Reveal the selected day within the rail without moving page scroll/focus.
+    const selected = dateRoll.querySelector(".selected");
+    if (selected) {
+        dateRoll.scrollLeft += selected.getBoundingClientRect().left - dateRoll.getBoundingClientRect().left
+            - (dateRoll.clientWidth - selected.clientWidth) / 2;
+    }
 }
 
 function focusSelectedDate() {
@@ -242,8 +254,13 @@ function renderizarAgendamentos(agendamentos) {
             return primeiraHora - segundaHora;
         });
 
+    const summary = document.getElementById('agenda-summary');
+    if (summary) {
+        const day = summarizeDay(lista, formatDateForAPI(selectedDate));
+        summary.innerHTML = `<div><span>Reservas na data</span><strong>${day.total}</strong></div><div><span>Pendentes de conclusão</span><strong>${day.pending}</strong></div><div><span>Concluídos</span><strong>${day.completed}</strong></div><div class="staff-next"><span>Próximo horário reservado na data</span><strong>${escapeHtml(day.next ? `${day.next.horario} · ${day.next.cliente} · ${day.next.servico}` : 'Nenhum horário futuro nesta data')}</strong></div>`;
+    }
     if (!lista.length) {
-        renderAgendaMessage("Todas as vagas livres — nenhum horário marcado");
+        renderAgendaMessage("Nenhuma reserva nesta data. Consulte o expediente e os bloqueios antes de marcar um horário.");
         return;
     }
 
@@ -253,66 +270,60 @@ function renderizarAgendamentos(agendamentos) {
         const isActive = ["pendente", "confirmado"].includes(statusKey);
         const actions = isActive && (currentUser?.role === "admin" || currentUser?.role === "barbeiro")
             ? `<div class="agenda-actions">
-                <label class="visually-hidden" for="charged-${escapeHtml(item.id)}">Valor cobrado em reais</label>
-                <input class="agenda-price-input" id="charged-${escapeHtml(item.id)}" type="number" min="0" step="0.01" value="${escapeHtml(item.valorCobrado ?? item.preco)}">
-                <button type="button" class="btn btn-sm btn-ghost" data-appointment-status="concluido" data-appointment-id="${escapeHtml(item.id)}">Concluído</button>
-                <button type="button" class="btn btn-sm btn-ghost" data-appointment-status="falta" data-appointment-id="${escapeHtml(item.id)}">Falta</button>
-                <button type="button" class="btn btn-sm btn-danger" data-appointment-status="cancelado" data-appointment-id="${escapeHtml(item.id)}">Cancelar</button>
+                <button type="button" class="btn btn-sm" data-appointment-status="concluido" data-appointment-id="${escapeHtml(item.id)}">Concluir atendimento</button>
+                <button type="button" class="btn btn-sm btn-ghost" data-appointment-status="falta" data-appointment-id="${escapeHtml(item.id)}">Marcar ausência</button>
+                <button type="button" class="btn btn-sm btn-danger" data-appointment-status="cancelado" data-appointment-id="${escapeHtml(item.id)}">Cancelar agendamento</button>
             </div>`
             : "";
 
         return `
-            <tr class="agenda-row">
-                <td data-label="Horário"><span class="time-pill">${escapeHtml(item.horario)}</span></td>
-                <td data-label="Cliente">${escapeHtml(item.cliente)}</td>
-                <td data-label="Serviço">${escapeHtml(item.servico)}</td>
-                <td data-label="Profissional">${escapeHtml(item.profissional)}</td>
-                <td data-label="Status"><span class="status-badge status-${escapeHtml(statusKey)}">${escapeHtml(statusLabel)}</span></td>
-                <td data-label="Ações">${actions}</td>
+            <tr class="agenda-row" role="row">
+                <td role="cell" data-label="Horário"><span class="time-pill">${escapeHtml(item.horario)}</span></td>
+                <td role="cell" data-label="Cliente">${escapeHtml(item.cliente)}</td>
+                <td role="cell" data-label="Serviço">${escapeHtml(item.servico)}</td>
+                <td role="cell" data-label="Profissional">${escapeHtml(item.profissional)}</td>
+                <td role="cell" data-label="Status"><span class="status-badge status-${escapeHtml(statusKey)}">${escapeHtml(statusLabel)}</span></td>
+                <td role="cell" data-label="Ações">${actions}</td>
             </tr>
         `;
     }).join("");
 
     agendaList.innerHTML = `
         <div class="agenda-table-wrapper">
-            <table class="agenda-table">
-                <thead>
-                    <tr>
-                        <th>Horário</th>
-                        <th>Cliente</th>
-                        <th>Serviço</th>
-                        <th>Profissional</th>
-                        <th>Status</th>
-                        <th>Ações</th>
+            <table class="agenda-table" role="table" aria-label="Atendimentos do dia">
+                <thead role="rowgroup">
+                    <tr role="row">
+                        <th role="columnheader" scope="col">Horário</th>
+                        <th role="columnheader" scope="col">Cliente</th>
+                        <th role="columnheader" scope="col">Serviço</th>
+                        <th role="columnheader" scope="col">Profissional</th>
+                        <th role="columnheader" scope="col">Status</th>
+                        <th role="columnheader" scope="col">Ações</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody role="rowgroup">
                     ${linhas}
                 </tbody>
             </table>
         </div>
     `;
     agendaList.querySelectorAll("[data-appointment-status]").forEach((button) => {
-        button.addEventListener("click", async () => {
+        button.addEventListener("click", () => {
             const requestId = agendaRequestId;
             displayedAppointments = null;
-            button.disabled = true;
-            try {
-                const update = { status: button.dataset.appointmentStatus };
-                if (update.status === "concluido") {
-                    const amount = Number(agendaList.querySelector(`#charged-${CSS.escape(button.dataset.appointmentId)}`)?.value);
-                    if (!Number.isFinite(amount) || amount < 0) throw new Error("Informe um valor cobrado válido.");
-                    update.valor_cobrado = amount;
-                }
-                await api.put(`/appointments/${encodeURIComponent(button.dataset.appointmentId)}`, update);
-                if (requestId !== agendaRequestId) return;
-                await carregarAgendaDoDia(selectedDate);
-            } catch (error) {
-                if (requestId !== agendaRequestId) return;
-                console.error("Falha ao atualizar status do atendimento:", error);
-                renderAgendaMessage(error.message || "Não foi possível atualizar o atendimento.", "error");
-                button.disabled = false;
-            }
+            const appointment = lista.find(item => String(item.id) === button.dataset.appointmentId);
+            if (!appointment) return;
+            return openStaffAction({ appointment, status: button.dataset.appointmentStatus,
+                dateLabel: formatDateForDisplay(selectedDate), opener: button,
+                isCurrent: () => requestId === agendaRequestId,
+                submit: async update => {
+                    await api.put(`/appointments/${encodeURIComponent(appointment.id)}`, update);
+                    if (requestId !== agendaRequestId) return;
+                    await carregarAgendaDoDia(selectedDate);
+                    const feedback = document.getElementById('agenda-feedback');
+                    if (feedback) { feedback.textContent = `Atendimento de ${appointment.cliente}: ${getStatusLabel(update.status)}. Alteração salva.`; feedback.hidden = false; }
+                },
+            });
         });
     });
 }
@@ -323,6 +334,12 @@ async function carregarAgendaDoDia(date) {
 
     const requestId = ++agendaRequestId;
     displayedAppointments = null;
+    const summary = document.getElementById('agenda-summary');
+    if (summary) summary.innerHTML = '';
+    const feedback = document.getElementById('agenda-feedback');
+    if (feedback) feedback.hidden = true;
+    const picker = document.getElementById('agenda-date');
+    if (picker) picker.value = formatDateForAPI(date);
     const dataFormatada = formatDateForAPI(date);
     agendaDayLabel.textContent = formatDateForDisplay(date);
     renderAgendaMessage("Carregando agenda…");
@@ -373,6 +390,13 @@ function init() {
     agendaList?.addEventListener("input", () => { displayedAppointments = null; });
     prevBtn?.addEventListener("click", () => navegarSemana(-1));
     nextBtn?.addEventListener("click", () => navegarSemana(1));
+    window.addEventListener('resize', revealSelectedDate, { passive: true });
+    document.getElementById('agenda-today')?.addEventListener('click', () => selecionarDia(new Date()));
+    document.getElementById('agenda-retry')?.addEventListener('click', () => carregarAgendaDoDia(selectedDate));
+    document.getElementById('agenda-date')?.addEventListener('change', event => {
+        const value = event.target.value;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) selecionarDia(new Date(value + 'T12:00:00'));
+    });
     weekDays = generateWeekDays(selectedDate);
     renderDateRoll();
     carregarAgendaDoDia(selectedDate);

@@ -6,10 +6,17 @@
   <meta name="theme-color" content="#15120f">
   <title>Minha conta e privacidade | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/product-editorial.css">
 </head>
-<body data-page="account">
+<body class="product-editorial" data-page="account">
+  <a class="product-skip-link" href="#main-content">Pular para o conteúdo</a>
   <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-dashboard.html">← Minha área</a></div></header>
-  <main class="container client-page">
+  <main id="main-content" tabindex="-1" class="container client-page">
+    <nav class="account-nav" aria-label="Área do cliente">
+      <a href="client-dashboard.html">Minha área</a>
+      <a href="client-appointments.html">Agendamentos</a>
+      <a href="client-account.html">Minha conta</a>
+    </nav>
     <div class="page-heading"><span class="eyebrow">DADOS E PRIVACIDADE</span><h1>Minha <em>conta.</em></h1><p>Seus dados são usados para administrar sua conta e seus agendamentos.</p></div>
     <section id="account-content" class="card account-card" aria-live="polite"><p>Carregando dados…</p></section>
     <section class="card privacy-card"><span class="eyebrow">SEUS DIREITOS</span><h2>Portabilidade dos dados</h2><p>Baixe uma cópia dos seus dados, consentimentos, agendamentos e avaliações em JSON ou PDF.</p><button id="export-account" class="btn" type="button">Exportar meus dados</button><button id="export-pdf" class="btn" type="button">Exportar PDF</button></section>
@@ -29,5 +36,6 @@
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
   <script type="module" src="../assets/js/password-visibility.mjs"></script>
+  <script type="module" src="../assets/js/product-navigation.mjs"></script>
 </body>
 </html>

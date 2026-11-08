@@ -1,0 +1,84 @@
+/* Task-focused staff workspace; the public/client experience is untouched. */
+.staff-workspace[data-staff-ready=false] .admin-only,
+.staff-workspace[data-staff-ready=false] [data-admin-only] { display: none !important; }
+.staff-workspace .admin-header { position: static; }
+.staff-workspace .product-skip-link:not(:focus) { clip-path: inset(50%); }
+.staff-workspace input:not([type]) { width: 100%; padding: .72rem .85rem; border: 1px solid var(--color-border); background: var(--color-surface-inset); color: var(--color-text); }
+.staff-workspace .admin-nav { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0; overflow: visible; padding-block: 0; }
+.staff-workspace .admin-nav a { justify-content: center; min-height: 54px; padding: 12px; text-align: center; border-bottom: 2px solid transparent; font-size: .84rem; }
+.staff-workspace .admin-nav a[aria-current=page] { color: var(--color-primary-strong); border-color: var(--color-primary); background: var(--color-surface); }
+.staff-workspace[data-staff-role=barbeiro] .admin-nav { display: flex; }
+.staff-workspace .admin-workspace { padding-block: 32px 64px; }
+.staff-heading { margin-bottom: 24px; }
+.staff-heading h1 { font-size: clamp(2rem, 4vw, 3.3rem); margin: 0 0 12px; }
+.staff-heading p { color: var(--color-muted); max-width: 70ch; font-size: .9rem; margin: 0; }
+.staff-subnav { display: flex; flex-wrap: wrap; gap: 8px 22px; border-bottom: 1px solid var(--color-border); margin-bottom: 24px; }
+.staff-subnav a { display: flex; align-items: center; min-height: 48px; font-size: .84rem; border-bottom: 2px solid transparent; }
+.staff-subnav a[aria-current=page] { border-color: var(--color-primary); color: var(--color-primary-strong); }
+.staff-workspace .admin-section, .staff-workspace .admin-section:first-child { padding: 0; border: 0; scroll-margin-top: 20px; }
+.staff-workspace .admin-section-heading { align-items: start; gap: 24px; }
+.staff-workspace .admin-section-heading h2 { font-size: 1.6rem; }
+.staff-workspace .admin-section-heading .eyebrow { display: none; }
+.staff-date-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 12px; margin-bottom: 22px; }
+.staff-date-controls > div { display: flex; align-items: center; gap: 12px; }
+.staff-date-controls label { font-size: .8rem; color: var(--color-muted); }
+.staff-workspace #agenda-date { width: 180px; }
+.staff-workspace #agenda-retry { margin-left: auto; }
+.staff-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr); gap: 12px; margin-bottom: 24px; }
+.staff-summary > div { padding: 18px; border: 1px solid var(--color-border); background: var(--color-surface); min-width: 0; }
+.staff-summary span { display: block; color: var(--color-muted); font-size: .76rem; }
+.staff-summary strong { display: block; font: 500 1.8rem/1.3 'Courier New', monospace; margin-top: 8px; }
+.staff-summary .staff-next strong { font: 500 1rem/1.5 var(--font-body); overflow-wrap: anywhere; }
+.staff-summary .staff-next { border-top: 2px solid var(--color-primary); }
+.staff-workspace .Agenda { max-width: none; margin-top: 0; }
+.staff-workspace .agenda-panel { margin-top: 20px; }
+.staff-workspace .agenda-header h2 { font-size: 1.6rem; }
+.staff-workspace .agenda-actions { min-width: 185px; flex-direction: column; align-items: stretch; }
+.staff-workspace .agenda-actions .btn { padding: .6rem .75rem; font-size: .78rem; }
+.staff-workspace .agenda-table { min-width: 850px; }
+.staff-workspace .agenda-table th, .staff-workspace .agenda-table td { padding: 12px; }
+.staff-workspace .agenda-table th { font-size: .68rem; }
+.staff-workspace .agenda-table td { font-size: .85rem; }
+.staff-editor { border: 1px solid var(--color-border); background: var(--color-surface); margin-bottom: 20px; }
+.staff-editor > summary { min-height: 52px; cursor: pointer; padding: 14px 20px; color: var(--color-primary-strong); font-size: .9rem; }
+.staff-editor[open] > summary { border-bottom: 1px solid var(--color-border); }
+.staff-editor .management-form { border: 0; margin: 0; }
+.staff-workspace .availability-group { min-width: 0; }
+.availability-group > h3 { font-size: 1.55rem; margin: 0 0 10px; }
+.availability-group > p { font-size: .85rem; margin-bottom: 16px; }
+.availability-group > .form-field { padding: 16px; border: 1px solid var(--color-border); margin-bottom: 12px; }
+.staff-workspace .management-item { flex-wrap: wrap; }
+.staff-workspace .management-item > div:first-child { flex: 1 1 180px; }
+.staff-workspace .management-item strong { overflow-wrap: anywhere; }
+.staff-workspace .form-grid { min-width: 0; }
+.staff-workspace .management-form[data-mode=edit] { border-left: 3px solid var(--color-primary); }
+.staff-workspace .finance-presets { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.staff-workspace .staff-dialog-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.staff-workspace #staff-action-dialog { width: min(560px, calc(100% - 32px)); border-color: var(--color-primary); }
+.staff-workspace #staff-action-dialog h2 { margin-top: 0; }
+.staff-action-context { padding: 16px; border-block: 1px solid var(--color-border); overflow-wrap: anywhere; }
+.staff-workspace #agenda-feedback { padding: 12px 16px; border-left: 3px solid var(--color-success); color: var(--color-success-text); }
+@media (max-width: 900px) {
+  .staff-workspace .admin-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .staff-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .staff-summary .staff-next { grid-column: 1 / -1; }
+}
+@media (max-width: 720px) {
+  .staff-workspace .admin-nav a { font-size: .74rem; padding: 10px 4px; }
+  .staff-workspace .admin-workspace { padding-block: 26px 48px; }
+  .staff-workspace .staff-date-controls { gap: 10px; }
+  .staff-date-controls > div { flex: 1; justify-content: flex-end; gap: 8px; }
+  .staff-date-controls label { max-width: 54px; }
+  .staff-workspace #agenda-date { width: 145px; }
+  .staff-workspace #agenda-retry { margin-left: 0; }
+  .staff-summary { gap: 8px; }
+  .staff-summary > div { padding: 12px; }
+  .staff-summary span { font-size: .72rem; }
+  .staff-summary strong { font-size: 1.5rem; }
+  .staff-workspace .agenda-table { min-width: 0; }
+  .staff-workspace .agenda-table td { padding: 10px 0; }
+  .staff-workspace .agenda-actions { min-width: 0; }
+  .staff-workspace .management-item > div:first-child { flex: 0 1 auto; width: 100%; }
+  .staff-workspace .staff-dialog-actions { flex-direction: column; }
+  .staff-workspace .staff-dialog-actions .btn { width: 100%; }
+}

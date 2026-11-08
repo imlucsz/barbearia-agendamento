@@ -14,6 +14,15 @@ document.addEventListener("DOMContentLoaded", () => {
   form.elements.fim.value = localDateString(today);
   form.addEventListener("submit", generateReport);
   document.getElementById("finance-export")?.addEventListener("click", exportReport);
+  document.querySelectorAll('[data-finance-period]').forEach(button => button.addEventListener('click', () => {
+    const end = new Date();
+    const start = new Date(end);
+    if (button.dataset.financePeriod === 'week') start.setDate(start.getDate() - 6);
+    if (button.dataset.financePeriod === 'month') start.setDate(1);
+    form.elements.inicio.value = localDateString(start);
+    form.elements.fim.value = localDateString(end);
+    form.requestSubmit();
+  }));
 });
 
 async function generateReport(event) {
@@ -21,11 +30,14 @@ async function generateReport(event) {
   const form = event.currentTarget;
   const button = form.querySelector("[type=submit]");
   const result = document.getElementById("finance-result");
+  if (button.disabled) return;
   if (form.elements.inicio.value > form.elements.fim.value) {
     showError(result, "A data inicial deve ser anterior ou igual à data final.");
     return;
   }
   button.disabled = true;
+  const rangeControls = [...document.querySelectorAll('[data-finance-period]'), form.elements.inicio, form.elements.fim];
+  rangeControls.forEach(control => { control.disabled = true; });
   try {
     const report = await api.get("/admin/relatorio", {
       params: { inicio: form.elements.inicio.value, fim: form.elements.fim.value },
@@ -53,6 +65,7 @@ async function generateReport(event) {
     if (error.status === 401) window.location.href = "login.html?redirect=admin.html";
   } finally {
     button.disabled = false;
+    rangeControls.forEach(control => { control.disabled = false; });
   }
 }
 

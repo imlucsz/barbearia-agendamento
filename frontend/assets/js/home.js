@@ -6,6 +6,7 @@ let allServices = [];
 let activeFilter = "all";
 
 document.addEventListener("DOMContentLoaded", () => {
+  prepareEditorialHeadline();
   document.getElementById("current-year").textContent = new Date().getFullYear();
   setupNavigation();
   setupAuthArea();
@@ -15,6 +16,24 @@ document.addEventListener("DOMContentLoaded", () => {
   loadBusinessInfo();
   loadReviews();
 });
+
+// The approved line breaks only apply to the default copy. Configured copy
+// remains text, with its original branding hooks and natural wrapping.
+function prepareEditorialHeadline() {
+  const lead = document.querySelector('[data-installation-copy="homeHeroTitleLead"]');
+  const accent = document.querySelector('[data-installation-copy="homeHeroTitleAccent"]');
+  if (lead?.textContent !== "O clássico nunca sai de" || accent?.textContent !== "cena.") return;
+  const lines = ["O clássico ", "nunca sai ", "de "].map(text => {
+    const line = document.createElement("span");
+    line.className = "headline-line";
+    line.textContent = text;
+    return line;
+  });
+  lead.classList.remove("headline-line");
+  accent.classList.remove("headline-line");
+  lines[2].append(accent);
+  lead.replaceChildren(...lines);
+}
 
 function setupNavigation() {
   const toggle = document.getElementById("nav-toggle");
@@ -29,6 +48,13 @@ function setupNavigation() {
     toggle.setAttribute("aria-expanded", "false");
     toggle.setAttribute("aria-label", "Abrir menu");
   }));
+  nav.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    nav.classList.remove("main-nav--open");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Abrir menu");
+    toggle.focus();
+  });
 }
 
 function setupAuthArea() {
@@ -154,7 +180,11 @@ function renderServices() {
     book.setAttribute("aria-label", `Agendar ${service.nome}`);
     book.textContent = "↗";
     footer.append(meta, book);
-    item.append(top, title, details, footer);
+    const study = document.createElement("div");
+    study.className = "service-study";
+    study.setAttribute("aria-hidden", "true");
+    study.textContent = Array.from(service.nome || "")[0] || "B";
+    item.append(top, study, title, details, footer);
     list.append(item);
   });
 }

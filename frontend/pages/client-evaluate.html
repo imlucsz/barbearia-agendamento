@@ -6,10 +6,17 @@
   <meta name="theme-color" content="#15120f">
   <title>Avaliar atendimento | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/product-editorial.css">
 </head>
-<body data-page="evaluate">
+<body class="product-editorial" data-page="evaluate">
+  <a class="product-skip-link" href="#main-content">Pular para o conteúdo</a>
   <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-appointments.html">← Agendamentos</a></div></header>
-  <main class="page-shell">
+  <main id="main-content" tabindex="-1" class="page-shell">
+    <nav class="account-nav" aria-label="Área do cliente">
+      <a href="client-dashboard.html">Minha área</a>
+      <a href="client-appointments.html">Agendamentos</a>
+      <a href="client-account.html">Minha conta</a>
+    </nav>
     <div class="page-heading"><span class="eyebrow">CONTA PRA GENTE</span><h1>Como foi seu <em>atendimento?</em></h1><p>Sua avaliação ajuda a gente a cuidar cada vez melhor de você.</p></div>
     <section id="evaluate-content" class="card" aria-live="polite"><p>Carregando atendimento…</p></section>
     <form id="evaluate-form" class="card evaluation-form">
@@ -21,5 +28,6 @@
   </main>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
+  <script type="module" src="../assets/js/product-navigation.mjs"></script>
 </body>
 </html>

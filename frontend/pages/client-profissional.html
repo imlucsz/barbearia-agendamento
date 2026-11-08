@@ -6,14 +6,18 @@
   <meta name="theme-color" content="#15120f">
   <title>Escolha seu profissional | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/product-editorial.css">
 </head>
-<body data-page="professionals">
+<body class="product-editorial" data-page="professionals">
+  <a class="product-skip-link" href="#main-content">Pular para o conteúdo</a>
   <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a class="btn btn-ghost" href="client-services.html">← Serviços</a></div></header>
-  <main class="container client-page">
+  <main id="main-content" tabindex="-1" class="container client-page">
+    <nav class="booking-progress" data-booking-progress aria-label="Etapas do agendamento"></nav>
     <div class="page-heading"><span class="eyebrow">PASSO 2 · PROFISSIONAL</span><h1>Quem vai cuidar<br>do seu <em>visual?</em></h1><p>Escolha um profissional que realiza o serviço selecionado.</p></div>
     <div id="profissional-content" class="selection-grid" aria-live="polite"><p class="text-muted">Carregando profissionais…</p></div>
   </main>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
+  <script type="module" src="../assets/js/product-navigation.mjs"></script>
 </body>
 </html>

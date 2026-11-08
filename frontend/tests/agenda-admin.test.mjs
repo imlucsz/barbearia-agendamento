@@ -10,10 +10,13 @@ const deferred = () => { let resolve, reject; const promise = new Promise((a, b)
 
 function harness(get, { put = async () => {}, statusButtons = [] } = {}) {
   let active;
+  let action;
   const node = () => {
     const classes = new Set();
     return {
       children: [], dataset: {}, attributes: {}, listeners: {}, disabled: false,
+      clientWidth: 240, scrollLeft: 0,
+      getBoundingClientRect() { return { left: 0 }; },
       classList: { add: value => classes.add(value), contains: value => classes.has(value) },
       set innerHTML(value) { this.html = value; this.children = []; },
       get innerHTML() { return this.html || ''; },
@@ -21,6 +24,7 @@ function harness(get, { put = async () => {}, statusButtons = [] } = {}) {
       appendChild(child) { this.children.push(child); },
       addEventListener(name, fn) { this.listeners[name] = fn; },
       querySelectorAll() { return []; },
+      querySelector(selector) { return selector === '.selected' ? this.children.find(child => child.classList.contains('selected')) : null; },
       focus() { active = this; },
     };
   };
@@ -28,14 +32,15 @@ function harness(get, { put = async () => {}, statusButtons = [] } = {}) {
   nodes.agendaList.querySelectorAll = () => statusButtons;
   const calls = [];
   const context = vm.createContext({
+    openStaffAction: options => { action = options; },
     api: { put, get(path, options) { calls.push({ path, date: options?.params?.data }); return Promise.resolve().then(() => get(path, options)); } },
     getCurrentUser: () => ({ role: 'admin', nome: 'Admin' }), getToken: () => 'test', logout() {},
-    escapeHtml: value => String(value), console: { error() {} }, window: { location: {} },
+    escapeHtml: value => String(value), console: { error() {} }, window: { location: {}, addEventListener() {} },
     document: { getElementById: id => nodes[id], querySelector: () => null, createElement: node, addEventListener() {} },
   });
   vm.runInContext(source, context);
   context.init();
-  return { nodes, calls, context, active: () => active };
+  return { nodes, calls, context, active: () => active, action: () => action };
 }
 const appointment = name => [{ id: 1, horario: '09:30', nome_cliente: name, servico_nome: 'Corte', profissional_nome: 'Barbeiro', status: 'confirmado' }];
 
@@ -96,24 +101,28 @@ test('late reference enriches the selected day without issuing another agenda re
 });
 
 for (const navigate of [false, true]) {
-  test(`failed status update ${navigate ? 'from old day cannot overwrite selected day' : 'stays visible after late reference'}`, async () => {
+  test(`failed status update ${navigate ? 'from old day cannot overwrite selected day' : 'preserves agenda and reports error to dialog'}`, async () => {
     const services = deferred();
     const mutation = deferred();
     const button = { dataset: { appointmentStatus: 'falta', appointmentId: '1' }, addEventListener(_name, handler) { this.click = handler; } };
     const h = harness(path => path === '/services/' ? services.promise : path === '/admin/agenda' ? appointment('Dia selecionado') : [],
       { statusButtons: [button], put: () => mutation.promise });
     await tick();
-    const update = button.click();
+    button.click();
+    assert.equal(h.action().isCurrent(), true);
+    const update = h.action().submit({ status: 'falta' });
+    const failed = assert.rejects(update, /Falha de atualização/);
     if (navigate) {
       h.nodes.dateRoll.children[2].listeners.click();
       await tick();
     }
     mutation.reject(new Error('Falha de atualização'));
-    await update;
+    await failed;
     services.resolve([]);
     await tick();
-    assert.match(h.nodes.agendaList.innerHTML, navigate ? /Dia selecionado/ : /Falha de atualização/);
-    if (navigate) assert.doesNotMatch(h.nodes.agendaList.innerHTML, /Falha de atualização/);
+    assert.match(h.nodes.agendaList.innerHTML, /Dia selecionado/);
+    assert.doesNotMatch(h.nodes.agendaList.innerHTML, /Falha de atualização/);
+    assert.equal(h.action().isCurrent(), !navigate);
   });
 }
 
