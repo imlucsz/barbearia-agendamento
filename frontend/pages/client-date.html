@@ -7,25 +7,40 @@
   <title>Escolha seu horário | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../assets/css/booking-calendar.css">
+  <link rel="stylesheet" href="../assets/css/product-editorial.css">
 </head>
-<body data-page="date">
+<body class="product-editorial" data-page="date">
+  <a class="product-skip-link" href="#main-content">Pular para o conteúdo</a>
   <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><a id="change-professional" class="btn btn-ghost" href="client-profissional.html">← Profissional</a></div></header>
-  <main class="container client-page">
+  <main id="main-content" tabindex="-1" class="container client-page">
+    <nav class="booking-progress" data-booking-progress aria-label="Etapas do agendamento"></nav>
     <div class="page-heading"><span class="eyebrow">PASSO 3 · DATA E HORÁRIO</span><h1>Quando fica <em>melhor?</em></h1><p>Confira os horários disponíveis. A agenda abre para os próximos 14 dias.</p></div>
+    <div class="booking-layout">
     <section class="card date-picker-card">
+      <div class="booking-choices">
+      <div>
       <label class="form-label" for="booking-service">Serviço</label>
       <select id="booking-service" class="form-control" disabled></select>
+      </div>
+      <div>
       <label class="form-label" for="booking-barber">Profissional</label>
       <select id="booking-barber" class="form-control" disabled></select>
+      </div>
+      </div>
       <h2 id="calendar-label">Selecione a data</h2>
       <p id="calendar-status" role="status" aria-live="polite">Carregando calendário…</p>
       <button id="calendar-retry" type="button" class="btn btn-ghost">Atualizar disponibilidade</button>
       <input type="hidden" id="date-input">
       <div id="booking-calendar" class="booking-calendar" role="group" aria-labelledby="calendar-label" aria-describedby="calendar-status"></div>
     </section>
-    <section id="slots-container" class="slots-container" aria-live="polite"><p class="empty-state">Selecione uma data para consultar os horários.</p></section>
+    <section class="booking-times" aria-labelledby="times-title">
+      <h2 id="times-title">Horários disponíveis</h2>
+      <div id="slots-container" class="slots-container" aria-live="polite"><p class="empty-state">Selecione uma data para consultar os horários.</p></div>
+    </section>
+    </div>
   </main>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
+  <script type="module" src="../assets/js/product-navigation.mjs"></script>
 </body>
 </html>

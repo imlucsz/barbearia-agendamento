@@ -151,8 +151,10 @@ export async function mountBookingCalendar(api, params, onError) {
     params.set("service_id", serviceSelect.value);
     params.set("barbeiro_id", barberSelect.value);
     history.replaceState(null, "", "?" + params);
-    document.getElementById("change-professional").href =
-      "client-profissional.html?service_id=" + encodeURIComponent(serviceSelect.value);
+    const back = document.getElementById("change-professional");
+    back.href = appointmentId ? "client-appointments.html"
+      : "client-profissional.html?service_id=" + encodeURIComponent(serviceSelect.value);
+    if (appointmentId) back.textContent = "← Meus agendamentos";
   }
 
   retry.addEventListener("click", () => initialized ? loadContext(true) : window.location.reload());

@@ -6,14 +6,23 @@
   <meta name="theme-color" content="#15120f">
   <title>Meus agendamentos | Barbearia</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/product-editorial.css">
 </head>
-<body data-page="appointments">
+<body class="product-editorial" data-page="appointments">
+  <a class="product-skip-link" href="#main-content">Pular para o conteúdo</a>
   <header class="site-header"><div class="container header-inner"><a class="brand-lockup" href="index.html"><span class="brand-mark">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a><nav class="header-actions"><a class="btn btn-ghost" href="client-dashboard.html">Minha área</a><a id="logout-link" class="btn btn-ghost" href="login.html">Sair</a></nav></div></header>
-  <main class="container client-page">
+  <main id="main-content" tabindex="-1" class="container client-page">
+    <nav class="account-nav" aria-label="Área do cliente">
+      <a href="client-dashboard.html">Minha área</a>
+      <a href="client-appointments.html">Agendamentos</a>
+      <a href="client-account.html">Minha conta</a>
+    </nav>
     <div class="page-heading"><span class="eyebrow">SUA AGENDA</span><h1>Seus <em>agendamentos.</em></h1><p>Acompanhe os próximos horários e consulte seu histórico de atendimentos.</p></div>
+    <p class="appointments-start"><a class="btn" href="client-services.html">Agendar um horário</a></p>
     <div id="appointments-list" class="appointment-list" aria-live="polite"><p class="text-muted">Carregando agendamentos…</p></div>
   </main>
   <footer class="auth-footer"><p>© <span id="current-year"></span> Barbearia Agendamento</p></footer>
   <script type="module" src="../assets/js/schedule.js"></script>
+  <script type="module" src="../assets/js/product-navigation.mjs"></script>
 </body>
 </html>

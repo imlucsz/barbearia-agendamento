@@ -130,6 +130,7 @@ async function loadConfirmation() {
   const appointmentId = params.get("appointment_id");
   const container = document.getElementById("confirmation-content");
   const button = document.getElementById("confirm-btn");
+  button.disabled = true;
   if (!serviceId || !barberId || !dateTime) {
     window.location.href = "client-services.html";
     return;
@@ -163,8 +164,15 @@ async function loadConfirmation() {
       container.append(row);
     });
 
+    button.disabled = false;
+    const confirmLabel = appointmentId ? "Confirmar novo horário" : button.textContent;
+    button.textContent = confirmLabel;
     button.addEventListener("click", async () => {
+      if (button.disabled) return;
       button.disabled = true;
+      button.textContent = "Confirmando…";
+      button.setAttribute("aria-busy", "true");
+      container.querySelector(".alert-danger")?.remove();
       try {
         if (!isBookableDateTime(dateTime)) throw new Error("Esse horário expirou. Escolha uma nova data e horário.");
         if (appointmentId) {
@@ -189,8 +197,10 @@ async function loadConfirmation() {
         showMessage(container, error.message, "danger");
         handleAuthError(error);
         button.disabled = false;
+        button.textContent = confirmLabel;
+        button.removeAttribute("aria-busy");
       }
-    }, { once: true });
+    });
   } catch (error) {
     console.error("Falha ao carregar confirmação:", error);
     handleAuthError(error);
