@@ -1,10 +1,10 @@
+from support import access_token_for_user
 import csv
 import io
 import unittest
 from datetime import datetime
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token
 from app.models.user import Appointment, AppointmentStatusEnum, RoleEnum, Service, User
 
 
@@ -50,7 +50,7 @@ class FinancialReportTests(unittest.TestCase):
         ))
 
     def request(self, method, path, role="admin", return_headers=False):
-        token = create_access_token({"sub": self.emails[role]})
+        token = access_token_for_user(self.emails[role])
         return asgi_request(
             self.app, method, path, headers={"Authorization": f"Bearer {token}"},
             return_headers=return_headers,

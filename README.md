@@ -1,5 +1,7 @@
 # Sistema de Agendamento Online para Barbearia
 
+Recuperação de senha: admissão compartilhada por conta/IP e cooldown, com respostas genéricas. [Integração, migrações e testes da PR35](docs/PR35_INTEGRATION.md).
+
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
 
 **Status:** versão candidata em homologação. Recursos implementados e resultados locais não equivalem a prontidão de produção; confira [requisitos e evidências](docs/REQUISITOS_STATUS.md), [rastreabilidade](docs/RASTREABILIDADE.md) e [checklist operacional](docs/CHECKLIST_PRODUCAO.md).
@@ -16,8 +18,6 @@ Projeto acadêmico do curso de Desenvolvimento de Software Multiplataforma (DSM)
 | Administrador | Agenda da equipe, serviços e vínculos com profissionais, jornadas/bloqueios, clientes, informações institucionais, moderação, relatórios e consulta de auditoria. |
 
 O fluxo de reserva segue **serviço → profissional → data e horário → confirmação**. A API verifica jornada, bloqueios, conflitos e duração; a janela de reserva é de até 14 dias. Cancelamento/reagendamento pelo cliente exigem 24 horas de antecedência, com até dois reagendamentos. Preço e duração ficam registrados no agendamento.
-
-Login, cadastro, nova senha e confirmação de senha atual para exclusão têm controles acessíveis de mostrar/ocultar senha, operáveis por teclado. Mantêm o campo original e seu autocomplete; reset e fechamento do diálogo voltam a ocultar a senha. A apresentação não altera as regras de autenticação. Evidências e limites de leitores de tela/autofill estão no [plano de qualidade e UX](docs/superpowers/plans/2026-11-03-qualidade-dados-auth-ux.md).
 
 ## Arquitetura e tecnologias
 
@@ -105,11 +105,11 @@ O Alembic usa a mesma variável `DATABASE_URL` da aplicação, carregada do ambi
 .\.venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descrição pública dos serviços; `20261029_06` adiciona índices de disponibilidade; `20261031_01` normaliza identidade de e-mail por trim/lowercase e recusa conflitos sem unir contas; `20261103_01` adiciona os limites compartilhados de recuperação de senha. O schema atual tem quatorze tabelas da aplicação. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
+`20261027_01` preserva a evolução histórica que remove a restrição antiga de `appointments(service_id, data_hora)`. A revisão `20261028_01` cria as nove tabelas do schema inicial; `20261029_01` adiciona consentimentos LGPD versionados e refresh tokens rotativos; `20261029_02` acrescenta tentativas de login; `20261029_03` acrescenta auditoria; `20261029_04` permite desvincular consentimentos e sessões revogadas durante anonimização; `20261029_05` adiciona a descrição pública dos serviços; `20261029_06` adiciona índices de disponibilidade; `20261031_01` normaliza identidade de e-mail por trim/lowercase e recusa conflitos sem unir contas. O schema atual tem treze tabelas. Em banco existente, a adoção só reconhece schemas suportados e falha sem apagar tabelas ou registros. Não há `stamp` automático.
 
 Procedimento de adoção:
 
-- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas; as revisões posteriores completam as quatorze tabelas da aplicação e os controles atuais.
+- **Banco novo PostgreSQL ou SQLite:** configure `DATABASE_URL` para o banco vazio exclusivo desta instalação e execute `python -m alembic upgrade head` antes de iniciar a API. A revisão `20261028_01` cria o schema legado de nove tabelas; as revisões posteriores completam as treze tabelas e os controles atuais.
 - **Banco local de desenvolvimento SQLite existente:** pare a API e, no diretório `backend`, faça backup e prepare um novo arquivo sem apagar o antigo:
 
   ```powershell
@@ -187,12 +187,8 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Validade do token de acesso em minutos (faixa 5–60) | `15` minutos |
 | `TERMS_VERSION` | Versão dos termos de consentimento LGPD registrada no cadastro | `1.0` |
 | `CLIENT_IP_SOURCE` | Origem do IP para rate limit/auditoria: `direct` (padrão, ignora headers) ou `cf-connecting-ip` (um IP validado do edge confiável) | `direct` |
-| `RATE_LIMIT_MAX_ATTEMPTS` | Falhas consecutivas por IP e rota antes do bloqueio | `5` |
-| `RATE_LIMIT_BLOCK_MINUTES` | Duração do bloqueio das rotas de autenticação | `15` minutos |
-| `PASSWORD_RESET_COOLDOWN_SECONDS` | Intervalo mínimo por e-mail normalizado; controle compartilhado entre processos/IPs | `60` segundos |
-| `PASSWORD_RESET_ACCOUNT_MAX_REQUESTS` | Reservas aceitas por e-mail em cada janela de recuperação | `5` |
-| `PASSWORD_RESET_IP_MAX_REQUESTS` | Tentativas válidas por IP, incluindo pedidos suprimidos pelo cooldown | `20` |
-| `PASSWORD_RESET_WINDOW_SECONDS` | Janela ancorada na primeira tentativa/reserva por identidade | `3600` segundos |
+| `RATE_LIMIT_MAX_ATTEMPTS` | Limite legado por IP/rota nos endpoints protegidos exceto login | `5` |
+| `RATE_LIMIT_BLOCK_MINUTES` | Janela legada dos endpoints protegidos exceto login | `15` minutos |
 | `RETENTION_DAYS` | Retenção de eventos de auditoria antes de expurgo | `365` dias |
 | `METRICS_TOKEN` | Token bearer de pelo menos 32 caracteres aleatorios para scraping Prometheus | Vazio (desabilita `/metrics`) |
 | `FORCE_HTTPS` | Redireciona requisições HTTP; padrão ligado em produção e desligado em desenvolvimento/teste | Derivado de `APP_ENV` |
@@ -217,9 +213,57 @@ Copie o resultado para `SECRET_KEY` em `backend/.env`. A aplicação falha ao in
 
 Para PostgreSQL, defina `DATABASE_URL` com a URL SQLAlchemy do banco. Em produção, `postgresql://` é normalizada para o driver `postgresql+psycopg`; a conexão remota adiciona `sslmode=require` quando nenhum modo TLS é informado e rejeita modos inseguros explícitos. O `backend/requirements.txt` instala `psycopg[binary]`. SQLite é aceito somente em desenvolvimento e testes.
 
-O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 60) e permanece em `localStorage` para a navegação entre páginas; JavaScript injetado na origem, como em um XSS, pode lê-lo. O refresh token aleatório é armazenado no servidor somente como SHA-256 e enviado ao frontend em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção. As chamadas usam `credentials: include`; em produção, site e API precisam compartilhar o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). `/auth/refresh` e `/auth/logout` aceitam somente `Origin` listado em `CORS_ALLOWED_ORIGINS`.
+O access token JWT tem validade padrão de 15 minutos (configurável entre 5 e 60) e permanece em `localStorage` para a navegação entre páginas; JavaScript injetado na origem, como em um XSS, pode lê-lo. O refresh token aleatório é armazenado no servidor somente como SHA-256 e enviado exclusivamente em cookie `HttpOnly`, `SameSite=Lax` e `Secure` em produção, com `Path=/auth` e duração de 30 dias. O JSON de login contém `access_token`, `token_type` e `user`; o refresh retorna apenas `access_token` e `token_type`, com rotação no cookie. Consumidores externos que liam `refresh_token` no JSON precisam usar o cookie. As chamadas usam `credentials: include`; em produção, site e API precisam compartilhar o mesmo domínio registrável (por exemplo, `app.dominio.com` e `api.dominio.com`). `/auth/refresh` e `/auth/logout` aceitam somente `Origin` listado em `CORS_ALLOWED_ORIGINS`.
 
-Os controles locais de recuperação, a revisão Alembic `20261103_01`, os testes de concorrência e o procedimento futuro de migração estão descritos em [recuperação e barbeiros](docs/CORRECAO_RECUPERACAO_E_BARBEIROS_20261103.md). A aplicação da migração em homologação/produção e qualquer deploy exigem autorização separada.
+Access tokens usam `sub` como o ID imutável da conta em string decimal positiva, nunca e-mail. Assinatura, expiração e estado ativo/bloqueado continuam obrigatórios. Tokens legados cujo `sub` é e-mail recebem 401, sem fallback; um refresh válido pode emitir access token no novo formato, caso contrário é necessário novo login. Reutilizar o e-mail de uma conta excluída não transfere seus tokens; alterar o e-mail de uma conta ativa mantém o vínculo ao mesmo ID, nunca à nova conta que reutilizar o endereço.
+
+Antes de emitir sessão, o login faz UPDATE condicional pelo ID e hash originalmente verificado, inclusive quando o hash não precisa de upgrade. O lock dessa atualização é mantido até o commit da sessão. Se uma recuperação concorrente já alterou a credencial, a atualização não encontra a linha, a transação é desfeita e o login retorna 401 sem tokens/cookie. O upgrade bcrypt → Argon2 continua disponível quando não há conflito. Não há mudança de schema ou de formato dos refresh tokens e tokens de recuperação.
+
+Subdomínios distintos de `onrender.com` são cross-site: `onrender.com` consta na [Public Suffix List](https://publicsuffix.org/list/public_suffix_list.dat). Nesse cenário, `SameSite=Lax` impede refresh por fetch, mesmo com CORS e `credentials: include` ([MDN](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch)). A solução F1 preparada neste repositório serve frontend e API na origem HTTPS do mesmo serviço Python, mantendo Lax e dispensando DNS/proxy novos. A aplicação do Blueprint e a validação publicada ainda são necessárias. Não relaxe `SameSite` para contornar essa incompatibilidade.
+
+Na seleção de data do cliente, o frontend valida `YYYY-MM-DD`, o calendário e a janela de hoje até o dia 14 em `America/Sao_Paulo` antes de consultar disponibilidade. Digitação incompleta não consulta a API e remove horários antigos. Na confirmação, o limite considera o horário exato atual mais 14 dias; o backend permanece responsável por disponibilidade, concorrência e todas as regras definitivas. O relógio do dispositivo pode divergir do servidor.
+
+### Admissão de login e revogação de sessões
+
+**F1 — origem única:** `SERVE_FRONTEND=true` publica `/pages` e `/assets` no FastAPI e configura o frontend com a própria origem. Nesse modo `/` redireciona à home; no modo API-only padrão o contrato JSON permanece. CORS deve listar exatamente essa origem; cookies continuam HttpOnly/Secure em produção/SameSite=Lax/Path=/auth, sem Domain ou cookies de terceiros. `render.yaml` prepara essa topologia e o redirecionamento do site estático antigo. A implantação e validação real Render ainda são necessárias; consulte [procedimento F1](docs/security/AUTH_F1_SAME_ORIGIN.md). Não houve deploy nesta correção.
+
+Correção F2: o login publica um marcador interno após confirmar CAS, sessão e sucesso da reserva. O middleware dispensa a finalização redundante dessa reserva, preservando a resposta com cookie mesmo se o armazenamento de finalização estiver indisponível. Falhas anteriores mantêm rollback/finalização condicional. Entrega HTTP após commit e resultado de commit sem confirmação continuam sem garantia. Evidências em [F2_FIX.md](docs/validation-stage2/postgresql/F2_FIX.md).
+
+**Decisão da etapa 2:** admissão distribuída por conta/IP e limite estrito de verificações por processo. A lease do banco não libera capacidade de hash local. A ordem User antes do consumo de token de recuperação foi corrigida. Consulte [garantias e procedimento de implantação da etapa 2](docs/security/AUTH_STAGE2_ROLLOUT.md), incluindo a validação PostgreSQL pendente e a barreira necessária contra versões mistas.
+
+`POST /auth/login` reserva a tentativa em `login_attempts` antes da senha. O e-mail normalizado é guardado apenas como HMAC com separação de domínio e SECRET_KEY; contadores não recebem senhas, tokens nem e-mail em claro. Um sucesso não reinicia falhas de outras contas. Falhas/reservas por conta têm janela curta para limitar bloqueios provocados por terceiros, e o IP tem orçamento maior para redes compartilhadas.
+
+| Variáveis LOGIN_RATE_* | Padrões | Controle |
+|---|---|---|
+| ACCOUNT_FAILURES / ACCOUNT_WINDOW_SECONDS | 5 / 60s | Falhas e reservas por conta, mesmo com IPs diferentes |
+| IP_FAILURES / IP_WINDOW_SECONDS | 30 / 300s | Falhas e reservas por IP/rota |
+| IP_REQUESTS / REQUEST_WINDOW_SECONDS | 60 / 60s | Todas as tentativas por IP/rota, inclusive sucessos e payload inválido |
+| ACCOUNT_CONCURRENCY / IP_CONCURRENCY | 2 / 4 | Reservas simultâneas por conta e IP |
+| LEASE_SECONDS | 120s | Recuperação de reservas abandonadas |
+
+`AUTH_PASSWORD_MAX_CONCURRENCY` controla separadamente verificações simultâneas por processo: padrão **1**, inteiro de **1 a 16**, validado ao iniciar. Alterações exigem reinício. Use capacidade proporcional à memória/CPU; não é recomendação de aumentar paralelismo no plano free. O verificador comum usa semáforo não bloqueante: saturação retorna 503 genérico com Retry-After=1, sem fila adicional aguardando esse semáforo. Login e confirmação de senha compartilham a capacidade; verificação bcrypt e upgrade Argon2 ocupam a mesma vaga até o fim. Geração de hashes em cadastro/reset não integra esse teto de verificações; parâmetros criptográficos não foram reduzidos.
+
+Use o prefixo completo, por exemplo `LOGIN_RATE_ACCOUNT_FAILURES`. Valores são validados na inicialização e precisam ser consistentes entre processos, assim como SECRET_KEY. Trocar a chave reinicia a identidade dos contadores por conta; o histórico por IP permanece. Os padrões permitem uso normal de uma barbearia pequena sem bloqueio global. Ataques distribuídos por muitas contas e IPs ainda podem exigir proteção do edge.
+
+Admissão usa locks transacionais ordenados por conta/IP no PostgreSQL (READ COMMITTED explícito) e BEGIN IMMEDIATE no SQLite. A transação termina antes da senha; não há contador distribuído somente em memória. Cinco falhas normalmente retornam 401; a tentativa que excede o orçamento retorna 429 genérico com Retry-After em segundos, sem revelar existência da conta. Tentativas bloqueadas não prolongam a janela. Falha do armazenamento retorna 503 genérico com Retry-After=1 antes da senha na admissão.
+
+Reservas vivas ocupam provisoriamente o orçamento de admissão. A revisão `20261107_02` distingue `pendente`, `sucesso`, `credencial_rejeitada` e `neutro`, com motivo de finalização fechado. Saturação/indisponibilidade sem rejeição conhecida, payload inválido e encerramento sem veredicto são neutros: permanecem no limite geral de requisições, sem consumir cotas de senha incorreta e sem marcar sucesso. O resultado vem da decisão de autenticação, não do status HTTP. Uma rejeição real já conhecida não é apagada por erro, cancelamento ou expiração posteriores; portanto um erro HTTP posterior a essa rejeição não transforma a tentativa em neutra. Rejeição por rate limiting ocorre antes de criar reserva e não prolonga janelas.
+
+Após expiração da lease, reservas novas ainda sem veredicto deixam de ocupar admissão distribuída; o expurgo de histórico com mais de 30 dias permanece. O hash ativo mantém sua vaga local até retornar ou falhar, mesmo com cancelamento HTTP ou lease vencida. Não existe interrupção forçada de thread: trabalho travado mantém a vaga até terminar ou o processo ser efetivamente encerrado. Processo novo recebe capacidade local nova; reservas do processo encerrado recuperam-se pelas janelas/lease existentes.
+
+O teto agregado é a soma das capacidades dos processos realmente vivos, inclusive versões sobrepostas; não há coordenador global. Relógios devem estar sincronizados. Após o CAS de User, o login consome condicionalmente sua reserva ainda ativa/não expirada na mesma transação da sessão. Expiração, invalidação anterior ao consumo ou cancelamento observado antes da autorização impedem tokens/cookie e desfazem o upgrade. A autorização é linearizada nesse consumo; cancelamento concorrente ao commit pode ocorrer depois da última checagem e não garante rollback nem revogação retroativa de sessão confirmada. O cliente cancelar/desconectar também não prova interrupção do hash. Filas já existentes do servidor, pool de threads e conexões não são limitadas por esse semáforo.
+
+A revisão aditiva `20261107_01`, encadeada a `20261031_01`, adiciona somente account_key, em_andamento, expira_em e índice de conta/rota/tempo em login_attempts. Histórico fica intacto, identidade/expiração antigas ficam nulas e em_andamento começa false. Upgrade deve ocorrer antes de executar esta versão em produção, pelo fluxo Alembic existente. Downgrade destrutivo é recusado antes de DDL, como nas revisões anteriores; recuperação é forward-only. Não executar create_all em produção.
+
+A revisão aditiva `20261107_02`, após `20261107_01`, acrescenta `resultado` e `motivo_finalizacao` opcionais, sem alterar revisões anteriores, dados ou índices. Resultado NULL identifica legado e mantém a interpretação binária conservadora (`sucesso=False` ocupa o orçamento anterior até a janela original expirar); não se inventa se um erro histórico foi senha incorreta ou indisponibilidade. Nenhum histórico é reclassificado por backfill. Para novos registros, finalização usa UPDATE somente quando resultado=pendente: término repetido não sobrescreve resultado terminal. Sucesso é gravado junto da sessão e do CAS, com rollback conjunto em falha. O deploy deve atingir `20261107_02`; convivência com writers antigos continua proibida pelo roteiro operacional.
+
+Refresh, logout, replay, reset e bloqueio compartilham a ordem de lock User → RefreshToken. Refresh relê o token depois de esperar pelo lock; logout revoga sua família, inclusive sucessores, sem encerrar famílias independentes. Um cookie de resposta tardia pode reaparecer no navegador, mas não consegue renovar uma família encerrada. Origin e atributos do cookie permanecem inalterados; frontend não foi modificado.
+
+Access JWTs já emitidos permanecem válidos até expirar após logout/reset (padrão15min, configurável5–60min). Esta etapa revoga a renovação, sem blacklist ou consulta adicional por requisição; a consulta existente continua verificando conta ativa/bloqueada. Portanto um access token já emitido, inclusive por resposta atrasada, pode continuar utilizável nessa janela. Revogação imediata por sessão exigiria outro desenho e não foi implementada.
+
+O modo direct ignora headers encaminhados. O Blueprint declara cf-connecting-ip, mas apenas validar a sintaxe do header não autentica o proxy: sua confiança depende de todo acesso passar pelo edge que o sobrescreve e da ausência de bypass. A infraestrutura publicada não foi consultada/testada; não há comprovação operacional desse requisito, nem de entrega de cookies em navegador ou de concorrência em PostgreSQL nesta entrega.
+
+As garantias de coordenação pressupõem que todos os processos/instâncias usem esta versão e a mesma política/chave. A migração preserva inserções antigas pelo default false, mas workers antigos não participam dos novos locks e limites; uma implantação futura deve considerar essa janela de versões mistas. Nenhuma implantação foi executada nesta etapa.
 
 ## Funcionalidades e requisitos
 
@@ -391,8 +435,6 @@ Enums do domínio:
 
 ## Schemas Pydantic
 
-Nomes enviados no cadastro e na atualização administrativa de usuários são normalizados em NFC, com espaços Unicode de separação reduzidos a um espaço simples e trim externo. São rejeitados controles, Unicode inválido, nomes sem conteúdo visível e mais de 120 caracteres após normalização; a entrada bruta tem teto de 4.096 caracteres. A regra não altera nomes persistidos ou schemas de resposta e não muda a normalização de e-mails e senhas.
-
 Os schemas validam os dados HTTP; não são tabelas do banco. `ORMModel` configura leitura de atributos dos modelos ORM.
 
 - **Base:** `ORMModel`.
@@ -446,6 +488,16 @@ As suites de apresentação acima servem arquivos estáticos e interceptam API f
 
 A suíte completa de fluxos usa `frontend/e2e/playwright.config.mjs` e seu próprio ambiente de API/SQLite descartável; leia [as instruções E2E](frontend/e2e/README.md) antes de executá-la. Ela não deve usar banco local de desenvolvimento ou produção. Não há formatter/lint configurado no package.json raiz.
 
+A agenda administrativa permite navegar por semanas mantendo o dia da semana
+selecionado. Nos botões de data, as setas esquerda/direita selecionam dias,
+PageUp/PageDown mudam sete dias e Home/End selecionam domingo/sábado. Falhas dos
+catálogos auxiliares não impedem a consulta da agenda; erros da própria agenda
+continuam visíveis. Clientes inativos/anonimizados não aparecem na gestão nem
+podem ser consultados ou alterados por ID; bloqueados ativos continuam disponíveis.
+As regressões de navegador dessa correção usam apenas servidor estático e API
+fictícia interceptada, sem backend/migrações:
+`node node_modules/@playwright/test/cli.js test --config=frontend/e2e/agenda-navigation.config.mjs`.
+
 ### Evidências e limites
 
 Na rodada completa anterior de 2026-11-03: Node 27/27, HOME 44/44 e Ritual Chrome/Edge 22/22, com tempos intermediários, rVFC, reverso, touch e resize; fallback/reduced-motion WebKit 4/4. Reexecuções posteriores confirmaram o smoke Chrome/Edge; Firefox/WebKit continuam com os impedimentos documentados. Registros de backend/infraestrutura ficam em [requisitos](docs/REQUISITOS_STATUS.md); detalhes da HOME em [integração](docs/HOME_MOTION_INTEGRATION.md). Nada disso equivale a teste de produção ou em aparelhos físicos.
@@ -479,3 +531,12 @@ Projeto desenvolvido por estudantes de DSM da FATEC Itaquera. Consulte o histór
 Leia [AGENTS.md](AGENTS.md), [planos curtos](docs/superpowers/plans/README.md) e [workflow local](tools/codex-helpers/README.md#workflow-local-do-codex) para alterações assistidas por Codex. Graphify é uma ferramenta de navegação do código, sem dependência no runtime da aplicação. Outputs e caches locais precisam de triagem antes de versionamento.
 
 O [material comercial](docs/business/notebooklm/00_INDICE.md) separa fatos do produto, hipóteses e planejamento; não descreve um SaaS multi-tenant implementado.
+
+
+## Qualidade e acessibilidade — integração independente
+
+Inclui nomes Unicode NFC em novas entradas, contratos de identidade de e-mail,
+visibilidade acessível e seleção/elegibilidade administrativa de barbeiros.
+Não inclui cooldown, fila ou mudanças de recuperação, JWT ou sessões.
+Evidências e ressalvas em
+[integração independente](docs/INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md).

@@ -25,6 +25,7 @@ export async function buildStaticSite({
   sourceDir = frontendRoot,
   outputDir = path.join(frontendRoot, "dist"),
   publicApiUrl = process.env.PUBLIC_API_URL,
+  redirectToApiOrigin = process.env.PUBLIC_SAME_ORIGIN_REDIRECT === "true",
 } = {}) {
   const apiOrigin = validatePublicApiUrl(publicApiUrl);
   const source = path.resolve(sourceDir);
@@ -45,7 +46,9 @@ export async function buildStaticSite({
   await mkdir(path.dirname(runtimeConfigPath), { recursive: true });
   await writeFile(
     runtimeConfigPath,
-    `window.BARBEARIA_API_URL = ${JSON.stringify(apiOrigin)};\n`,
+    redirectToApiOrigin
+      ? `window.location.replace(${JSON.stringify(apiOrigin)} + window.location.pathname + window.location.search + window.location.hash);\n`
+      : `window.BARBEARIA_API_URL = ${JSON.stringify(apiOrigin)};\n`,
     "utf8",
   );
 
@@ -60,6 +63,11 @@ export async function buildStaticSite({
   await collectHtml(output);
   const injection = '  <script src="/assets/js/render-api-config.js"></script>\n';
   for (const htmlPath of htmlPaths) {
+    if (redirectToApiOrigin) {
+      const target = new URL(path.relative(output, htmlPath).split(path.sep).join("/"), `${apiOrigin}/`).href;
+      await writeFile(htmlPath, `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Barbearia</title>${injection}</head><body><a href="${target}">Continuar para a barbearia</a></body></html>`, "utf8");
+      continue;
+    }
     const html = await readFile(htmlPath, "utf8");
     if (!/<\/head\s*>/i.test(html)) {
       throw new Error(`Cannot inject API configuration because ${path.relative(output, htmlPath)} has no closing head tag`);

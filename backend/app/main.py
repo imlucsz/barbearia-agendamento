@@ -48,6 +48,7 @@ from app.models.user import User, Service, RoleEnum
 from app.core.security import get_password_hash
 from app.core.rate_limit import AuthRateLimitMiddleware
 from app.core.observability import RequestObservabilityMiddleware, metrics_text
+from app.frontend import FRONTEND_CSP, install_frontend
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
+        if getattr(request.state, 'frontend_document', False):
+            # Public HTML has the same framing policy as the former static site.
+            # API responses keep their restrictive default-src policy.
+            response.headers['Content-Security-Policy'] = FRONTEND_CSP
+        if request.url.path.startswith('/auth/'):
+            response.headers['Cache-Control'] = 'no-store'
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["X-Frame-Options"] = "DENY"
         if configured.app_env == "production":
@@ -143,10 +150,13 @@ app.include_router(institucional.router)
 app.include_router(users.router)
 app.include_router(horario.router)
 app.include_router(barbeiro_servico.router)
+FRONTEND_ENABLED = install_frontend(app)
 
 
 @app.get("/")
 def root():
+    if FRONTEND_ENABLED:
+        return RedirectResponse('/pages/index.html', status_code=307)
     return {"status": "Backend da instalação operando perfeitamente!"}
 
 

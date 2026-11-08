@@ -208,13 +208,22 @@ class RefreshToken(Base):
 
 class LoginAttempt(Base):
     __tablename__ = "login_attempts"
-    __table_args__ = (Index("ix_login_attempts_ip_rota_ocorrido_em", "ip", "rota", "ocorrido_em"),)
+    __table_args__ = (
+        Index("ix_login_attempts_ip_rota_ocorrido_em", "ip", "rota", "ocorrido_em"),
+        Index("ix_login_attempts_account_rota_ocorrido", "account_key", "rota", "ocorrido_em"),
+    )
 
     id = Column(Integer, primary_key=True)
     ip = Column(String(45), nullable=False, index=True)
     rota = Column(String(80), nullable=False)
     sucesso = Column(Boolean, nullable=False)
     ocorrido_em = Column(DateTime, nullable=False, default=utc_now_naive, index=True)
+
+    account_key = Column(String(64), nullable=True)
+    em_andamento = Column(Boolean, nullable=False, server_default="0")
+    expira_em = Column(DateTime, nullable=True)
+    resultado = Column(String(24), nullable=True)
+    motivo_finalizacao = Column(String(40), nullable=True)
 
 
 class AuditLog(Base):

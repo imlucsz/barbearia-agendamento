@@ -1,9 +1,10 @@
+from support import access_token_for_user
 import unittest
 from datetime import datetime, time, timedelta
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.booking import now_local
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
@@ -90,7 +91,7 @@ class AuthorizationTests(unittest.TestCase):
     def request(self, method, path, payload=None, principal=None):
         headers = {}
         if principal is not None:
-            token = create_access_token({"sub": self.emails[principal]})
+            token = access_token_for_user(self.emails[principal])
             headers["Authorization"] = f"Bearer {token}"
         return asgi_request(
             self.application, method, path, payload, headers=headers
@@ -133,6 +134,46 @@ class AuthorizationTests(unittest.TestCase):
                 status, _ = self.request("GET", path)
                 self.assertEqual(status, 401)
         self.assertEqual(self.appointment_snapshot(), before)
+
+    def test_admin_excludes_anonymized_and_inactive_clients_but_keeps_blocked(self):
+        db = main.SessionLocal()
+        try:
+            anonymized = db.get(User, self.user_ids["client_a"])
+            anonymized.ativo = False
+            anonymized.bloqueado = True
+            anonymized.nome = "Conta anonimizada"
+            anonymized.email = "anonimizado-test@invalid.local"
+            db.get(User, self.user_ids["client_b"]).bloqueado = True
+            inactive = self.create_user(db, "inactive@example.com", RoleEnum.CLIENTE)
+            inactive.ativo = False
+            db.commit()
+            inactive_id = inactive.id
+        finally:
+            db.close()
+        before = self.appointment_snapshot()
+        status, clients = self.request("GET", "/users/", principal="admin")
+        self.assertEqual(status, 200)
+        self.assertEqual([item["id"] for item in clients], [self.user_ids["client_b"]])
+        for user_id in (self.user_ids["client_a"], inactive_id):
+            for method, payload in (("GET", None), ("PUT", {"nome": "Alterado", "bloqueado": False})):
+                with self.subTest(method=method, user_id=user_id):
+                    status, _ = self.request(method, f"/users/{user_id}", payload, principal="admin")
+                    self.assertEqual(status, 404)
+        status, _ = self.request("GET", f"/users/{self.user_ids['client_b']}", principal="admin")
+        self.assertEqual(status, 200)
+        status, body = self.request("PUT", f"/users/{self.user_ids['client_b']}",
+                                    {"bloqueado": False}, principal="admin")
+        self.assertEqual(status, 200)
+        self.assertFalse(body["bloqueado"])
+        self.assertEqual(self.appointment_snapshot(), before)
+        db = main.SessionLocal()
+        try:
+            user = db.get(User, self.user_ids["client_a"])
+            self.assertFalse(user.ativo)
+            self.assertEqual(user.email, "anonimizado-test@invalid.local")
+            self.assertTrue(user.bloqueado)
+        finally:
+            db.close()
 
     def test_client_cannot_read_or_modify_another_clients_appointment(self):
         before = self.appointment_snapshot()
@@ -432,7 +473,7 @@ class AuthorizationTests(unittest.TestCase):
                     self.assertEqual(status, 403)
 
     def test_user_responses_do_not_expose_password_hash_or_consent_metadata(self):
-        token = create_access_token({"sub": self.emails["client_a"]})
+        token = access_token_for_user(self.emails["client_a"])
         status, user = asgi_request(
             self.application,
             "GET",

@@ -1,3 +1,4 @@
+from support import access_token_for_user
 import sqlite3
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -6,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.database import get_db
 from app.models.user import User, RoleEnum
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.core.email_identity import is_email_conflict
 
 
@@ -26,7 +27,7 @@ class EmailIntegrityTests(unittest.TestCase):
         self.db.add_all([self.admin,self.client])
         self.db.commit()
         self.client_id = self.client.id
-        self.headers = {"Authorization": "Bearer " + create_access_token({"sub":self.admin.email})}
+        self.headers = {"Authorization": "Bearer " + access_token_for_user(self.admin.email)}
         self.app.dependency_overrides[get_db] = lambda: self.db
 
     def tearDown(self):

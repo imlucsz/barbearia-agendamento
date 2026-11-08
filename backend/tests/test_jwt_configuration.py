@@ -95,13 +95,13 @@ class JwtConfigurationTests(unittest.TestCase):
 
     def test_configured_key_signs_and_verifies_tokens_but_another_key_does_not(self):
         self.assertEqual(os.environ["SECRET_KEY"], TEST_SECRET_KEY)
-        token = create_access_token({"sub": "qa-user@example.test"})
-        self.assertEqual(decode_access_token(token)["sub"], "qa-user@example.test")
+        token = create_access_token({"sub": "123"})
+        self.assertEqual(decode_access_token(token)["sub"], "123")
 
         wrong_key = "different-test-signing-key-that-is-not-configured"
         wrong_token = jwt.encode(
             {
-                "sub": "qa-user@example.test",
+                "sub": "123",
                 "exp": utc_now() + timedelta(minutes=5),
             },
             wrong_key,
@@ -112,7 +112,7 @@ class JwtConfigurationTests(unittest.TestCase):
 
     def test_signed_token_without_expiration_is_rejected_by_decoder_and_endpoint(self):
         token_without_exp = jwt.encode(
-            {"sub": "qa-user@example.test"},
+            {"sub": "123"},
             TEST_SECRET_KEY,
             algorithm=ALGORITHM,
         )
@@ -143,7 +143,7 @@ class JwtConfigurationTests(unittest.TestCase):
         wrong_key = "different-test-signing-key-that-is-not-configured"
         wrong_token = jwt.encode(
             {
-                "sub": "qa-user@example.test",
+                "sub": "123",
                 "exp": utc_now() + timedelta(minutes=5),
             },
             wrong_key,

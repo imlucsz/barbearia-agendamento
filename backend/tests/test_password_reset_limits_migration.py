@@ -34,17 +34,17 @@ class PasswordResetLimitsMigrationTests(unittest.TestCase):
         self.migrate("20261031_01")
         with self.engine.begin() as connection:
             connection.execute(text("INSERT INTO users (nome,email,senha_hash,consentimento_lgpd) VALUES ('Test','test@example.com','test',false)"))
-        self.migrate("head")
-        assert_matches_models(self, self.engine)
+        self.migrate("20261103_01")
         self.migrate("20261031_01", downgrade=True)
         self.assertNotIn("password_reset_limits", inspect(self.engine).get_table_names())
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text("SELECT nome FROM users")).scalar_one(), "Test")
+        self.migrate("20261103_01")
         self.migrate("head")
         assert_matches_models(self, self.engine)
 
     def test_downgrade_refuses_to_discard_active_limits(self):
-        self.migrate("head")
+        self.migrate("20261103_01")
         with self.engine.begin() as connection:
             connection.execute(text("INSERT INTO password_reset_limits (key,window_started_at,requests,next_allowed_at,lease_until) VALUES ('test',CURRENT_TIMESTAMP,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)"))
         with self.assertRaisesRegex(RuntimeError, "active limits must be preserved"):
@@ -53,9 +53,27 @@ class PasswordResetLimitsMigrationTests(unittest.TestCase):
             self.assertEqual(connection.execute(text("SELECT count(*) FROM password_reset_limits")).scalar_one(), 1)
             self.assertEqual(connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(), "20261103_01")
 
+    def test_published_session_head_upgrades_to_single_head_without_losing_data(self):
+        from alembic.script import ScriptDirectory
+        with self.engine.connect() as connection:
+            self.assertEqual(ScriptDirectory.from_config(migration_config(connection)).get_heads(), ["20261108_01"])
+        self.migrate("20261107_02")
+        with self.engine.begin() as connection:
+            connection.execute(text("INSERT INTO users (nome,email,senha_hash,consentimento_lgpd) VALUES ('Keep','keep@example.test','test',false)"))
+            connection.execute(text("INSERT INTO login_attempts (ip,rota,sucesso,ocorrido_em,resultado) VALUES ('192.0.2.1','/auth/login',false,CURRENT_TIMESTAMP,'neutro')"))
+        self.migrate("head")
+        assert_matches_models(self, self.engine)
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT email FROM users")).scalar_one(), "keep@example.test")
+            self.assertEqual(connection.execute(text("SELECT resultado FROM login_attempts")).scalar_one(), "neutro")
+        with self.assertRaisesRegex(RuntimeError, "Downgrade is disabled"):
+            self.migrate("20261107_02", downgrade=True)
+        with self.engine.connect() as connection:
+            self.assertEqual(connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(), "20261108_01")
+
     @unittest.skipUnless(os.environ.get("BOOKING_TEST_BACKEND") == "postgresql", "PostgreSQL concurrent DDL test requires a disposable cluster")
     def test_downgrade_prevents_insertion_between_empty_check_and_drop(self):
-        self.migrate("head")
+        self.migrate("20261103_01")
         competing = create_engine(self.engine.url)
         completed = Event()
         outcomes = []

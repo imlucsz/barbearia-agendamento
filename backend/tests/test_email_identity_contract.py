@@ -1,10 +1,11 @@
+from support import access_token_for_user
 """Characterize the current contract without changing normalization policy."""
 import unittest
 from unittest.mock import patch
 
 from pydantic import ValidationError
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import get_password_hash
 from app.models.user import User, RoleEnum, PasswordResetToken
 from app.schemas.user import UserCreate, UserUpdate, UserLogin, EsqueciSenhaRequest
 
@@ -52,12 +53,15 @@ class EmailIdentityContractTests(unittest.TestCase):
             status, _ = asgi_request(self.app, "POST", "/auth/login", {"email": equivalent, "senha": "  fixture-password  "}, client_ip=f"192.0.2.{index+1}")
             self.assertEqual(status, 200)
             with patch("app.routers.auth.send_password_reset_email") as sender:
-                first_response = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": first})
-                second_response = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": equivalent})
-                unknown_response = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": f"unknown{index}@example.com"})
-            self.assertEqual(first_response, second_response)
-            self.assertEqual(second_response, unknown_response)
+                # Each case is a distinct actor; do not exhaust main's IP limiter.
+                ip = f"198.51.100.{index + 1}"
+                first_response = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": first}, client_ip=ip)
+                unknown_response = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": f"unknown{index}@example.com"}, client_ip=ip)
+            self.assertEqual(first_response[0], 200)
+            self.assertEqual(first_response, unknown_response)
             self.assertEqual(sender.call_count, 1)
+            expected_recipient = ["mixed+tag@example.com", "josé@example.com", "person@bücher.de"][index]
+            self.assertTrue(sender.call_args.args[0] == expected_recipient)
         with main.SessionLocal() as db:
             self.assertEqual(db.query(User).count(), 3)
 
@@ -76,24 +80,27 @@ class EmailIdentityContractTests(unittest.TestCase):
             ("\u00a0person@example.com\u00a0", "person@example.com"),
         ]
         for index, (variant, canonical) in enumerate(cases):
-            with self.subTest(case=index):
-                with main.SessionLocal() as db:
-                    row = User(nome="Fixture", email=canonical, senha_hash="fixture")
-                    db.add(row)
-                    db.commit()
-                    user_id = row.id
-                with patch("app.routers.auth.send_password_reset_email") as sender:
-                    first = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email":variant})
-                    same_identity = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email":canonical})
-                    unknown = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email":f"unknown{index}@example.com"})
-                self.assertEqual(first[0], 200)
-                self.assertEqual(first, same_identity)
-                self.assertEqual(first, unknown)
-                self.assertEqual(sender.call_count, 1)
-                self.assertTrue(sender.call_args.args[0] == canonical)
-                with main.SessionLocal() as db:
-                    reset = db.query(PasswordResetToken).filter_by(user_id=user_id).one()
-                    self.assertFalse(reset.used)
+            for supplied in (variant, canonical):
+                with self.subTest(case=index, input_is_canonical=supplied == canonical):
+                    # Both spellings must resolve as first requests on fresh fixtures.
+                    # This characterizes identity, not repeated-send suppression.
+                    reset_database()
+                    self.app = load_app_for_environment("test").app
+                    with main.SessionLocal() as db:
+                        row = User(nome="Fixture", email=canonical, senha_hash="fixture")
+                        db.add(row)
+                        db.commit()
+                        user_id = row.id
+                    with patch("app.routers.auth.send_password_reset_email") as sender:
+                        known = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": supplied})
+                        unknown = asgi_request(self.app, "POST", "/auth/esqueci-senha", {"email": f"unknown{index}@example.com"})
+                    self.assertEqual(known[0], 200)
+                    self.assertEqual(known, unknown)
+                    sender.assert_called_once()
+                    self.assertTrue(sender.call_args.args[0] == canonical)
+                    with main.SessionLocal() as db:
+                        reset = db.query(PasswordResetToken).filter_by(user_id=user_id).one()
+                        self.assertFalse(reset.used)
 
     def test_admin_duplicate_update_is_safe_and_preserves_original_credentials(self):
         with main.SessionLocal() as db:
@@ -102,7 +109,7 @@ class EmailIdentityContractTests(unittest.TestCase):
             db.add_all([admin, client, User(nome="Other", email="josé@example.com", senha_hash="fixture")])
             db.commit()
             user_id, original_hash = client.id, client.senha_hash
-        headers = {"Authorization": "Bearer " + create_access_token({"sub": "admin@example.com"})}
+        headers = {"Authorization": "Bearer " + access_token_for_user("admin@example.com")}
         status, body = asgi_request(self.app, "PUT", f"/users/{user_id}", {"email": "Jose\u0301@EXAMPLE.COM"}, headers=headers)
         self.assertEqual(status, 409)
         self.assertEqual(body, {"detail": "E-mail já cadastrado"})
@@ -142,7 +149,7 @@ class EmailIdentityContractTests(unittest.TestCase):
             db.add_all([admin, client])
             db.commit()
             user_id, original_hash = client.id, client.senha_hash
-        headers = {"Authorization": "Bearer " + create_access_token({"sub":"admin@example.com"})}
+        headers = {"Authorization": "Bearer " + access_token_for_user("admin@example.com")}
         status, _ = asgi_request(self.app, "PUT", f"/users/{user_id}", {"nome":"Updated"}, headers=headers)
         self.assertEqual(status, 200)
         with main.SessionLocal() as db:

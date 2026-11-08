@@ -1,7 +1,7 @@
+from support import access_token_for_user
 import unittest
 
 from support import asgi_request, load_app_for_environment, main, reset_database
-from app.core.security import create_access_token
 from app.models.user import RoleEnum, User
 
 
@@ -21,7 +21,7 @@ class ServiceCrudTests(unittest.TestCase):
             db.close()
 
     def request(self, method, path, payload=None, role="admin"):
-        token = create_access_token({"sub": self.emails[role]})
+        token = access_token_for_user(self.emails[role])
         return asgi_request(
             self.app, method, path, payload,
             headers={"Authorization": f"Bearer {token}"},

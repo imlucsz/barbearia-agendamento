@@ -9,9 +9,10 @@ services:
   - type: web
     name: barbearia-homolog-api
     runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
     startCommand: >-
+      cd backend &&
       PASSWORD_RESET_URL="${FRONTEND_ORIGIN}/pages/reset.html"
       python -m app.render_start
     plan: free
@@ -19,6 +20,10 @@ services:
     envVars:
       - key: APP_ENV
         value: production
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: PYTHON_VERSION
+        value: 3.14.8
       - key: DATABASE_URL
         fromDatabase:
           name: barbearia-homolog-db
@@ -32,12 +37,12 @@ services:
           envVarKey: RENDER_EXTERNAL_HOSTNAME
       - key: CORS_ALLOWED_ORIGINS
         fromService:
-          name: barbearia-homolog-frontend
+          name: barbearia-homolog-api
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: FRONTEND_ORIGIN
         fromService:
-          name: barbearia-homolog-frontend
+          name: barbearia-homolog-api
           type: web
           envVarKey: RENDER_EXTERNAL_URL
       - key: SCHEDULING_TIMEZONE
@@ -85,6 +90,8 @@ services:
         name: Strict-Transport-Security
         value: "max-age=31536000; includeSubDomains"
     envVars:
+      - key: PUBLIC_SAME_ORIGIN_REDIRECT
+        value: "true"
       - key: PUBLIC_API_URL
         fromService:
           name: barbearia-homolog-api
