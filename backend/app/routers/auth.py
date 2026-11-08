@@ -1,5 +1,5 @@
 from app.core.email_identity import email_key, normalize_email, is_email_conflict
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 import hashlib
 import os
 import secrets
@@ -14,8 +14,9 @@ from app.core.email import send_password_reset_email
 from app.core.clock import utc_now_naive
 from app.core.security import verify_password_and_update, get_password_hash, create_access_token
 from app.core.request_context import get_client_ip
+from app.config import parse_cors_origins, settings as load_settings
+from app.core.password_reset_limits import reserve_request, finish_reservation, prune_expired
 from app.core.login_rate_limit import claim_login_reservation, record_login_outcome, Outcome, Reason
-from app.config import parse_cors_origins
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import ConsentimentoLGPD, User, RoleEnum, PasswordResetToken, RefreshToken
@@ -318,44 +319,60 @@ def read_current_user(current_user: User = Depends(get_current_user)):
 
 @router.post("/esqueci-senha")
 def esqueci_senha(payload: EsqueciSenhaRequest, request: Request, db: Session = Depends(get_db)):
-    user = db.query(User).filter(email_key(User.email) == normalize_email(payload.email)).first()
-    if user:
+    public_response = {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
+    try:
+        configured = load_settings()
+    except RuntimeError:
+        # Startup validates production settings; runtime misconfiguration fails closed.
+        return public_response
+    now = utc_now_naive()
+    email = normalize_email(payload.email)
+    ip = get_client_ip(request)
+    try:
+        reservation = reserve_request(db, email, ip, now, configured)
+        if not reservation:
+            return public_response
+        user = db.query(User).filter(email_key(User.email) == email).first()
+        if not user:
+            finish_reservation(db, reservation, utc_now_naive())
+            prune_expired(db, now, configured)
+            db.commit()
+            return public_response
         token = secrets.token_urlsafe(32)
-        token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
-        reset = PasswordResetToken(
-            user_id=user.id,
-            token=token_hash,
-            expires_at=utc_now_naive() + timedelta(hours=1),
-        )
+        reset = PasswordResetToken(user_id=user.id, token=_token_hash(token), expires_at=now + timedelta(hours=1))
+        db.add(reset)
+        db.flush()
+        reset_id, user_id, recipient = reset.id, user.id, user.email
+        db.commit()
+        # No open write transaction/connection is held while waiting for email.
         try:
-            # Only the newest outstanding token for this account remains usable.
+            send_password_reset_email(recipient, token)
+        except Exception:
+            db.query(PasswordResetToken).filter(PasswordResetToken.id == reset_id).delete(synchronize_session=False)
+            finish_reservation(db, reservation, utc_now_naive())
+            db.commit()
+            return public_response
+
+        owns_reservation = finish_reservation(db, reservation, utc_now_naive())
+        if owns_reservation:
+            # A failed/newer delivery must never invalidate the preceding link.
+            # The fencing check also prevents a late sender changing newer tokens.
             db.query(PasswordResetToken).filter(
-                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.user_id == user_id,
+                PasswordResetToken.id < reset_id,
                 PasswordResetToken.used.is_(False),
             ).update({PasswordResetToken.used: True}, synchronize_session=False)
-            db.add(reset)
-            db.flush()
-        except Exception:
-            db.rollback()
-            raise
-
-        try:
-            send_password_reset_email(user.email, token)
-        except Exception:
-            # A failed delivery must not leave an undisclosed usable token behind.
-            db.rollback()
-            return {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
-
-        try:
-            db.commit()
-        except Exception:
-            db.rollback()
-            raise
-
-    record_audit(db, request, actor=user if user else None, acao="auth.redefinicao_solicitada", entidade="credencial", resultado="sucesso")
-    db.commit()
-    # Same status and body for known/unknown addresses and delivery failures.
-    return {"mensagem": "Se o email existir, um link de redefinição foi gerado."}
+        else:
+            db.query(PasswordResetToken).filter(PasswordResetToken.id == reset_id).delete(synchronize_session=False)
+        record_audit(db, request, actor=user, acao="auth.redefinicao_solicitada", entidade="credencial", resultado="sucesso")
+        prune_expired(db, now, configured)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        # Fail closed, without SQL, identifiers or submitted secrets in logs.
+        import logging
+        logging.getLogger("security.audit").warning("password_recovery_database_unavailable")
+    return public_response
 
 
 @router.post("/redefinir-senha")

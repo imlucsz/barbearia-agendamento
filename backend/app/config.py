@@ -62,6 +62,10 @@ class Settings:
     email_timeout_seconds: float
     retention_days: int = 365
     metrics_token: str = field(default="", repr=False)
+    password_reset_cooldown_seconds: int = 60
+    password_reset_account_max_requests: int = 5
+    password_reset_ip_max_requests: int = 20
+    password_reset_window_seconds: int = 3600
 
 
 def _get(source: Mapping[str, str], name: str, default: str = "") -> str:
@@ -387,6 +391,20 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         raise RuntimeError("RATE_LIMIT_MAX_ATTEMPTS must be between 1 and 100")
     if not 1 <= rate_limit_block_minutes <= 1440:
         raise RuntimeError("RATE_LIMIT_BLOCK_MINUTES must be between 1 and 1440")
+    reset_limits = {}
+    for name, default, maximum in (
+        ("PASSWORD_RESET_COOLDOWN_SECONDS", 60, 3600),
+        ("PASSWORD_RESET_ACCOUNT_MAX_REQUESTS", 5, 1000),
+        ("PASSWORD_RESET_IP_MAX_REQUESTS", 20, 10000),
+        ("PASSWORD_RESET_WINDOW_SECONDS", 3600, 86400),
+    ):
+        try:
+            value = int(_get(source, name, str(default)))
+        except ValueError:
+            raise RuntimeError(f"{name} must be a positive integer") from None
+        if not 1 <= value <= maximum:
+            raise RuntimeError(f"{name} must be between 1 and {maximum}")
+        reset_limits[name.lower()] = value
     try:
         retention_days = int(_get(source, "RETENTION_DAYS", "365"))
     except ValueError:
@@ -502,6 +520,7 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         email_timeout_seconds=email_timeout,
         retention_days=retention_days,
         metrics_token=metrics_token,
+        **reset_limits,
     )
 
 

@@ -23,6 +23,21 @@ def valid_production_environment():
 
 
 class ApplicationSettingsTests(unittest.TestCase):
+    def test_password_recovery_limits_have_safe_configurable_defaults_and_bounds(self):
+        values = valid_production_environment()
+        configured = load_settings(values)
+        self.assertEqual(configured.password_reset_cooldown_seconds, 60)
+        self.assertEqual(configured.password_reset_account_max_requests, 5)
+        self.assertEqual(configured.password_reset_ip_max_requests, 20)
+        self.assertEqual(configured.password_reset_window_seconds, 3600)
+        for name in ("PASSWORD_RESET_COOLDOWN_SECONDS", "PASSWORD_RESET_ACCOUNT_MAX_REQUESTS",
+                     "PASSWORD_RESET_IP_MAX_REQUESTS", "PASSWORD_RESET_WINDOW_SECONDS"):
+            for invalid in ("0", "-1", "abc", "1000000"):
+                with self.subTest(name=name, invalid=invalid):
+                    with self.assertRaises(RuntimeError):
+                        load_settings(dict(values, **{name: invalid}))
+            self.assertEqual(getattr(load_settings(dict(values, **{name: "2"})), name.lower()), 2)
+
     def test_metrics_token_is_optional_but_must_be_long_and_non_whitespace(self):
         values = valid_production_environment()
         self.assertEqual(load_settings(values).metrics_token, "")

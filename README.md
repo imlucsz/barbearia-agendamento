@@ -1,10 +1,6 @@
 # Sistema de Agendamento Online para Barbearia
 
-**HOME da Parte 2:** direção A híbrida aprovada e integrada localmente ao frontend funcional, com identidade tradicional, Hero sem moldura e intro refinada. [Alterações, testes e limites](docs/HOME_EDITORIAL_INTEGRATION.md). Os [protótipos](prototypes/part2/README.md) e o calendário da Parte 1 permanecem preservados. Sem publicação nesta integração.
 
-**Telas internas da Parte 2:** a mesma identidade agora acompanha acesso, recuperação, catálogo, agendamento, área do cliente e gestão. Progresso da reserva, navegação com contexto e agenda mobile foram refinados. [Páginas, reprodução dos testes e evidências](docs/PRODUCT_EDITORIAL_INTEGRATION.md). Alterações locais, sem publicação.
-
-**Painéis da equipe:** administrador com seis áreas por tarefa; barbeiro com Minha agenda. Resumo da data, confirmações de atendimento, formulários separados das listas e recuperação de erros. [Comportamento, testes e limitações](docs/STAFF_WORKSPACE_UX.md).
 
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
 

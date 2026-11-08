@@ -1,29 +1,7 @@
 # Status de auditoria dos requisitos
 
-## Parte 2 — painéis de administrador e barbeiro
 
-- Plano aprovado implementado no frontend: seis áreas administrativas, Minha agenda do barbeiro, atalhos de data e resumo das reservas. Confirmação contextual antes de concluir, marcar ausência ou cancelar; valor cobrado na conclusão, guarda contra duplo envio e erro sem apagar agenda/formulário.
-- Serviços, expediente e folgas separam editor/lista; profissional permanece visível e selecionado após salvar. Financeiro recebe períodos rápidos e explicação dos valores. Hashes antigos, histórico e controles da API preservados; agendamento manual permanece administrativo na interface.
-- Validação: **104/104 verificações Chromium dos painéis**, **200/200 regressões Chromium das telas internas**, **66/66 testes Node**, **21/21 testes Python** de entrega/autorização com SQLite temporário. Nenhum backend/schema/dependência alterado; APIs fictícias no navegador, sem dados publicados. [Arquivos, evidências e limites](STAFF_WORKSPACE_UX.md). Sem commit, push ou deploy.
 
-## Parte 2 — continuidade nas telas internas
-
-- Identidade A híbrida aplicada às 14 páginas funcionais restantes: autenticação/recuperação, catálogo, reserva, conta e gestão. CSS delimitado, fontes locais reutilizadas e navegação acessível por etapas/área do cliente. Calendário e regras da Parte 1 preservados; retornos mantêm contexto, inclusive no reagendamento.
-- Corrigida a nova tentativa de confirmação após erro da API; um único envio por vez. Gestão apresenta atendimentos em blocos no mobile, mantendo semântica de tabela, permissões e formulários existentes. A configuração de mesma origem continua anterior aos módulos novos.
-- Validação final: **200/200 verificações Chromium**, **61/61 testes Node**, **7/7 testes Python** de entrega com SQLite temporário. Zero falhas/ignorados finais; navegador com API fictícia interceptada, sem banco publicado. Revisão independente sem achados acionáveis. [Escopo, arquivos, reprodução e limitações](PRODUCT_EDITORIAL_INTEGRATION.md). Sem mudança de backend/schema, dependências, commit ou publicação.
-
-## Parte 2 — HOME aprovada e integrada localmente
-
-- A híbrida foi aprovada e aplicada à HOME funcional: fontes locais, catálogo com dados reais, Hero original, intro por sessão e Ritual preservado. Chromium **98/98**, Node **57/57**, Python de publicação com SQLite temporário **7/7**. Sem backend/API/calendário alterado, commit ou deploy. [Integração, evidências e pendências](HOME_EDITORIAL_INTEGRATION.md).
-
-Histórico dos estudos anteriores à aprovação:
-
-- Variação **A híbrida**, solicitada após a primeira avaliação: preserva identidade tradicional, tokens, Ritual contínuo e Estrelinha; aplica hierarquia/editorial de A em área isolada. Chromium 39/39, Node 6/6 e Python 5/5 (servidor local). [Prévia e evidências](../prototypes/part2/HYBRID.md). Ainda aguardando avaliação visual, sem integração no produto.
-- Ajuste solicitado na híbrida: Hero original sem moldura, poste vertical e tesoura diagonal; intro recuperada de `3aa7a80`, refinada para 2,2 s/1,7 s, com lógica original por sessão, interrupção acessível e reduced motion. Chromium 49/49 novas verificações + 39/39 regressões do Ritual; Node 6/6. Capturas e limites no mesmo relatório. Nenhuma alteração no frontend funcional/backend.
-
-- Três homepages independentes (editorial, minimalista e experimental) em `prototypes/part2/`, baseadas na Parte 1 `19cfa27`. Não houve alteração de frontend funcional, calendário, API, banco ou implantação.
-- Chromium 156 real: **109 verificações aprovadas**, zero falhas finais; layouts em 320/390/768/1440 px, navegação, seleção, modal, teclado e movimento reduzido. Node: **5 testes aprovados**. Seis capturas desktop/mobile e comparação visual disponíveis na [galeria](../prototypes/part2/index.html).
-- Status histórico: os três estudos aguardavam escolha visual. A aprovação posterior e a integração da HOME estão registradas acima. [Pesquisa e decisão](../prototypes/part2/RESEARCH.md), [validação e limites](../prototypes/part2/VALIDATION.md).
 
 ## F1 — cookies em origem única
 

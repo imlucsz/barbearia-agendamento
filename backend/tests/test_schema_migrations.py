@@ -94,13 +94,13 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261107_02",
+                "20261108_01",
             )
 
     def test_supported_create_all_legacy_schema_is_adopted_without_losing_rows(self):
         legacy_tables = [
             table for table in Base.metadata.sorted_tables
-            if table.name not in {"consentimentos_lgpd", "refresh_tokens", "login_attempts", "audit_logs"}
+            if table.name not in {"consentimentos_lgpd", "refresh_tokens", "login_attempts", "audit_logs", "password_reset_limits"}
         ]
         Base.metadata.create_all(bind=self.engine, tables=legacy_tables)
         with self.engine.begin() as connection:
@@ -173,7 +173,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(connection.execute(text('SELECT * FROM login_attempts ORDER BY id')).all(), after)
             self.assertEqual(connection.execute(text('SELECT version_num FROM alembic_version')).scalar_one(),
-                             '20261107_02')
+                             '20261108_01')
 
     def test_incompatible_schema_fails_without_dropping_existing_table_or_data(self):
         with self.engine.begin() as connection:
@@ -243,7 +243,7 @@ class SQLiteSchemaMigrationTests(unittest.TestCase):
         with self.engine.connect() as connection:
             self.assertEqual(
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one(),
-                "20261107_02",
+                "20261108_01",
             )
 
 

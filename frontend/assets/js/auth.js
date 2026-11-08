@@ -6,6 +6,8 @@ const moneySafeDestinations = {
   barbeiro: "admin.html",
   admin: "admin.html",
 };
+let recoveryInFlight = false;
+let recoveryAvailableAt = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("current-year").textContent = new Date().getFullYear();
@@ -61,9 +63,12 @@ async function register(event) {
 
 async function forgotPassword(event) {
   event.preventDefault();
+  if (recoveryInFlight || Date.now() < recoveryAvailableAt) return;
+  recoveryInFlight = true;
   const form = event.currentTarget;
   const button = form.querySelector("[type=submit]");
   setBusy(button, true);
+  form.setAttribute("aria-busy", "true");
   try {
     const result = await api.post("/auth/esqueci-senha", {
       email: form.elements.email.value.trim(),
@@ -72,7 +77,17 @@ async function forgotPassword(event) {
   } catch (error) {
     showMessage(error.message, "danger");
   } finally {
-    setBusy(button, false);
+    recoveryInFlight = false;
+    form.removeAttribute("aria-busy");
+    recoveryAvailableAt = Date.now() + 60000;
+    const updateCountdown = () => {
+      const seconds = Math.max(0, Math.ceil((recoveryAvailableAt - Date.now()) / 1000));
+      button.disabled = seconds > 0;
+      button.textContent = seconds ? `Solicitar novamente em ${seconds}s` : button.dataset.label;
+      if (!seconds) window.clearInterval(timer);
+    };
+    const timer = window.setInterval(updateCountdown, 1000);
+    updateCountdown();
   }
 }
 

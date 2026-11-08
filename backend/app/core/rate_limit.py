@@ -18,7 +18,7 @@ from app.core.login_rate_limit import limit_login
 RATE_SETTINGS = load_settings()
 
 AUTH_PATHS = {
-    "/auth/login", "/auth/register", "/auth/esqueci-senha", "/auth/redefinir-senha",
+    "/auth/login", "/auth/register", "/auth/redefinir-senha",
 }
 EXPORT_PATH = "/users/me/exportacao"
 EXPORT_PATHS = {EXPORT_PATH, "/users/me/export"}
