@@ -1,11 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional
-from app.models.user import RoleEnum
+from pydantic import Field, StrictInt
+from app.schemas.base import ORMModel
 
 
-class BarbearioServicoBase(BaseModel):
-    barbeiro_id: int
-    service_id: int
+class BarbearioServicoBase(ORMModel):
+    barbeiro_id: StrictInt = Field(gt=0)
+    service_id: StrictInt = Field(gt=0)
 
 
 class BarbearioServicoCreate(BarbearioServicoBase):
@@ -15,15 +14,8 @@ class BarbearioServicoCreate(BarbearioServicoBase):
 class BarbearioServicoResponse(BarbearioServicoBase):
     id: int
 
-    class Config:
-        orm_mode = True
-
-
-class BarbearioServicoWithBarbeiroResponse(BaseModel):
+class BarbearioServicoWithBarbeiroResponse(ORMModel):
     id: int
     barbeiro_id: int
     service_id: int
     barbeiro_nome: str
-
-    class Config:
-        orm_mode = True

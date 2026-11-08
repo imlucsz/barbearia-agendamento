@@ -1,0 +1,19 @@
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #080808; color: #f5f1e9; font: 15px/1.5 system-ui, sans-serif; }
+.estrela-debug { width: min(1720px, 100%); margin: 0 auto; padding: 32px clamp(16px, 3vw, 48px) 48px; }
+.estrela-debug__header { margin-bottom: 24px; }
+.estrela-debug__header p { margin: 0; color: #d5aa65; font-size: 11px; font-weight: 800; letter-spacing: .18em; }
+.estrela-debug__header h1 { margin: 6px 0; font-size: clamp(28px, 4vw, 42px); line-height: 1.1; }
+.estrela-debug__header span,.estrela-debug__note { color: #aaa49b; font-size: 13px; }
+.estrela-debug__views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.estrela-debug__panel { min-width: 0; overflow: hidden; border: 1px solid #37312a; background: #000; }
+.estrela-debug__panel h2 { margin: 0; padding: 9px 12px; border-bottom: 1px solid #29241e; color: #d5aa65; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.estrela-debug__panel canvas,.estrela-debug__panel img { display: block; width: 100%; height: min(56vw, 540px); min-height: 340px; background: #000; object-fit: contain; }
+.estrela-debug__controls { margin-top: 22px; }
+.estrela-debug__controls h2 { margin: 0 0 10px; font-size: 14px; }
+.estrela-debug__buttons { display: flex; flex-wrap: wrap; gap: 7px; }
+.estrela-debug__buttons button { padding: 7px 11px; border: 1px solid #65533a; background: #17130f; color: #f4e6cb; font: inherit; font-size: 12px; cursor: pointer; }
+.estrela-debug__buttons button[aria-pressed="false"] { border-color: #393939; background: #101010; color: #777; text-decoration: line-through; }
+.estrela-debug__note { margin-top: 20px; }
+@media (max-width: 1050px) { .estrela-debug__views { grid-template-columns: repeat(2, minmax(0, 1fr)); } .estrela-debug__panel canvas,.estrela-debug__panel img { height: min(75vw, 500px); } }
+@media (max-width: 560px) { .estrela-debug__views { grid-template-columns: 1fr; } .estrela-debug__panel canvas,.estrela-debug__panel img { height: 420px; min-height: 0; } }

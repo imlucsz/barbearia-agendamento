@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Estudo visual isolado: Precisão que transforma.">
+  <title>Precisão que transforma — Motion Lab</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../assets/css/installation.css">
+  <link rel="stylesheet" href="./lab.css">
+  <link rel="stylesheet" href="./ritual-video.css">
+  <script src="./instrument.js"></script>
+  <script type="importmap">
+    {"imports":{"gsap":"./node_modules/gsap/index.js","gsap/ScrollTrigger":"./node_modules/gsap/ScrollTrigger.js","gsap/CustomEase":"./node_modules/gsap/CustomEase.js","three":"./node_modules/three/build/three.module.js"}}
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#ritual">Ir para o Ritual</a>
+  <header class="masthead">
+    <a href="#hero" class="brand" aria-label="Barbearia — início do estudo"><span class="brand-monogram">B.</span><span>BARBEARIA<small>PRECISÃO QUE TRANSFORMA</small></span></a>
+    <nav aria-label="Cenas do laboratório"><a href="#ritual">O RITUAL</a><a href="#pole-study">ESTUDOS</a><a class="header-book" href="../../pages/client-services.html">AGENDAR <span aria-hidden="true">↗</span></a></nav>
+  </header>
+  <main>
+    <section class="hero" id="hero" aria-labelledby="hero-title">
+      <div class="hero-room" aria-hidden="true"><div class="room-wall"></div><div class="room-axis"></div><div class="room-portal"></div><div class="room-horizon"></div></div>
+      <div class="hero-light" aria-hidden="true"><div class="light-core"></div></div>
+      <div class="hero-beam" aria-hidden="true"></div>
+      <div class="hero-copy">
+        <p class="eyebrow hero-kicker"><span class="short-rule"></span> TRADIÇÃO NO GESTO. PRECISÃO NO DETALHE.</p>
+        <h1 id="hero-title" aria-label="O clássico nunca sai de cena."><span class="line-mask" aria-hidden="true"><span class="headline-line">O CLÁSSICO</span></span><span class="line-mask" aria-hidden="true"><span class="headline-line">NUNCA SAI</span></span><span class="line-mask" aria-hidden="true"><span class="headline-line headline-accent">DE CENA.</span></span></h1>
+        <div class="hero-detail"><p>O tempo desacelera.<br>O cuidado ganha forma.</p><a class="booking-button" href="../../pages/client-services.html">AGENDAR MEU HORÁRIO <span aria-hidden="true">↗</span></a></div>
+      </div>
+      <div class="hero-pole" data-pole="hero" aria-hidden="true"></div>
+      <div class="hero-tool tool-mount" data-scissors="hero" aria-hidden="true"></div>
+      <div class="tool-shadow" aria-hidden="true"></div>
+      <canvas class="dust-canvas" id="dust" aria-hidden="true"></canvas>
+      <div class="hero-footer"><span>01 / O PRIMEIRO GESTO</span><a href="#ritual">DESCUBRA O RITUAL <span aria-hidden="true">↓</span></a><span class="vertical-note">FEITO COM INTENÇÃO</span></div>
+    </section>
+
+    <div class="chapter-interlude"><span class="chapter-index">I — II</span><p>O cuidado começa<br>antes do <em>primeiro corte.</em></p><div class="interlude-track" aria-hidden="true"><span></span></div></div>
+
+    <section id="ritual" class="ritual ritual-video ritual-static" aria-labelledby="ritual-heading">
+      <div class="ritual-stage">
+        <div class="ritual-atmosphere" aria-hidden="true"></div>
+        <figure class="ritual-film" aria-label="Cena estilizada de um barbeiro realizando um corte, conduzida pela rolagem.">
+          <div class="film-content"><img class="ritual-poster" src="./assets/ritual-poster.webp" alt="" width="1280" height="720"><video id="ritual-video" muted playsinline preload="none" poster="./assets/ritual-poster.webp" aria-hidden="true"></video></div>
+          <div class="film-vignette" aria-hidden="true"></div><div class="film-gold-reflection" aria-hidden="true"></div>
+        </figure>
+        <div class="ritual-heading"><span class="eyebrow">CENA B / O RITUAL DA CASA</span><h2 id="ritual-heading">A arte está<br>no <em>processo.</em></h2></div>
+        <div class="ritual-readout" aria-hidden="true"><span class="stage-index">01</span><span class="stage-name">PREPARO</span><span class="stage-percent">000</span></div>
+        <div class="ritual-chapters">
+          <article class="ritual-chapter" data-chapter="0"><span class="eyebrow">01 — PREPARO</span><h3>Antes da técnica,<br>vem entender você.</h3><p>Uma pausa. Um olhar.<br>Cada detalhe encontra o seu lugar.</p></article>
+          <article class="ritual-chapter" data-chapter="1"><span class="eyebrow">02 — TÉCNICA</span><h3>Cada movimento<br>tem intenção.</h3><p>O gesto é decidido.<br>A linha é precisa.<br>Nada está ali por acaso.</p></article>
+          <article class="ritual-chapter" data-chapter="2"><span class="eyebrow">03 — ACABAMENTO</span><h3>O corte termina.<br>O estilo fica.</h3><p>O último gesto encontra<br>o seu equilíbrio.</p></article>
+        </div>
+        <span class="video-stage-caption" aria-hidden="true">01 / PREPARO</span>
+        <div class="ritual-rail" aria-label="Etapas do Ritual"><div class="ritual-progress" aria-hidden="true"><span></span></div><button data-stage="0">01 <span>PREPARO</span></button><button data-stage="1">02 <span>TÉCNICA</span></button><button data-stage="2">03 <span>ACABAMENTO</span></button></div>
+        <span class="ritual-scroll-note">ROLE PARA TRANSFORMAR <span aria-hidden="true">↓</span></span>
+        <a class="ritual-compare-link" href="./compare-ritual.html" target="_blank" rel="noopener">COMPARAR ESTUDOS ↗</a>
+      </div>
+    </section>
+
+    <section class="pole-study" id="pole-study" aria-labelledby="pole-heading">
+      <div class="study-heading"><div><p class="eyebrow">ESTUDO DE MATERIAL / A MESMA ASSINATURA</p><h2 id="pole-heading">Forma ou<br><em>presença?</em></h2></div><p>A mesma luz. Duas interpretações.<br>Observe o metal, a profundidade e o reflexo.</p></div>
+      <div class="pole-comparison">
+        <article class="pole-specimen"><div class="specimen-label"><strong>A</strong><span>SVG / CSS<small>GEOMETRIA + REFLEXO</small></span></div><div class="pole-display" data-pole="comparison" aria-hidden="true"></div><p>Precisão gráfica. Leveza.</p></article>
+        <article class="pole-specimen"><div class="specimen-label"><strong>B</strong><span>THREE.JS<small>VOLUME + LUZ + METAL</small></span></div><div class="pole-display pole-three" aria-hidden="true"><div class="three-fallback" data-pole="fallback"></div><canvas id="pole-canvas"></canvas></div><p id="three-status" role="status">Carregamento sob demanda.</p><button class="text-button" id="three-retry" hidden>Recarregar estudo 3D</button></article>
+      </div>
+    </section>
+
+    <section class="finale" id="finale" aria-labelledby="finale-heading">
+      <div class="finale-glass" aria-hidden="true"><div class="finale-reflection"></div><div class="finale-ring"></div><div class="finale-seam"></div></div>
+      <div class="finale-copy"><p class="eyebrow">CENA C / O PRÓXIMO CAPÍTULO É SEU</p><h2 id="finale-heading"><span class="line-mask"><span class="finale-line">SEU PRÓXIMO</span></span><span class="line-mask"><span class="finale-line huge-word">CORTE</span></span><span class="line-mask"><span class="finale-line finale-accent">COMEÇA AQUI.</span></span></h2><a class="booking-button" href="../../pages/client-services.html">AGENDAR MEU HORÁRIO <span aria-hidden="true">↗</span></a><span class="finale-signature">TRADIÇÃO. PRECISÃO. PRESENÇA.</span></div>
+    </section>
+  </main>
+  <footer class="page-footer"><span>BARBEARIA / PRECISÃO QUE TRANSFORMA</span><span>ESTUDO VISUAL — FASE 01</span><a href="#hero">VOLTAR AO PRIMEIRO GESTO ↑</a></footer>
+
+  <div class="intro-shell" hidden aria-hidden="true"><div class="intro-panel intro-panel-left"></div><div class="intro-panel intro-panel-right"></div><div class="intro-seam"></div><div class="intro-mark"><span>B.</span><strong>BARBEARIA</strong><small>PRECISÃO QUE TRANSFORMA</small></div><span class="intro-caption">UM GESTO. UMA TRANSFORMAÇÃO.</span></div>
+  <button id="skip-intro" class="skip-intro" hidden>PULAR INTRO <span aria-hidden="true">↗</span></button>
+  <aside class="lab-dock" aria-label="Controles do laboratório"><span class="lab-badge">MOTION LAB <i></i></span><button id="replay">REVER INTRO</button><button id="pause" aria-pressed="false" title="Pausa o movimento automático. O Ritual continua respondendo ao seu scroll.">PAUSAR AMBIENTE</button><a href="./compare.html" target="_blank" rel="noopener">LADO A LADO ↗</a><button id="metrics-toggle" aria-expanded="false" aria-controls="metrics">MÉTRICAS +</button></aside>
+  <aside id="metrics" class="metrics" hidden aria-label="Instrumentação do laboratório"><strong>EXECUÇÃO / AO VIVO</strong><pre id="metrics-text"></pre><p>Listeners próprios. Bytes descomprimidos dos subrecursos locais, sem documento HTML. RAF internos da biblioteca identificados acima.</p><button id="destroy">DESMONTAR MOTION</button></aside>
+  <p id="lab-status" class="sr-only" role="status"></p>
+  <noscript><p class="no-script">Estudo estático. Ative JavaScript para experimentar as transformações.</p></noscript>
+  <script type="module" src="./main.mjs"></script>
+</body>
+</html>

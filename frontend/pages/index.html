@@ -3,88 +3,194 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Barbearia Agendamento</title>
+  <meta name="description" content="Agende seu próximo corte em poucos cliques. Conheça serviços, equipe e horários da Barbearia Agendamento.">
+  <meta name="theme-color" content="#15120f">
+  <title>Barbearia Agendamento | Seu estilo, no seu horário</title>
   <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="../assets/css/home.css">
+  <link rel="stylesheet" href="../assets/css/home-ritual.css">
+  <link rel="stylesheet" href="../assets/css/home-experience.css">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js" } }
+  </script>
 </head>
 <body>
-  <header class="bg-primary text-white text-center py-4">
-    <h1>Barbearia Agendamento</h1>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand-lockup" href="index.html" aria-label="Barbearia Agendamento - início">
+        <span class="brand-mark" aria-hidden="true">B.</span>
+        <span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span>
+      </a>
+      <button id="nav-toggle" class="nav-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="main-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="main-nav" class="main-nav" aria-label="Navegação principal">
+        <a href="#services">Serviços</a>
+        <a href="#how-it-works">Como funciona</a>
+        <a href="#business-info">Onde estamos</a>
+        <a href="#reviews">Avaliações</a>
+      </nav>
+      <div id="auth-area" class="header-actions">
+        <a href="login.html" class="btn btn-ghost">Entrar</a>
+        <a href="client-services.html" class="btn">Agendar horário</a>
+      </div>
+    </div>
   </header>
 
-  <main class="container my-4">
-    <!-- Informações Institucionais -->
-    <section id="institucional" class="mb-5">
-      <h2>Informações Institucionais</h2>
-      <div id="institucional-content" class="border p-4 rounded">
-        <p class="text-center">Carregando...</p>
+  <main>
+    <section class="hero container" id="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow hero-eyebrow hero-kicker"><span class="live-dot"></span> <span data-installation-copy="homeHeroEyebrow">Seu próximo visual começa aqui</span></span>
+        <h1 id="hero-title" class="hero-title"><span class="headline-line" data-installation-copy="homeHeroTitleLead">O clássico nunca sai de</span> <em class="headline-line" data-installation-copy="homeHeroTitleAccent">cena.</em></h1>
+        <p class="hero-text" data-installation-copy="homeHeroDescription">Cuidado de verdade, conversa boa e um corte feito para você. Escolha seu serviço e reserve seu horário sem complicação.</p>
+        <div class="hero-actions hero-detail">
+          <a id="btn-agendar-hero" href="client-services.html" class="btn btn-large"><span data-installation-copy="homePrimaryAction">Escolher meu horário</span> <span aria-hidden="true">↗</span></a>
+          <a href="#services" class="btn btn-large btn-ghost" data-installation-copy="homeSecondaryAction">Explorar serviços</a>
+        </div>
+        <div class="hero-proof hero-footer">
+          <span class="proof-stars" aria-hidden="true">✦</span>
+          <span>Atendimento com cuidado em cada detalhe</span>
+        </div>
+      </div>
+      <canvas id="dust" aria-hidden="true"></canvas><div class="hero-art" aria-label="Ilustração de uma barbearia clássica">
+        <div class="art-frame">
+          <div class="art-glow hero-beam"></div><div class="hero-pole" data-home-pole aria-hidden="true"></div><div class="hero-tool" aria-hidden="true"></div>
+          <img class="legacy-pole" hidden data-barber-pole
+            src="../assets/images/barbershopPole-recortado.gif"
+            data-animated-src="../assets/images/barbershopPole-recortado.gif"
+            data-still-src="../assets/images/barbershopPole-primeiro-frame.png"
+            alt="" aria-hidden="true">
+          <div class="art-copy"><span>DESDE O PRIMEIRO CORTE</span><strong>TRADIÇÃO<br>NO SEU ESTILO.</strong></div>
+          <div class="art-bottom-line" aria-hidden="true"></div>
+        </div>
+        <span class="art-caption">Técnica, personalidade e aquele acabamento impecável.</span>
       </div>
     </section>
 
-    <!-- Nota Média de Avaliações -->
-    <section id="avaliacoes" class="mb-5">
-      <h2>Avaliações</h2>
-      <div id="avaliacoes-content" class="border p-4 rounded">
-        <p class="text-center">Carregando...</p>
+    <div class="chapter-bridge container" aria-label="Tradição em cada detalhe">
+      <span class="estrela-cameo estrela-cameo--opening" data-estrelinha-barbeiro data-estrelinha-cameo="opening" aria-hidden="true"></span>
+      <span class="chapter-bridge-line" aria-hidden="true"></span>
+      <p>Tradição no gesto. <em>Cuidado no detalhe.</em></p>
+      <span class="chapter-bridge-line" aria-hidden="true"></span>
+    </div>
+
+    <section id="services" class="home-section services-section" aria-labelledby="services-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">FEITO PRA VOCÊ</span><h2 id="services-title">Ritual de cuidado.<br><em>Resultado de respeito.</em></h2></div>
+          <p>Veja o que fazemos, quanto tempo leva e escolha o melhor momento para sua visita.</p>
+        </div>
+        <div class="filter-tabs" role="group" aria-label="Filtrar serviços">
+          <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">Todos</button>
+        </div>
+        <div id="services-skeleton" class="services-grid" aria-label="Carregando catálogo" aria-live="polite">
+          <div class="skeleton-loading"></div><div class="skeleton-loading"></div><div class="skeleton-loading"></div>
+        </div>
+        <ul id="services-list" class="services-grid" aria-live="polite" hidden></ul>
+        <div id="services-error" class="services-error" hidden>
+          <p>Não conseguimos carregar o catálogo agora.</p>
+          <button id="btn-retry-services" class="btn btn-ghost" type="button">Tentar novamente</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="home-section process-section" aria-labelledby="process-title">
+      <span class="estrela-cameo estrela-cameo--passage" data-estrelinha-cameo="passage" aria-hidden="true"></span>
+      <div class="container">
+        <div class="section-heading section-heading-centered">
+          <div><span class="eyebrow">SEM ENROLAÇÃO</span><h2 id="process-title">Seu horário em <em>3 passos.</em></h2></div>
+          <p>Você escolhe, a gente prepara a cadeira.</p>
+        </div>
+        <div class="steps">
+          <article class="step-card"><span class="step-number">01</span><h3>Escolha seu serviço</h3><p>Confira os detalhes, preço e duração antes de reservar.</p></article>
+          <article class="step-card"><span class="step-number">02</span><h3>Encontre seu horário</h3><p>Selecione o profissional, a data e um horário disponível.</p></article>
+          <article class="step-card"><span class="step-number">03</span><h3>Chegue no estilo</h3><p>Confirme seu agendamento e venha viver a experiência.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="ritual" class="ritual ritual-video ritual-static" aria-labelledby="ritual-title">
+      <div class="ritual-stage">
+        <div class="ritual-atmosphere" aria-hidden="true"></div>
+        <figure class="ritual-film ritual-visual" data-ritual-visual aria-label="Cena estilizada de um barbeiro realizando um corte, conduzida pela rolagem.">
+          <div class="film-content"><img class="ritual-poster" src="../assets/media/home/ritual-poster.webp" alt="" width="1280" height="720"><video id="ritual-video" muted playsinline preload="none" poster="../assets/media/home/ritual-poster.webp" aria-hidden="true"></video></div>
+          <div class="film-vignette" aria-hidden="true"></div><div class="film-gold-reflection" aria-hidden="true"></div>
+        </figure>
+        <div class="ritual-heading"><span class="eyebrow">CENA B / O RITUAL DA CASA</span><h2 id="ritual-title">A arte está<br>no <em>processo.</em></h2></div>
+        <div class="ritual-readout" aria-hidden="true"><span class="stage-index">01</span><span class="stage-name">PREPARO</span><span class="stage-percent">000</span></div>
+        <div class="ritual-chapters">
+          <article class="ritual-chapter" data-chapter="0"><span class="eyebrow">01 — PREPARO</span><h3>Antes da técnica,<br>vem entender você.</h3><p>Uma pausa. Um olhar.<br>Cada detalhe encontra o seu lugar.</p></article>
+          <article class="ritual-chapter" data-chapter="1"><span class="eyebrow">02 — TÉCNICA</span><h3>Cada movimento<br>tem intenção.</h3><p>O gesto é decidido.<br>A linha é precisa.<br>Nada está ali por acaso.</p></article>
+          <article class="ritual-chapter" data-chapter="2"><span class="eyebrow">03 — ACABAMENTO</span><h3>O corte termina.<br>O estilo fica.</h3><p>O último gesto encontra<br>o seu equilíbrio.</p></article>
+        </div>
+        <span class="video-stage-caption" aria-hidden="true">01 / PREPARO</span>
+        <div class="ritual-rail" aria-label="Etapas do Ritual"><div class="ritual-progress" aria-hidden="true"><span></span></div><button data-stage="0">01 <span>PREPARO</span></button><button data-stage="1">02 <span>TÉCNICA</span></button><button data-stage="2">03 <span>ACABAMENTO</span></button></div>
+        <span class="ritual-scroll-note">ROLE PARA TRANSFORMAR <span aria-hidden="true">↓</span></span>
+      </div>
+    </section>
+
+    <section id="business-info" class="home-section location-section" aria-labelledby="location-title">
+      <div class="container location-layout">
+        <div class="location-copy">
+          <span class="eyebrow">PASSE PRA TOMAR UM CAFÉ</span>
+          <h2 id="location-title">A cadeira certa<br><em>fica mais perto.</em></h2>
+          <p>Consulte nosso endereço e horário de funcionamento. Esperamos você.</p>
+          <dl class="business-details">
+            <div><dt>Endereço</dt><dd id="address">Carregando…</dd></div>
+            <div><dt>Telefone</dt><dd id="phone">Carregando…</dd></div>
+            <div><dt>Dias</dt><dd id="operating-days">Carregando…</dd></div>
+            <div><dt>E-mail</dt><dd id="email">Carregando…</dd></div>
+          </dl>
+        </div>
+        <div class="location-card">
+          <div class="location-card-heading"><div><span class="eyebrow">HORÁRIOS</span><h3>Quando nos encontrar</h3></div><span class="location-icon" aria-hidden="true">◷</span></div>
+          <div class="schedule-table"><table><tbody id="schedule-table-body">
+            <tr><th scope="row">Segunda</th><td id="mon">—</td></tr>
+            <tr><th scope="row">Terça</th><td id="tue">—</td></tr>
+            <tr><th scope="row">Quarta</th><td id="wed">—</td></tr>
+            <tr><th scope="row">Quinta</th><td id="thu">—</td></tr>
+            <tr><th scope="row">Sexta</th><td id="fri">—</td></tr>
+            <tr><th scope="row">Sábado</th><td id="sat">—</td></tr>
+            <tr><th scope="row">Domingo</th><td id="sun">—</td></tr>
+          </tbody></table></div>
+          <div id="map-container" class="map-container"><p class="text-muted">Mapa não disponível.</p></div>
+          <a id="map-link" class="map-link" href="#" target="_blank" rel="noopener noreferrer" hidden>Ver rota no mapa <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section id="reviews" class="home-section reviews-section" aria-labelledby="reviews-title">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">QUEM JÁ SENTOU NA CADEIRA</span><h2 id="reviews-title">Respeito se conquista.<br><em>Olha só quem conta.</em></h2></div>
+          <div id="review-average" class="review-average" aria-live="polite">Carregando avaliações…</div>
+        </div>
+        <div id="reviews-list" class="reviews-grid" aria-live="polite"><p class="text-muted">Carregando avaliações…</p></div>
+      </div>
+    </section>
+    <section class="home-section final-booking" aria-labelledby="final-booking-title">
+      <span class="estrela-cameo estrela-cameo--finale" data-estrelinha-cameo="finale" aria-hidden="true"></span>
+      <div class="container" data-home-reveal>
+        <span class="eyebrow">A CADEIRA ESTÁ À SUA ESPERA</span>
+        <h2 id="final-booking-title"><span>Seu próximo</span> <strong class="huge-word">corte</strong><span>começa <em>aqui.</em></span></h2>
+        <p>Escolha seu serviço. Encontre seu horário. O resto é com a gente.</p>
+        <a class="btn btn-large" href="client-services.html">Agendar meu horário <span aria-hidden="true">↗</span></a>
+        <span class="final-booking-note">TRADIÇÃO NO SEU ESTILO.</span>
       </div>
     </section>
   </main>
 
-  <footer class="bg-dark text-white text-center py-3">
-    <p>&copy; 2026 Barbearia Agendamento. Todos os direitos reservados.</p>
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <a class="brand-lockup" href="index.html"><span class="brand-mark" aria-hidden="true">B.</span><span class="brand-copy"><strong>Barbearia</strong><small>ESTILO COM ATITUDE</small></span></a>
+      <p><span data-installation-copy="homeFooterMessage">Um bom corte muda o dia.</span> <span>© <span id="current-year"></span> Barbearia Agendamento.</span></p>
+      <a href="client-services.html">Agende sua visita <span aria-hidden="true">↗</span></a>
+    </div>
   </footer>
-
-  <script src="../assets/js/api.js" type="module"></script>
-  <script type="module">
-    import { api } from '../assets/js/api.js';
-
-    async function loadInstitucional() {
-      try {
-        const data = await api.get('/informacoes', { auth: false });
-        const container = document.getElementById('institucional-content');
-        container.innerHTML = `
-          <p><strong>Nome:</strong> ${data.nome}</p>
-          <p><strong>Endereço:</strong> ${data.endereco}</p>
-          <p><strong>Telefone:</strong> ${data.telefone}</p>
-          ${data.email ? `<p><strong>Email:</strong> <a href="mailto:${data.email}">${data.email}</a></p>` : ''}
-          ${data.site ? `<p><strong>Site:</strong> <a href="${data.site}" target="_blank">${data.site}</a></p>` : ''}
-          <p><strong>Horário de Funcionamento:</strong> ${data.horario_funcionamento}</p>
-          <p><strong>Dias de Atendimento:</strong> ${data.dias_atendimento}</p>
-          ${data.endereco_maps ? `<p><strong>Localização:</strong> <a href="${data.endereco_maps}" target="_blank">Ver no mapa</a></p>` : ''}
-        `;
-      } catch (err) {
-        console.error('Erro ao carregar informações institucionais:', err);
-        document.getElementById('institucional-content').innerHTML = `<p class="text-danger">Erro ao carregar informações.</p>`;
-      }
-    }
-
-    async function loadAvaliacoes() {
-      try {
-        const data = await api.get('/avaliacoes', { auth: false });
-        const container = document.getElementById('avaliacoes-content');
-        if (!data || data.length === 0) {
-          container.innerHTML = '<p>Ainda não há avaliações.</p>';
-          return;
-        }
-        const total = data.reduce((sum, item) => sum + item.nota, 0);
-        const average = (total / data.length).toFixed(1);
-        container.innerHTML = `
-          <p><strong>Nota Média:</strong> <span class="monospace">${average}/5.0</span> (${data.length} avaliações)</p>
-          <div class="mt-3">
-            <strong>Últimas avaliações:</strong>
-            <ul class="list-unstyled">
-              ${data.slice(0, 3).map(item => `<li>${'★'.repeat(item.nota)}${'☆'.repeat(5 - item.nota)} ${item.comentario || ''}</li>`).join('')}
-            </ul>
-          </div>
-        `;
-      } catch (err) {
-        console.error('Erro ao carregar avaliações:', err);
-        document.getElementById('avaliacoes-content').innerHTML = `<p class="text-danger">Erro ao carregar avaliações.</p>`;
-      }
-    }
-
-    // Load data on page load
-    loadInstitucional();
-    loadAvaliacoes();
-  </script>
+  <div class="intro-shell" hidden aria-hidden="true"><div class="intro-panel intro-panel-left"></div><div class="intro-panel intro-panel-right"></div><div class="intro-seam"></div><div class="intro-mark"><span>B.</span><strong>BARBEARIA</strong><small>PRECISÃO QUE TRANSFORMA</small></div><span class="intro-caption">UM GESTO. UMA TRANSFORMAÇÃO.</span></div>
+  <button id="skip-intro" class="skip-intro" hidden>PULAR INTRO <span aria-hidden="true">↗</span></button>
+  <script type="module" src="../assets/js/home.js"></script>
+  <script type="module" src="../assets/js/optional-features.mjs"></script>
+  <script type="module" src="../assets/js/home-experience.mjs"></script>
 </body>
 </html>
