@@ -1,0 +1,9 @@
+.booking-calendar { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: .5rem; margin-top: 1rem; }
+.booking-calendar .booking-day { min-height: 64px; border-radius: 0; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text); flex-direction: column; font-variant-numeric: tabular-nums; }
+.booking-calendar .booking-day span { font-family: ui-monospace, monospace; }
+.booking-calendar .booking-day small { display: block; font-size: .75rem; color: var(--color-muted); }
+.booking-calendar .booking-day[aria-pressed="true"] { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.booking-calendar .booking-day:disabled { opacity: 1; cursor: not-allowed; border-style: dashed; color: var(--color-muted); }
+.booking-calendar .booking-day[data-status="full"] small { font-weight: 700; color: var(--color-warning); }
+#slots-container [data-suggestion] { margin: .25rem; }
+#calendar-retry { margin-top: .5rem; }

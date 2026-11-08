@@ -155,16 +155,23 @@ def validate_booking_slot(
     if association is None:
         raise HTTPException(status_code=400, detail="Este barbeiro n?o realiza o servi?o selecionado")
     weekday = (start.weekday() + 1) % 7
-    schedule = db.query(JornadaTrabalho).filter(
+    schedules = db.query(JornadaTrabalho).filter(
         JornadaTrabalho.barbeiro_id == barber_id, JornadaTrabalho.dia_semana == weekday,
         JornadaTrabalho.ativo.is_(True),
-    ).first()
-    if schedule is None:
+    ).all()
+    if not schedules:
         raise HTTPException(status_code=400, detail="O barbeiro n?o atende nesta data")
     duration = service.duracao_minutos if duration_minutes is None else duration_minutes
     if not isinstance(duration, int) or duration <= 0:
         raise HTTPException(status_code=500, detail="O servi?o possui dura??o inv?lida")
     end = start + timedelta(minutes=duration)
+    # Multiple records describe separate shifts, never a continuous interval.
+    schedule = next(
+        (row for row in schedules
+         if schedule_bounds(start.date(), row)[0] <= start
+         and end <= schedule_bounds(start.date(), row)[1]),
+        schedules[0],
+    )
     block = db.query(BloqueioHorario).filter(
         BloqueioHorario.barbeiro_id == barber_id, BloqueioHorario.ativo.is_(True),
         BloqueioHorario.inicio < end, BloqueioHorario.fim > start,

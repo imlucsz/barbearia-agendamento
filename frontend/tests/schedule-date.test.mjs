@@ -6,57 +6,72 @@ import * as dates from "../assets/js/booking-date.mjs";
 
 const source = (await readFile(new URL("../assets/js/schedule.js", import.meta.url), "utf8")).replace(/^import .*;\r?\n/gm, "");
 const tick = () => new Promise(resolve => setImmediate(resolve));
-function harness(search = "?service_id=1&barbeiro_id=2", get = async () => []) {
+function harness(search = "?service_id=1&barbeiro_id=2", get = async () => [], post = async () => {}) {
   const node = () => ({ children: [], listeners: {}, attributes: {}, value: "", disabled: false,
     addEventListener(name, fn) { this.listeners[name] = fn; },
     setAttribute(name, value) { this.attributes[name] = value; },
+    removeAttribute(name) { delete this.attributes[name]; },
+    querySelector(selector) { return selector === '.alert-danger' ? this.children.find(child => child.className === 'alert alert-danger') : null; },
+    remove() { if (this.parent) this.parent.children = this.parent.children.filter(child => child !== this); },
     append(...children) { this.children.push(...children); },
-    prepend(child) { this.children.unshift(child); },
+    prepend(child) { child.parent = this; this.children.unshift(child); },
     replaceChildren() { this.children = []; },
   });
   const nodes = Object.fromEntries(["date-input", "slots-container", "confirmation-content", "confirm-btn"].map(id => [id, node()]));
   const calls = [];
   const location = { search, pathname: "/pages/client-date.html" };
-  const context = vm.createContext({ ...dates, Intl, URLSearchParams, console, window: { location },
-    getToken: () => "test-access", api: {
+  const context = vm.createContext({ ...dates, Intl, URLSearchParams, console: { error() {} }, window: { location },
+    getToken: () => "test-access", mountBookingCalendar: (api, params) => calls.push({ calendar: true, params: params.toString() }), api: {
       get: async (path, options) => { calls.push({ path, options }); return get(path, options); },
-      post: async (path, body) => { calls.push({ path, body }); },
+      post: async (path, body) => { calls.push({ path, body }); return post(path, body); },
     }, document: { addEventListener() {}, getElementById: id => nodes[id], createElement: node, createTextNode: text => text },
   });
   vm.runInContext(source, context);
   return { nodes, calls, context, location };
 }
 
-test("incomplete typing and invalid change never request HTTP or retain old slots", async () => {
-  const h = harness();
+test("date page delegates to accessible calendar and preserves rescheduling context", () => {
+  const h = harness("?service_id=1&barbeiro_id=2&appointment_id=7");
   h.context.setupDatePicker();
-  const input = h.nodes["date-input"];
-  assert.equal(input.min, dates.bookingDateBounds().min);
-  assert.equal(input.max, dates.bookingDateBounds().max);
-  for (const value of ["", "2026-11-", "0002-11-11", "0202-11-11", "0020-11-11", "2026-02-30"]) {
-    input.value = value;
-    h.nodes["slots-container"].children = [{ textContent: "old slot" }];
-    input.listeners.input();
-    await input.listeners.change();
-    assert.equal(input.attributes["aria-invalid"], "true");
-    assert.equal(h.nodes["slots-container"].children.length, 1);
-  }
-  assert.equal(h.calls.length, 0);
+  assert.equal(h.calls.length, 1);
+  assert.equal(h.calls[0].calendar, true);
+  assert.equal(h.calls[0].params, "service_id=1&barbeiro_id=2&appointment_id=7");
 });
 
-test("valid date queries availability; stale response cannot restore invalid slots", async () => {
-  let resolve;
-  const h = harness(undefined, () => new Promise(done => { resolve = done; }));
+test("confirmation keeps one request in flight and can retry after failure", async () => {
+  const dateTime = `${dates.localDateInZone(new Date(Date.now() + 86400000))}T12:00:00`;
+  let resolve, reject;
+  let pending = new Promise((yes, no) => { resolve = yes; reject = no; });
+  const h = harness(`?service_id=1&barbeiro_id=2&date_time=${dateTime}`,
+    async path => path.startsWith('/services/') ? { nome: 'Corte', duracao_minutos: 30, preco: 40 } : [{ barbeiro_id: 2, barbeiro_nome: 'Teste' }],
+    () => pending);
+  await h.context.loadConfirmation();
+  const button = h.nodes['confirm-btn'];
+  const first = button.listeners.click();
+  await button.listeners.click();
+  assert.equal(h.calls.filter(c => c.body).length, 1);
+  assert.equal(button.disabled, true);
+  assert.equal(button.attributes['aria-busy'], 'true');
+  reject(new Error('Temporary API failure'));
+  await first;
+  assert.equal(button.disabled, false);
+  assert.equal(h.nodes['confirmation-content'].querySelector('.alert-danger').textContent, 'Temporary API failure');
+  pending = new Promise(yes => { resolve = yes; });
+  const second = button.listeners.click();
+  await button.listeners.click();
+  assert.equal(h.calls.filter(c => c.body).length, 2);
+  assert.equal(h.nodes['confirmation-content'].querySelector('.alert-danger'), undefined);
+  resolve();
+  await second;
+  assert.equal(h.location.href, 'client-appointments.html');
+  assert.equal(button.disabled, true);
+});
+
+test("date page without required context makes no availability request", () => {
+  const h = harness("?service_id=1");
   h.context.setupDatePicker();
-  const input = h.nodes["date-input"];
-  input.value = dates.bookingDateBounds().max;
-  const pending = input.listeners.change();
-  assert.equal(h.calls.length, 1);
-  input.value = "0020-11-11";
-  input.listeners.input();
-  resolve([{ horario: "09:00", data_hora: `${dates.bookingDateBounds().max}T09:00:00` }]);
-  await pending;
-  assert.equal(h.nodes["slots-container"].children[0].attributes.role, "alert");
+  assert.equal(h.calls.length, 0);
+  assert.equal(h.location.href, "client-services.html");
 });
 
 test("valid date and time submit booking; invalid confirmation makes no HTTP call", async () => {

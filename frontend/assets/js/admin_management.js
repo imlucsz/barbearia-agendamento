@@ -1,5 +1,6 @@
 import { api, getToken } from "./api.js";
 import { escapeHtml } from "./escape-html.mjs";
+import { initializeWorkspace } from "./staff-workspace.mjs";
 
 const byId = (id) => document.getElementById(id);
 const dayNames = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -26,6 +27,7 @@ async function initialize() {
       }
     }
     byId("userName").textContent = currentUser.nome;
+    initializeWorkspace(currentUser);
     if (currentUser.role === "admin") {
       await loadReferenceData();
       bindAdminForms();
@@ -40,7 +42,8 @@ async function initialize() {
       ]);
       byId("audit-filter").addEventListener("submit", (event) => { event.preventDefault(); loadAudit(0); });
       byId("audit-next").addEventListener("click", () => loadAudit(auditSkip + 50));
-      document.querySelector('a[href="#auditoria"]').addEventListener("click", () => loadAudit(0));
+      window.addEventListener('hashchange', () => { if (window.location.hash === '#auditoria') loadAudit(0); });
+      if (window.location.hash === '#auditoria') loadAudit(0);
     }
   } catch (error) {
     console.error("Falha ao inicializar o painel:", error);
@@ -309,7 +312,7 @@ async function loadSchedules() {
         <button type="button" class="btn btn-ghost" data-schedule-toggle="${record.id}" data-active="${record.ativo}">${record.ativo ? "Desativar" : "Ativar"}</button>
         <button type="button" class="btn btn-danger" data-schedule-delete="${record.id}">Remover</button>
       </article>
-    `).join("") || emptyHtml("Nenhuma jornada cadastrada para este barbeiro.");
+    `).join("") || emptyHtml("Nenhum horário semanal cadastrado para este profissional.");
     container.querySelectorAll("[data-schedule-edit]").forEach((button) => button.addEventListener("click", () => {
       const record = records.find((item) => String(item.id) === button.dataset.scheduleEdit);
       if (!record) return;
@@ -320,7 +323,7 @@ async function loadSchedules() {
       form.elements.dia_semana.value = String(record.dia_semana);
       form.elements.hora_inicio.value = record.hora_inicio;
       form.elements.hora_fim.value = record.hora_fim;
-      form.querySelector("[type=submit]").textContent = "Atualizar jornada";
+      form.querySelector("[type=submit]").textContent = "Atualizar horário semanal";
       byId("schedule-cancel-edit").hidden = false;
       form.scrollIntoView({ behavior: "smooth", block: "center" });
     }));
@@ -348,10 +351,12 @@ async function loadSchedules() {
 
 function resetScheduleForm() {
   const form = byId("schedule-form");
+  const barberId = form.elements.barbeiro_id.value;
   form.reset();
+  form.elements.barbeiro_id.value = barberId;
   form.elements.id.value = "";
   form.elements.barbeiro_id.disabled = false;
-  form.querySelector("[type=submit]").textContent = "Adicionar jornada";
+  form.querySelector("[type=submit]").textContent = "Adicionar horário semanal";
   byId("schedule-cancel-edit").hidden = true;
 }
 
@@ -387,7 +392,7 @@ async function loadBlocks() {
     const container = byId("blocks-list");
     container.innerHTML = records.map((record) => `
       <article class="management-item">
-        <div><strong>${escapeHtml(record.tipo)}</strong><p>${escapeHtml(record.motivo || "Sem motivo")} · ${new Date(record.inicio).toLocaleString("pt-BR")}–${new Date(record.fim).toLocaleString("pt-BR")}</p></div>
+        <div><strong>${escapeHtml({ folga: 'Folga', feriado: 'Feriado', bloqueio_ad_hoc: 'Outro bloqueio' }[record.tipo] || record.tipo)}</strong><p>${escapeHtml(record.motivo || "Sem motivo")} · ${new Date(record.inicio).toLocaleString("pt-BR")}–${new Date(record.fim).toLocaleString("pt-BR")}</p></div>
         <button type="button" class="btn btn-ghost" data-block-edit="${record.id}">Editar</button>
         <button type="button" class="btn btn-danger" data-block-delete="${record.id}">Remover</button>
       </article>
@@ -422,7 +427,9 @@ async function loadBlocks() {
 
 function resetBlockForm() {
   const form = byId("block-form");
+  const barberId = form.elements.barbeiro_id.value;
   form.reset();
+  form.elements.barbeiro_id.value = barberId;
   form.elements.id.value = "";
   form.elements.barbeiro_id.disabled = false;
   form.querySelector("[type=submit]").textContent = "Salvar bloqueio";

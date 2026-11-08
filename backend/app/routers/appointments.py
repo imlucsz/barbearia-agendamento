@@ -1,5 +1,5 @@
-from datetime import date, datetime, timedelta
-from typing import List, Optional
+from datetime import date, timedelta
+from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from sqlalchemy.exc import IntegrityError
@@ -7,23 +7,18 @@ from sqlalchemy.orm import Session
 
 from app.booking import (
     BOOKING_WINDOW_DAYS,
-    SLOT_INTERVAL_MINUTES,
     lock_barber_for_booking,
-    normalize_datetime,
     now_local,
     validate_appointment_status_transition,
     validate_booking_slot,
-    validate_slot_against_loaded_data,
 )
 from app.database import get_db
+from app.availability import availability_days
 from app.dependencies import ensure_resource_owner, get_current_user, require_roles
 from app.models.user import (
     Appointment,
     AppointmentStatusEnum,
     Avaliacao,
-    BarbearioServico,
-    BloqueioHorario,
-    JornadaTrabalho,
     RoleEnum,
     Service,
     User,
@@ -38,6 +33,18 @@ from app.schemas.appointment import (
 from app.core.audit import record as record_audit
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
+
+
+def rescheduling_context(db, current_user, appointment_id, service_id, barber_id):
+    if appointment_id is None:
+        return None
+    appointment = db.get(Appointment, appointment_id)
+    if appointment is None:
+        raise HTTPException(status_code=404, detail="Agendamento não encontrado")
+    ensure_resource_owner(appointment, current_user, owner_fields=("user_id",), detail="Acesso negado")
+    if appointment.service_id != service_id or appointment.barbeiro_id != barber_id:
+        raise HTTPException(status_code=400, detail="O reagendamento deve manter serviço e profissional")
+    return appointment
 
 
 @router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
@@ -102,104 +109,35 @@ def get_available_slots(
     service_id: int,
     data: date,
     barbeiro_id: Optional[int] = None,
+    appointment_id: Annotated[Optional[int], Query(gt=0)] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(
         RoleEnum.CLIENTE, RoleEnum.ADMIN,
         detail="Apenas clientes e administradores podem consultar horários disponíveis",
     )),
 ):
-    service = db.query(Service).filter(Service.id == service_id).first()
-    if service is None:
-        raise HTTPException(status_code=404, detail="Serviço não encontrado")
-
     now = now_local()
-    today = now.date()
-    if data < today or data > (now + timedelta(days=BOOKING_WINDOW_DAYS)).date():
-        raise HTTPException(
-            status_code=400,
-            detail=f"Escolha uma data entre hoje e os próximos {BOOKING_WINDOW_DAYS} dias",
-        )
+    if data < now.date() or data > (now + timedelta(days=BOOKING_WINDOW_DAYS)).date():
+        raise HTTPException(status_code=400, detail=f"Escolha uma data entre hoje e os próximos {BOOKING_WINDOW_DAYS} dias")
+    appointment = rescheduling_context(db, current_user, appointment_id, service_id, barbeiro_id)
+    return availability_days(db, service_id, barbeiro_id, data, data, now, appointment)[0]["slots"]
 
-    barbers_query = db.query(User).join(
-        BarbearioServico, BarbearioServico.barbeiro_id == User.id
-    ).filter(
-        User.role == RoleEnum.BARBEIRO,
-        User.ativo.is_(True),
-        BarbearioServico.service_id == service_id,
-    )
-    if barbeiro_id is not None:
-        barbers_query = barbers_query.filter(User.id == barbeiro_id)
-    barbers = barbers_query.all()
-    if barbeiro_id is not None and not barbers:
-        raise HTTPException(status_code=404, detail="Barbeiro não encontrado ou não realiza este serviço")
 
-    weekday = (data.weekday() + 1) % 7
-    slots = []
-    barber_ids = [barber.id for barber in barbers]
-    if not barber_ids:
-        return slots
-    schedules = {
-        schedule.barbeiro_id: schedule
-        for schedule in db.query(JornadaTrabalho).filter(
-            JornadaTrabalho.barbeiro_id.in_(barber_ids),
-            JornadaTrabalho.dia_semana == weekday,
-            JornadaTrabalho.ativo.is_(True),
-        ).all()
+@router.get("/calendario")
+def get_booking_calendar(
+    service_id: int = Query(gt=0),
+    barbeiro_id: int = Query(gt=0),
+    appointment_id: Annotated[Optional[int], Query(gt=0)] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(RoleEnum.CLIENTE, RoleEnum.ADMIN)),
+):
+    now = now_local()
+    last_day = (now + timedelta(days=BOOKING_WINDOW_DAYS)).date()
+    appointment = rescheduling_context(db, current_user, appointment_id, service_id, barbeiro_id)
+    return {
+        "start_date": now.date().isoformat(), "end_date": last_day.isoformat(),
+        "days": availability_days(db, service_id, barbeiro_id, now.date(), last_day, now, appointment),
     }
-    day_start = datetime.combine(data, datetime.min.time())
-    day_end = day_start + timedelta(days=1)
-    blocks_by_barber = {}
-    for block in db.query(BloqueioHorario).filter(
-        BloqueioHorario.barbeiro_id.in_(barber_ids),
-        BloqueioHorario.ativo.is_(True),
-        BloqueioHorario.inicio < day_end,
-        BloqueioHorario.fim > day_start,
-    ).all():
-        blocks_by_barber.setdefault(block.barbeiro_id, []).append(block)
-    appointments_by_barber = {}
-    for appointment in db.query(Appointment).filter(
-        Appointment.barbeiro_id.in_(barber_ids),
-        Appointment.status.in_([AppointmentStatusEnum.PENDENTE, AppointmentStatusEnum.CONFIRMADO]),
-        Appointment.data_hora < day_end,
-    ).all():
-        appointments_by_barber.setdefault(appointment.barbeiro_id, []).append(appointment)
-    for barber in barbers:
-        schedule = schedules.get(barber.id)
-        if schedule is None:
-            continue
-        try:
-            start_time = datetime.strptime(schedule.hora_inicio, "%H:%M").time()
-            end_time = datetime.strptime(schedule.hora_fim, "%H:%M").time()
-        except ValueError as exc:
-            raise HTTPException(status_code=500, detail="Jornada do barbeiro possui horário inválido") from exc
-
-        day_start = datetime.combine(data, start_time)
-        day_end = datetime.combine(data, end_time)
-        if day_end <= day_start:
-            raise HTTPException(status_code=500, detail="Jornada do barbeiro possui intervalo inválido")
-        slot_start = day_start
-        while slot_start + timedelta(minutes=service.duracao_minutos) <= day_end:
-            try:
-                valid_start = validate_slot_against_loaded_data(
-                    service,
-                    barber.id,
-                    slot_start,
-                    schedule=schedule,
-                    blocks=blocks_by_barber.get(barber.id, []),
-                    appointments=appointments_by_barber.get(barber.id, []),
-                    now=now,
-                )
-                slots.append({
-                    "horario": valid_start.strftime("%H:%M"),
-                    "data_hora": valid_start.isoformat(),
-                    "barbeiro_id": barber.id,
-                })
-            except HTTPException as exc:
-                if exc.status_code not in (400, 409):
-                    raise
-            slot_start += timedelta(minutes=SLOT_INTERVAL_MINUTES)
-
-    return slots
 
 
 @router.get("/avaliacoes", response_model=List[AvaliacaoResponse])
