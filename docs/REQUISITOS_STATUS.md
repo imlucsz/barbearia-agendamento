@@ -1,8 +1,6 @@
 # Status de auditoria dos requisitos
 
-## PR35 — recuperação integrada às sessões atuais
 
-Conflitos resolvidos preservando JWT por ID, CAS, login/F2 e refresh/logout da main. Admissão de recuperação compartilhada por conta/IP integrada; nova revisão 20261108_01 une as duas linhas Alembic sem editar revisões históricas ou executar DDL. Paridade e preservação no upgrade desde 20261107_02 cobertas. [Escopo, reprodução e limites](PR35_INTEGRATION.md). Sem deploy ou bancos publicados.
 
 ## F1 — cookies em origem única
 

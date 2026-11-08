@@ -1,6 +1,6 @@
 # Sistema de Agendamento Online para Barbearia
 
-Recuperação de senha: admissão compartilhada por conta/IP e cooldown, com respostas genéricas. [Integração, migrações e testes da PR35](docs/PR35_INTEGRATION.md).
+
 
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
 
