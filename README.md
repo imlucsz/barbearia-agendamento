@@ -1,5 +1,7 @@
 # Sistema de Agendamento Online para Barbearia
 
+Scripts de integração antigos estão preservados como texto no [arquivo histórico da PR36](docs/archive/pr36/README.md); não integram os testes ou o código de produção atuais.
+
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
 
 **Status:** versão candidata em homologação. Recursos implementados e resultados locais não equivalem a prontidão de produção; confira [requisitos e evidências](docs/REQUISITOS_STATUS.md), [rastreabilidade](docs/RASTREABILIDADE.md) e [checklist operacional](docs/CHECKLIST_PRODUCAO.md).
