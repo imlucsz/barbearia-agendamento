@@ -17,7 +17,8 @@ from app.dependencies import get_current_user, require_roles
 from app.routers.auth import revoke_user_refresh_tokens
 from app.core.audit import record as record_audit
 from app.core.clock import utc_now_naive
-from app.core.security import verify_password, get_password_hash
+from app.core import password_confirmation_limit
+from app.core.security import verify_password_confirmation, get_password_hash
 
 router = APIRouter(prefix="/users", tags=["usuarios"])
 
@@ -142,8 +143,15 @@ def excluir_minha_conta(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    if not verify_password(confirmation.senha_atual, current_user.senha_hash):
+    attempt = password_confirmation_limit.reserve(request, current_user.id)
+    try:
+        password_valid = verify_password_confirmation(confirmation.senha_atual, current_user.senha_hash)
+    except Exception:
+        password_confirmation_limit.discard(attempt)
+        raise
+    if not password_valid:
         raise HTTPException(status_code=403, detail="A senha atual está incorreta")
+    password_confirmation_limit.accept(attempt)
     if current_user.role == RoleEnum.ADMIN:
         active_admins = db.query(User.id).filter(
             User.role == RoleEnum.ADMIN, User.ativo.is_(True),

@@ -3,6 +3,12 @@
 
 
 
+## Confirmação de senha fora do login — limite e vaga própria
+
+- `DELETE /users/me` passa a ter limite de falhas de confirmação de senha por conta e por IP (`RATE_LIMIT_MAX_ATTEMPTS` em `RATE_LIMIT_BLOCK_MINUTES`, persistido em `login_attempts` com rota própria e sem migração). Excedido o limite, responde 429 com Retry-After antes de qualquer verificação de senha. Saturação (503) não conta como falha.
+- A confirmação usa uma vaga de verificação própria e não bloqueante (`verify_password_confirmation`), separada do semáforo de `AUTH_PASSWORD_MAX_CONCURRENCY`, que fica exclusivo do login. O pico por processo passa a ser essa capacidade + 1.
+- Evidência: `python -m unittest discover -s tests -p test_password_confirmation_limits.py`, com 5 aprovados; suíte Python completa em SQLite temporário, com 416 testes, 17 ignorados e nenhuma falha. PostgreSQL não executado.
+
 ## F1 — cookies em origem única
 
 - Implementado modo opt-in SERVE_FRONTEND para servir frontend no FastAPI, configuração da API pela própria origem, headers distintos para HTML/API e no-store em autenticação. Login passa a rejeitar Origin estrangeiro; refresh/logout preservam verificação estrita. Cookies/rotação/CAS/JWT/F2 e schema preservados.

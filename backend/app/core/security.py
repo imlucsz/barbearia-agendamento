@@ -36,10 +36,15 @@ PASSWORD_VERIFICATION_LIMIT = _load_password_verification_limit()
 _password_verification_slots = BoundedSemaphore(PASSWORD_VERIFICATION_LIMIT)
 
 
-def _password_unavailable() -> HTTPException:
-    return HTTPException(status_code=503,
-                         detail="Não foi possível entrar agora. Tente novamente em instantes.",
-                         headers={"Retry-After": "1"})
+# Confirmations outside login use their own lane so they never take login capacity.
+_password_confirmation_slots = BoundedSemaphore(1)
+
+LOGIN_UNAVAILABLE = "Não foi possível entrar agora. Tente novamente em instantes."
+CONFIRMATION_UNAVAILABLE = "Não foi possível confirmar a senha agora. Tente novamente em instantes."
+
+
+def _password_unavailable(detail: str = LOGIN_UNAVAILABLE) -> HTTPException:
+    return HTTPException(status_code=503, detail=detail, headers={"Retry-After": "1"})
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -48,9 +53,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def verify_password_and_update(plain_password: str, hashed_password: str | None) -> tuple[bool, str | None]:
     """Verify current Argon2 or legacy bcrypt hashes and upgrade legacy hashes."""
-    slots = _password_verification_slots
+    return _verify_in_lane(_password_verification_slots, plain_password, hashed_password, LOGIN_UNAVAILABLE)
+
+
+def verify_password_confirmation(plain_password: str, hashed_password: str | None) -> bool:
+    """Verify a re-authentication outside POST /auth/login without using login capacity."""
+    return _verify_in_lane(_password_confirmation_slots, plain_password, hashed_password,
+                           CONFIRMATION_UNAVAILABLE)[0]
+
+
+def _verify_in_lane(slots, plain_password, hashed_password, unavailable_detail):
     if not slots.acquire(blocking=False):
-        raise _password_unavailable()
+        raise _password_unavailable(unavailable_detail)
     try:
         # Unknown identities share overload behavior without doing password work.
         if hashed_password is None:
@@ -60,7 +74,7 @@ def verify_password_and_update(plain_password: str, hashed_password: str | None)
         except (UnknownHashError, ValueError, TypeError):
             return False, None
         except Exception:
-            raise _password_unavailable() from None
+            raise _password_unavailable(unavailable_detail) from None
     finally:
         # Runs in the synchronous worker, after verification AND any rehash.
         # Cancellation of its HTTP waiter cannot release this semaphore.
