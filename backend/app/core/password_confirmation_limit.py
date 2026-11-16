@@ -5,7 +5,7 @@ import hmac
 import math
 
 from fastapi import HTTPException
-from sqlalchemy import or_
+from sqlalchemy import or_, text
 
 from app.config import settings
 from app.core.clock import utc_now_naive
@@ -27,6 +27,19 @@ def account_key(user_id: int) -> str:
                     hashlib.sha256).hexdigest()
 
 
+def _lock(db, ip: str, key: str) -> None:
+    # Serializes check-and-insert per IP/account so concurrent requests cannot exceed the limit.
+    if db.get_bind().dialect.name == "sqlite":
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+        return
+    db.connection(execution_options={"isolation_level": "READ COMMITTED"})
+    scopes = ("password-confirmation-ip:" + ip, "password-confirmation-account:" + key)
+    identifiers = sorted({int.from_bytes(hashlib.sha256(scope.encode()).digest()[:8], "big", signed=True)
+                          for scope in scopes})
+    for identifier in identifiers:
+        db.execute(text("SELECT pg_advisory_xact_lock(:identifier)"), {"identifier": identifier})
+
+
 def reserve(request, user_id: int, path: str = ACCOUNT_ERASURE_PATH) -> int:
     """Admit one confirmation or raise 429; the row counts as a failure until accepted."""
     configured = settings()
@@ -36,6 +49,7 @@ def reserve(request, user_id: int, path: str = ACCOUNT_ERASURE_PATH) -> int:
     window = timedelta(minutes=configured.rate_limit_block_minutes)
     db = SessionLocal()
     try:
+        _lock(db, ip, key)
         now = utc_now_naive()
         failures = db.query(LoginAttempt.ip, LoginAttempt.account_key, LoginAttempt.ocorrido_em).filter(
             LoginAttempt.rota == path, LoginAttempt.sucesso.is_(False),
@@ -49,6 +63,7 @@ def reserve(request, user_id: int, path: str = ACCOUNT_ERASURE_PATH) -> int:
                 release = sorted(scoped)[len(scoped) - maximum] + window
                 waits.append((release - now).total_seconds())
         if waits:
+            db.rollback()
             raise HTTPException(status_code=429, detail="Muitas tentativas. Tente novamente mais tarde.",
                                 headers={"Retry-After": str(max(1, math.ceil(max(waits))))})
         attempt = LoginAttempt(ip=ip, rota=path, account_key=key, sucesso=False, ocorrido_em=now)

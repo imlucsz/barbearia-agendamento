@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 from fastapi import HTTPException
+from starlette.requests import Request
 
 from support import asgi_request, load_app_for_environment, main, reset_database
 from app.core import password_confirmation_limit, security
@@ -101,6 +102,34 @@ class AccountErasureConfirmationLimitTests(unittest.TestCase):
             self.assertEqual(self.erase(self.second_id, PASSWORD, "192.0.2.10")[0], 429)
         verify.assert_not_called()
         self.assertEqual(self.erase(self.second_id, PASSWORD, "192.0.2.11")[0], 200)
+
+    def test_concurrent_reservations_do_not_exceed_limit(self):
+        maximum = password_confirmation_limit.settings().rate_limit_max_attempts
+        key = password_confirmation_limit.account_key(self.first_id)
+        db = main.SessionLocal()
+        try:
+            for index in range(maximum - 1):
+                db.add(LoginAttempt(ip=f"198.51.100.{index + 1}", rota=password_confirmation_limit.ACCOUNT_ERASURE_PATH,
+                                    account_key=key, sucesso=False, ocorrido_em=utc_now_naive()))
+            db.commit()
+        finally:
+            db.close()
+        workers = 6
+        barrier = threading.Barrier(workers)
+
+        def reserve(index):
+            request = Request({"type": "http", "headers": [], "client": (f"203.0.113.{index + 1}", 1234)})
+            barrier.wait(10)
+            try:
+                password_confirmation_limit.reserve(request, self.first_id)
+                return "admitted"
+            except HTTPException as error:
+                return error.status_code
+
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(reserve, range(workers)))
+        self.assertEqual(results.count("admitted"), 1, results)
+        self.assertEqual(results.count(429), workers - 1, results)
 
     def test_saturated_confirmation_is_not_counted_as_failure(self):
         lane = threading.BoundedSemaphore(1)
