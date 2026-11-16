@@ -204,8 +204,8 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
                             headers={"Retry-After": "1"})
 
     # Create access token
-    access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token, _refresh_row = _new_refresh_token(db, db_user.id)
+    refresh_token, refresh_row = _new_refresh_token(db, db_user.id)
+    access_token = create_access_token(data={"sub": str(db_user.id), "sid": refresh_row.family_id})
     record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao")
     if request.state.login_cancelled.is_set():
         db.rollback()
@@ -286,7 +286,8 @@ def refresh_session(
         raise HTTPException(status_code=401, detail="Sessão revogada")
     db.commit()
     _set_refresh_cookie(response, replacement_token)
-    return {"access_token": create_access_token(data={"sub": str(user.id)}), "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": str(user.id), "sid": replacement.family_id})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/logout")
