@@ -105,6 +105,12 @@ class SecurityControlTests(unittest.TestCase):
         self.assertEqual(status, 429)
         self.assertGreater(int(headers["retry-after"]), 0)
 
+    def test_legacy_auth_limit_groups_ipv6_by_64(self):
+        for i in range(4):
+            self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip=f"2001:db8:5:6::{i + 1}")[0], 422)
+        self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip="2001:db8:5:6:abcd::9")[0], 429)
+        self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip="2001:db8:5:7::1")[0], 422)
+
     def test_https_redirect_does_not_trust_forwarded_scheme_headers(self):
         configured = type("S", (), {"force_https": True, "app_env": "production"})()
         with patch("app.main.SECURITY_SETTINGS", configured):

@@ -7,7 +7,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from support import asgi_request, load_app_for_environment, main, reset_database
+from support import access_token_for_user_id, asgi_request, load_app_for_environment, main, reset_database
 from app.core import password_confirmation_limit, security
 from app.core.clock import utc_now_naive
 from app.models.user import LoginAttempt, RoleEnum, User
@@ -66,7 +66,7 @@ class AccountErasureConfirmationLimitTests(unittest.TestCase):
             db.close()
 
     def token(self, user_id):
-        return security.create_access_token({"sub": str(user_id)})
+        return access_token_for_user_id(user_id)
 
     def erase(self, user_id, password, client_ip="127.0.0.1"):
         return asgi_request(self.app, "DELETE", "/users/me", {"senha_atual": password},
@@ -102,6 +102,20 @@ class AccountErasureConfirmationLimitTests(unittest.TestCase):
             self.assertEqual(self.erase(self.second_id, PASSWORD, "192.0.2.10")[0], 429)
         verify.assert_not_called()
         self.assertEqual(self.erase(self.second_id, PASSWORD, "192.0.2.11")[0], 200)
+
+    def test_ipv6_confirmation_limit_groups_addresses_by_64(self):
+        def request(ip):
+            return Request({"type": "http", "headers": [], "client": (ip, 1234)})
+
+        maximum = password_confirmation_limit.settings().rate_limit_max_attempts
+        for index in range(maximum):
+            password_confirmation_limit.reserve(request(f"2001:db8:5:6::{index + 1}"), self.first_id)
+        with self.assertRaises(HTTPException) as limited:
+            password_confirmation_limit.reserve(request("2001:db8:5:6:abcd::9"), self.second_id)
+        self.assertEqual(limited.exception.status_code, 429)
+        self.assertGreaterEqual(int(limited.exception.headers["Retry-After"]), 1)
+        self.assertIsInstance(password_confirmation_limit.reserve(
+            request("2001:db8:5:7::1"), self.second_id), int)
 
     def test_concurrent_reservations_do_not_exceed_limit(self):
         maximum = password_confirmation_limit.settings().rate_limit_max_attempts

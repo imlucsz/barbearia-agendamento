@@ -9,7 +9,7 @@ from sqlalchemy import or_, text
 
 from app.config import settings
 from app.core.clock import utc_now_naive
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
 
@@ -43,7 +43,7 @@ def _lock(db, ip: str, key: str) -> None:
 def reserve(request, user_id: int, path: str = ACCOUNT_ERASURE_PATH) -> int:
     """Admit one confirmation or raise 429; the row counts as a failure until accepted."""
     configured = settings()
-    ip = get_client_ip(request)
+    ip = rate_limit_key(get_client_ip(request))
     key = account_key(user_id)
     maximum = configured.rate_limit_max_attempts
     window = timedelta(minutes=configured.rate_limit_block_minutes)

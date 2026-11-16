@@ -4,7 +4,6 @@ import threading
 import unittest
 from contextvars import ContextVar
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
 from dataclasses import replace
 from unittest.mock import patch
 
@@ -180,21 +179,14 @@ class Stage2Reproductions(unittest.TestCase):
         self.assertEqual(self.session_request('refresh', cookie_token(rotated))[0], 401)
         self.assertEqual(self.login(password='fixture-replacement-password')[0], 200)
 
-    def test_characterize_access_token_lifetime_after_logout(self):
+    def test_access_token_is_rejected_immediately_after_logout(self):
         status, body, headers = self.login()
         self.assertEqual(status, 200)
         authorization = {'Authorization': 'Bearer ' + body['access_token']}
         self.assertEqual(self.session_request('logout', cookie_token(headers))[0], 200)
-        self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 200)
-        future = datetime.now(timezone.utc) + timedelta(minutes=61)
-        class ExpiredClock(datetime):
-            @classmethod
-            def now(cls, tz=None):
-                return future if tz else future.replace(tzinfo=None)
-        with patch('jwt.api_jwt.datetime', ExpiredClock):
-            self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 401)
+        self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 401)
 
-    def test_characterize_access_token_lifetime_after_reset(self):
+    def test_access_token_is_rejected_immediately_after_reset(self):
         status, body, headers = self.login()
         self.assertEqual(status, 200)
         authorization = {'Authorization': 'Bearer ' + body['access_token']}
@@ -205,11 +197,4 @@ class Stage2Reproductions(unittest.TestCase):
         })
         self.assertEqual(status, 200)
         self.assertEqual(self.session_request('refresh', cookie_token(headers))[0], 401)
-        self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 200)
-        future = datetime.now(timezone.utc) + timedelta(minutes=61)
-        class ExpiredClock(datetime):
-            @classmethod
-            def now(cls, tz=None):
-                return future if tz else future.replace(tzinfo=None)
-        with patch('jwt.api_jwt.datetime', ExpiredClock):
-            self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 401)
+        self.assertEqual(asgi_request(self.app, 'GET', '/auth/me', headers=authorization)[0], 401)

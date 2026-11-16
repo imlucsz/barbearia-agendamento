@@ -1,5 +1,7 @@
 # Sistema de Agendamento Online para Barbearia
 
+O limite por IP da confirmação de senha em `DELETE /users/me` agrupa endereços IPv6 por `/64`, assim como os demais limites de autenticação.
+
 
 
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
@@ -190,6 +192,7 @@ O arquivo `backend/.env.example` contém os valores iniciais. Copie-o para `back
 | `RATE_LIMIT_MAX_ATTEMPTS` | Limite legado por IP/rota nos endpoints protegidos exceto login | `5` |
 | `RATE_LIMIT_BLOCK_MINUTES` | Janela legada dos endpoints protegidos exceto login | `15` minutos |
 | `RETENTION_DAYS` | Retenção de eventos de auditoria antes de expurgo | `365` dias |
+| `MAX_ACTIVE_APPOINTMENTS_PER_CLIENT` | Máximo de agendamentos futuros `PENDENTE`/`CONFIRMADO` por cliente em `POST /appointments/` (faixa 1–50); agendamentos manuais da equipe não são limitados | `3` |
 | `METRICS_TOKEN` | Token bearer de pelo menos 32 caracteres aleatorios para scraping Prometheus | Vazio (desabilita `/metrics`) |
 | `FORCE_HTTPS` | Redireciona requisições HTTP; padrão ligado em produção e desligado em desenvolvimento/teste | Derivado de `APP_ENV` |
 | `APP_ENV` | Ambiente de execução | Obrigatória: use `development`, `test` ou `production`; implantações devem usar exatamente `production` |

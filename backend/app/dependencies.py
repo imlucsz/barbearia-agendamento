@@ -4,9 +4,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.core.clock import utc_now_naive
 from app.core.security import decode_access_token
 from app.database import get_db
-from app.models.user import RoleEnum, User
+from app.models.user import RefreshToken, RoleEnum, User
 
 
 security = HTTPBearer(auto_error=False)
@@ -49,6 +50,21 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Conta bloqueada",
+        )
+
+    # Logout, password reset, replay detection and account blocking revoke the
+    # refresh family; access tokens issued from it stop working immediately.
+    session_active = db.query(RefreshToken.id).filter(
+        RefreshToken.family_id == payload["sid"],
+        RefreshToken.user_id == user.id,
+        RefreshToken.revoked_at.is_(None),
+        RefreshToken.expires_at > utc_now_naive(),
+    ).first()
+    if session_active is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Sessão encerrada",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     return user

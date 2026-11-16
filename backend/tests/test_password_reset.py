@@ -139,6 +139,21 @@ class PasswordResetTests(unittest.TestCase):
         self.assertEqual(responses[0][0], 200)
         self.assertEqual(sender.call_count, 1)
 
+    def test_ip_limit_groups_ipv6_addresses_by_64(self):
+        for index in range(3):
+            self.create_user(f"person{index}@example.com")
+        with patch.dict(os.environ, {"PASSWORD_RESET_IP_MAX_REQUESTS": "2", "CLIENT_IP_SOURCE": "direct"}), patch(
+            "app.routers.auth.send_password_reset_email"
+        ) as sender:
+            for index in range(3):
+                status, _ = asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                    {"email": f"person{index}@example.com"}, client_ip=f"2001:db8:7:8::{index + 1}")
+                self.assertEqual(status, 200)
+            self.assertEqual(sender.call_count, 2)
+            asgi_request(self.application, "POST", "/auth/esqueci-senha",
+                {"email": "person2@example.com"}, client_ip="2001:db8:7:9::1")
+        self.assertEqual(sender.call_count, 3)
+
     def test_failed_delivery_preserves_previous_link_and_reserves_cooldown(self):
         self.create_user("known@example.com")
         now = utc_now_naive()

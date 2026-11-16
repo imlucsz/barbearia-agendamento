@@ -7,11 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.booking import (
     BOOKING_WINDOW_DAYS,
+    ensure_client_booking_capacity,
     lock_barber_for_booking,
     now_local,
     validate_appointment_status_transition,
     validate_booking_slot,
 )
+from app.config import max_active_appointments_per_client
 from app.database import get_db
 from app.availability import availability_days
 from app.dependencies import ensure_resource_owner, get_current_user, require_roles
@@ -59,6 +61,7 @@ def create_appointment(
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
     lock_barber_for_booking(db, appointment.barbeiro_id)
+    ensure_client_booking_capacity(db, current_user.id, max_active_appointments_per_client())
     start = validate_booking_slot(db, service, appointment.barbeiro_id, appointment.data_hora)
     db_appointment = Appointment(
         user_id=current_user.id,
@@ -241,6 +244,7 @@ def update_appointment(
             update_data["data_hora"],
             exclude_appointment_id=appointment.id,
             duration_minutes=appointment.duracao_minutos,
+            enforce_slot_grid=is_owner,
         )
         if new_start != appointment.data_hora and is_owner:
             appointment.reschedule_count += 1

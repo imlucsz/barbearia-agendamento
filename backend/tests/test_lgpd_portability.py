@@ -143,6 +143,21 @@ class LgpdPortabilityTests(unittest.TestCase):
         limited, _ = asgi_request(self.app, "GET", "/users/me/exportacao", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(limited, 429)
 
+    def test_pdf_export_is_rate_limited(self):
+        headers = {"Authorization": f"Bearer {self.login('titular@example.com')}"}
+        for _ in range(5):
+            self.assertEqual(asgi_request(self.app, "GET", "/users/me/export.pdf", headers=headers, raw_response=True)[0], 200)
+        limited, _ = asgi_request(self.app, "GET", "/users/me/export.pdf", headers=headers, raw_response=True)
+        self.assertEqual(limited, 429)
+
+    def test_json_and_pdf_exports_share_the_same_limit(self):
+        headers = {"Authorization": f"Bearer {self.login('titular@example.com')}"}
+        for path in ("/users/me/exportacao", "/users/me/export.pdf", "/users/me/export",
+                     "/users/me/export.pdf", "/users/me/exportacao"):
+            self.assertEqual(asgi_request(self.app, "GET", path, headers=headers, raw_response=True)[0], 200, path)
+        for path in ("/users/me/export.pdf", "/users/me/exportacao", "/users/me/export"):
+            self.assertEqual(asgi_request(self.app, "GET", path, headers=headers, raw_response=True)[0], 429, path)
+
     def test_erasure_unlinks_identity_preserves_financial_values_and_blocks_login(self):
         token = self.login("titular@example.com")
         admin_token = self.login("admin@example.com")
