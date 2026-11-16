@@ -109,6 +109,13 @@ def now_local() -> datetime:
     return datetime.now(scheduling_timezone()).replace(tzinfo=None)
 
 
+def is_on_slot_grid(start: datetime, opening: datetime) -> bool:
+    return not (
+        start.second or start.microsecond
+        or (start - opening) % timedelta(minutes=SLOT_INTERVAL_MINUTES)
+    )
+
+
 def validate_slot_against_loaded_data(
     service: Service,
     barber_id: int,
@@ -148,10 +155,7 @@ def validate_slot_against_loaded_data(
         existing_end = existing.data_hora + timedelta(minutes=existing.duracao_minutos)
         if start < existing_end and end > existing.data_hora:
             raise HTTPException(status_code=409, detail="O horário selecionado conflita com outro agendamento")
-    if enforce_slot_grid and (
-        start.second or start.microsecond
-        or (start - opening) % timedelta(minutes=SLOT_INTERVAL_MINUTES)
-    ):
+    if enforce_slot_grid and not is_on_slot_grid(start, opening):
         raise HTTPException(
             status_code=400,
             detail=f"O horário deve seguir a grade de {SLOT_INTERVAL_MINUTES} minutos a partir da abertura da jornada",
@@ -194,11 +198,16 @@ def validate_booking_slot(
         raise HTTPException(status_code=500, detail="O servi?o possui dura??o inv?lida")
     end = start + timedelta(minutes=duration)
     # Multiple records describe separate shifts, never a continuous interval.
+    fitting = [
+        row for row in schedules
+        if schedule_bounds(start.date(), row)[0] <= start
+        and end <= schedule_bounds(start.date(), row)[1]
+    ]
+    # Overlapping shifts have their own grids; prefer one that offers this start.
     schedule = next(
-        (row for row in schedules
-         if schedule_bounds(start.date(), row)[0] <= start
-         and end <= schedule_bounds(start.date(), row)[1]),
-        schedules[0],
+        (row for row in fitting
+         if not enforce_slot_grid or is_on_slot_grid(start, schedule_bounds(start.date(), row)[0])),
+        fitting[0] if fitting else schedules[0],
     )
     block = db.query(BloqueioHorario).filter(
         BloqueioHorario.barbeiro_id == barber_id, BloqueioHorario.ativo.is_(True),

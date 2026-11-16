@@ -144,6 +144,22 @@ class BookingAbuseLimitTests(unittest.TestCase):
         self.assertEqual(self._book(self._at(10))[0], 400)
         self.assertEqual(self._book(self._at(9, 45))[0], 201)
 
+    def test_overlapping_shifts_accept_start_on_either_grid(self):
+        db = main.SessionLocal()
+        try:
+            schedule = db.query(JornadaTrabalho).one()
+            schedule.hora_fim = "12:00"
+            db.add(JornadaTrabalho(
+                barbeiro_id=schedule.barbeiro_id, dia_semana=schedule.dia_semana,
+                hora_inicio="10:15", hora_fim="14:00", ativo=True,
+            ))
+            db.commit()
+        finally:
+            db.close()
+        self.assertEqual(self._book(self._at(10, 45))[0], 201)
+        self.assertEqual(self._book(self._at(11, 30))[0], 201)
+        self.assertEqual(self._book(self._at(12, 50))[0], 400)
+
     def test_admin_manual_booking_keeps_accepting_off_grid_start(self):
         status, body = self._admin_book(self._at(10, 15))
         self.assertEqual(status, 201)
