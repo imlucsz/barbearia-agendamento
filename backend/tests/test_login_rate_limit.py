@@ -51,6 +51,14 @@ class LoginRateLimitTests(unittest.TestCase):
         self.now += timedelta(seconds=300)
         self.assertEqual(self.login()[0], 401)
 
+    def test_ipv6_addresses_in_same_64_share_ip_failure_budget(self):
+        for i in range(30):
+            self.assertEqual(self.login(email=f"absent{i}@example.com", ip=f"2001:db8:1:2::{i + 1:x}")[0], 401)
+        status, _, headers = self.login(email="fresh@example.com", ip="2001:db8:1:2:ffff::1")
+        self.assertEqual(status, 429)
+        self.assertEqual(headers["retry-after"], "300")
+        self.assertEqual(self.login(email="fresh@example.com", ip="2001:db8:1:3::1")[0], 401)
+
     def test_success_frequency_is_limited_before_password_work(self):
         with patch("app.routers.auth.verify_password_and_update", return_value=(True, None)) as verify:
             for _ in range(60):

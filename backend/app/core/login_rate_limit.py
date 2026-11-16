@@ -16,7 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from app.config import settings
 from app.core.clock import utc_now_naive
 from app.core.email_identity import normalize_email
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
 from app.schemas.user import UserLogin
@@ -230,7 +230,7 @@ def unavailable():
 
 
 async def limit_login(request, call_next, cleanup):
-    ip = get_client_ip(request)
+    ip = rate_limit_key(get_client_ip(request))
     email = None
     initial_reason = Reason.UNAVAILABLE
     try:
