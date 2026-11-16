@@ -3,6 +3,15 @@
 
 
 
+## Revogação imediata do access token por sessão — 2026-11-16
+
+- Achado de code scan: logout e redefinição de senha revogavam só refresh tokens; o access JWT continuava válido até expirar. Status: **implementado**.
+- Login e refresh emitem o claim `sid` com o `family_id` da família de refresh que originou o token; `create_access_token`/`decode_access_token` exigem `sid` em formato UUID.
+- `get_current_user` aceita o token só se existir refresh não revogado e não expirado da mesma família e do mesmo usuário (consulta indexada por `family_id`). Logout encerra só aquela sessão; redefinição de senha, bloqueio, exclusão e detecção de reuso de refresh revogam todas as famílias afetadas e o access token antigo passa a receber 401 «Sessão encerrada». Conta bloqueada continua respondendo 403.
+- Sem migração nem mudança de schema, rotas, cookies ou frontend. Tokens antigos sem `sid` recebem 401 e o frontend renova pelo refresh existente.
+- Evidência: `backend/tests/test_auth_sessions.py` (logout invalida só o access token da sessão encerrada, rotação mantém a sessão e reuso a encerra, reset rejeita o access token antigo), `test_auth_security_regressions.py` e `test_jwt_configuration.py` (`sid` obrigatório/inválido).
+
+
 ## F1 — cookies em origem única
 
 - Implementado modo opt-in SERVE_FRONTEND para servir frontend no FastAPI, configuração da API pela própria origem, headers distintos para HTML/API e no-store em autenticação. Login passa a rejeitar Origin estrangeiro; refresh/logout preservam verificação estrita. Cookies/rotação/CAS/JWT/F2 e schema preservados.

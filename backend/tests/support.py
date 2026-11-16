@@ -291,7 +291,6 @@ def reset_database():
 def access_token_for_user(email):
     """Resolve a fixture email to its immutable ID; not a production fallback."""
     from app.core.email_identity import email_key, normalize_email
-    from app.core.security import create_access_token
     from app.models.user import User
 
     db = main.SessionLocal()
@@ -299,6 +298,20 @@ def access_token_for_user(email):
         user_id = db.query(User.id).filter(email_key(User.email) == normalize_email(email)).scalar()
         if user_id is None:
             raise AssertionError("Token fixture requires an existing user")
-        return create_access_token({"sub": str(user_id)})
+    finally:
+        db.close()
+    return access_token_for_user_id(user_id)
+
+
+def access_token_for_user_id(user_id):
+    """Open a real refresh family for a fixture user and sign an access token bound to it."""
+    from app.core.security import create_access_token
+    from app.routers.auth import _new_refresh_token
+
+    db = main.SessionLocal()
+    try:
+        _raw, row = _new_refresh_token(db, int(user_id))
+        db.commit()
+        return create_access_token({"sub": str(user_id), "sid": row.family_id})
     finally:
         db.close()
