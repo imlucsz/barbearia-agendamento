@@ -15,6 +15,10 @@ class AuthenticationSecurityTests(unittest.TestCase):
         os.environ['CLIENT_IP_SOURCE'] = 'direct'
         self.app = load_app_for_environment('test').app
 
+    def registered_id(self, email):
+        with main.SessionLocal() as db:
+            return db.query(User.id).filter(User.email == email).order_by(User.id.desc()).first()[0]
+
     def request(self, method, path, payload=None, token=None):
         headers = {'Authorization': 'Bearer ' + token} if token else None
         return asgi_request(self.app, method, path, payload, headers=headers)
@@ -97,9 +101,10 @@ class AuthenticationSecurityTests(unittest.TestCase):
         email = 'identity-validation@example.com'
         password_a = 'fixture-owner-a-only-2026'
         password_b = 'fixture-owner-b-only-2026'
-        status, account_a = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Original', 'email': email, 'senha': password_a, 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account_a = {'id': self.registered_id(email)}
         status, session_a = self.request('POST', '/auth/login', {'email': email, 'senha': password_a})
         self.assertEqual(status, 200)
         token_a = session_a['access_token']
@@ -110,9 +115,10 @@ class AuthenticationSecurityTests(unittest.TestCase):
         self.assertEqual(status, 200)
         status_before_reuse, _ = self.request('GET', '/auth/me', token=token_a)
         self.assertEqual(status_before_reuse, 401)
-        status, account_b = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Nova', 'email': email, 'senha': password_b, 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account_b = {'id': self.registered_id(email)}
         self.assertNotEqual(account_a['id'], account_b['id'])
         status, session_b = self.request('POST', '/auth/login', {'email': email, 'senha': password_b})
         self.assertEqual(status, 200)
@@ -123,10 +129,11 @@ class AuthenticationSecurityTests(unittest.TestCase):
         self.assertEqual(reused_status, 401, 'Original token authenticated the replacement account')
 
     def test_email_change_does_not_transfer_token_identity(self):
-        status, account_a = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Original', 'email': 'reuse-change@example.com',
             'senha': 'fixture-a-password', 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account_a = {'id': self.registered_id('reuse-change@example.com')}
         status, session_a = self.request('POST', '/auth/login', {
             'email': 'reuse-change@example.com', 'senha': 'fixture-a-password'})
         self.assertEqual(status, 200)
@@ -136,10 +143,11 @@ class AuthenticationSecurityTests(unittest.TestCase):
             db.commit()
         finally:
             db.close()
-        status, account_b = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Nova', 'email': 'reuse-change@example.com',
             'senha': 'fixture-b-password', 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account_b = {'id': self.registered_id('reuse-change@example.com')}
         status, resolved = self.request('GET', '/auth/me', token=session_a['access_token'])
         self.assertEqual(status, 200)
         self.assertEqual(resolved['id'], account_a['id'])
@@ -151,10 +159,11 @@ class AuthenticationSecurityTests(unittest.TestCase):
         from support import TEST_SECRET_KEY
         from app.core.clock import utc_now
         from app.core.security import ALGORITHM, create_access_token
-        status, account = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Teste', 'email': 'signed-token@example.com',
             'senha': 'fixture-password-only', 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account = {'id': self.registered_id('signed-token@example.com')}
         subject_id = str(account['id'])
         self.assertEqual(self.request('GET', '/auth/me', token=access_token_for_user_id(subject_id))[0], 200)
         expiry = utc_now() + timedelta(minutes=5)
@@ -178,10 +187,11 @@ class AuthenticationSecurityTests(unittest.TestCase):
     def test_inactive_blocked_and_unknown_user_ids_remain_rejected(self):
         import uuid
         from app.core.security import create_access_token
-        status, account = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Teste', 'email': 'state@example.com',
             'senha': 'fixture-password-only', 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account = {'id': self.registered_id('state@example.com')}
         token = access_token_for_user_id(account['id'])
         self.assertEqual(self.request('GET', '/auth/me', token=token)[0], 200)
         db = main.SessionLocal()
@@ -199,10 +209,11 @@ class AuthenticationSecurityTests(unittest.TestCase):
     def test_refresh_issues_access_token_for_same_immutable_id(self):
         from http.cookies import SimpleCookie
         from app.core.security import decode_access_token
-        status, account = self.request('POST', '/auth/register', {
+        status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Teste', 'email': 'refresh-id@example.com',
             'senha': 'fixture-password-only', 'consentimento_lgpd': True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
+        account = {'id': self.registered_id('refresh-id@example.com')}
         status, login, headers = asgi_request(self.app, 'POST', '/auth/login', {
             'email': 'refresh-id@example.com', 'senha': 'fixture-password-only'}, return_headers=True)
         self.assertEqual(status, 200)

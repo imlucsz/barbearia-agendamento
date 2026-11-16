@@ -35,7 +35,7 @@ class EmailIntegrityTests(unittest.TestCase):
         self.db.close()
 
     def test_register_race_returns_conflict_only_for_known_email_constraint(self):
-        for error, expected in [(unique_error(),409),(unique_error("NOT NULL constraint failed: users.nome",1299),None)]:
+        for error, expected in [(unique_error(),202),(unique_error("NOT NULL constraint failed: users.nome",1299),None)]:
             with patch.object(self.db,"flush",side_effect=error):
                 if expected:
                     code,_ = asgi_request(self.app,"POST","/auth/register",payload={"nome":"Novo","email":"new@example.com","senha":"test-only-password","consentimento_lgpd":True})

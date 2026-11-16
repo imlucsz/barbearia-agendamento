@@ -26,6 +26,7 @@ from app.core.audit import record as record_audit
 router = APIRouter(prefix="/auth", tags=["auth"])
 REFRESH_TOKEN_TTL = timedelta(days=30)
 REFRESH_COOKIE_NAME = "refresh_token"
+REGISTRATION_ACCEPTED_MESSAGE = "Cadastro recebido. Entre com seu e-mail e senha para continuar."
 
 
 def _token_hash(token: str) -> str:
@@ -101,21 +102,17 @@ def _terms_version() -> str:
     return version
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_202_ACCEPTED)
 def register_user(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     if not user.consentimento_lgpd:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="O consentimento para tratamento de dados é obrigatório")
 
-    # Check if user already exists
-    db_user = db.query(User).filter(email_key(User.email) == normalize_email(user.email)).first()
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email já registrado"
-        )
-
-    # Create new user
+    # Same response and Argon2 cost whether or not the email already has an account.
+    accepted = {"mensagem": REGISTRATION_ACCEPTED_MESSAGE}
     hashed_password = get_password_hash(user.senha)
+    if db.query(User.id).filter(email_key(User.email) == normalize_email(user.email)).first():
+        return accepted
+
     db_user = User(
         nome=user.nome,
         email=user.email,
@@ -130,7 +127,7 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
     except IntegrityError as error:
         db.rollback()
         if is_email_conflict(error):
-            raise HTTPException(status_code=409, detail="E-mail já cadastrado") from None
+            return accepted
         raise
     db.add(ConsentimentoLGPD(
         user_id=db_user.id,
@@ -141,8 +138,7 @@ def register_user(user: UserCreate, request: Request, db: Session = Depends(get_
     ))
     record_audit(db, request, actor=db_user, acao="usuario.cadastrado", entidade="usuario", entidade_id=db_user.id)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    return accepted
 
 
 @router.post("/login", response_model=UserTokenResponse)

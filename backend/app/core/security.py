@@ -1,6 +1,7 @@
 from datetime import timedelta
 import os
 import re
+import secrets
 from threading import BoundedSemaphore
 
 from fastapi import HTTPException
@@ -20,6 +21,8 @@ ALGORITHM = _settings.jwt_algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES = _settings.access_token_expire_minutes
 
 password_hash = PasswordHash((Argon2Hasher(), BcryptHasher()))
+# Verified for unknown identities so login timing does not reveal registered emails.
+_UNKNOWN_IDENTITY_HASH = password_hash.hash(secrets.token_urlsafe(32))
 
 
 def _load_password_verification_limit() -> int:
@@ -52,10 +55,11 @@ def verify_password_and_update(plain_password: str, hashed_password: str | None)
     if not slots.acquire(blocking=False):
         raise _password_unavailable()
     try:
-        # Unknown identities share overload behavior without doing password work.
-        if hashed_password is None:
-            return False, None
         try:
+            # Unknown identities share overload behavior and the same Argon2 cost.
+            if hashed_password is None:
+                password_hash.verify(plain_password, _UNKNOWN_IDENTITY_HASH)
+                return False, None
             return password_hash.verify_and_update(plain_password, hashed_password)
         except (UnknownHashError, ValueError, TypeError):
             return False, None

@@ -15,10 +15,10 @@ class EmailIdentityContractTests(unittest.TestCase):
         reset_database()
         self.app = load_app_for_environment("test").app
 
-    def register(self, email):
+    def register(self, email, client_ip="127.0.0.1"):
         return asgi_request(self.app, "POST", "/auth/register", {
             "nome": "Fixture", "email": email, "senha": "  fixture-password  ", "consentimento_lgpd": True,
-        })
+        }, client_ip=client_ip)
 
     def test_all_input_schemas_agree_on_current_equivalence(self):
         pairs = [
@@ -46,10 +46,12 @@ class EmailIdentityContractTests(unittest.TestCase):
             ("Jose\u0301@example.com", "JOSÉ@EXAMPLE.COM"),
             ("Person@xn--bcher-kva.de", "person@bücher.de"),
         ]):
-            self.assertEqual(self.register(first)[0], 201)
-            duplicate, body = self.register(equivalent)
-            self.assertEqual(duplicate, 400)  # Existing pre-check contract, not a race.
-            self.assertEqual(set(body), {"detail"})
+            # Each case is a distinct actor; do not exhaust the registration IP limiter.
+            registrant = f"203.0.113.{index + 1}"
+            created = self.register(first, registrant)
+            self.assertEqual(created[0], 202)
+            # Existing accounts receive the same response as new ones.
+            self.assertEqual(self.register(equivalent, registrant), created)
             status, _ = asgi_request(self.app, "POST", "/auth/login", {"email": equivalent, "senha": "  fixture-password  "}, client_ip=f"192.0.2.{index+1}")
             self.assertEqual(status, 200)
             with patch("app.routers.auth.send_password_reset_email") as sender:
@@ -68,7 +70,7 @@ class EmailIdentityContractTests(unittest.TestCase):
     def test_aliases_dots_and_casefold_variants_remain_distinct(self):
         for value in ["first.last@example.com", "firstlast@example.com", "first.last+tag@example.com",
                       "straße@example.com", "strasse@example.com"]:
-            self.assertEqual(self.register(value)[0], 201)
+            self.assertEqual(self.register(value)[0], 202)
         with main.SessionLocal() as db:
             self.assertEqual(db.query(User).count(), 5)
 

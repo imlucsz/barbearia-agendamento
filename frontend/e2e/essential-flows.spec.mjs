@@ -119,7 +119,7 @@ test("cadastro, login, refresh silencioso após sessão expirada e logout", asyn
   await page.getByLabel(/Senha/).fill("E2E-Registration-Only-2026!");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
-  await expect(page.getByRole("alert")).toContainText("Cadastro realizado");
+  await expect(page.getByRole("alert")).toContainText("Cadastro recebido");
   await page.waitForURL(/login\.html$/);
 
   await page.getByLabel("E-mail").fill(email);
