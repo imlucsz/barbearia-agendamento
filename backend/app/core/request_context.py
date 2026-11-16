@@ -21,6 +21,19 @@ def _parse_ip(value: str) -> str:
         ) from None
 
 
+IPV6_RATE_LIMIT_PREFIX = 64
+
+
+def rate_limit_key(ip: str) -> str:
+    """Group addresses one client controls: IPv4 /32, IPv6 /64."""
+    address = ipaddress.ip_address(ip)
+    if address.version == 6 and address.ipv4_mapped is not None:
+        address = address.ipv4_mapped
+    if address.version == 4:
+        return str(address)
+    return str(ipaddress.ip_network(f"{address}/{IPV6_RATE_LIMIT_PREFIX}", strict=False))
+
+
 def get_client_ip(request: Request) -> str:
     """Use the socket peer by default or one explicitly trusted edge header."""
     source = os.environ.get("CLIENT_IP_SOURCE", "direct").strip().lower()

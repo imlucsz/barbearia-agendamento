@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from unittest.mock import patch
 import bcrypt
-from support import asgi_request, load_app_for_environment, main, reset_database
+from support import access_token_for_user_id, asgi_request, load_app_for_environment, main, reset_database
 from app.models.user import User, RoleEnum, RefreshToken
 from app.core.security import verify_password
 from app.routers import auth
@@ -165,7 +165,7 @@ class AuthenticationSecurityTests(unittest.TestCase):
         self.assertEqual(status, 202)
         account = {'id': self.registered_id('signed-token@example.com')}
         subject_id = str(account['id'])
-        self.assertEqual(self.request('GET', '/auth/me', token=create_access_token({'sub': subject_id}))[0], 200)
+        self.assertEqual(self.request('GET', '/auth/me', token=access_token_for_user_id(subject_id))[0], 200)
         expiry = utc_now() + timedelta(minutes=5)
         for subject in ('old@example.com', '', '0', '-1', '01', '2147483648', '１', 1, None):
             with self.subTest(subject_type=type(subject).__name__):
@@ -176,6 +176,7 @@ class AuthenticationSecurityTests(unittest.TestCase):
         for payload, key in (
             ({'sub': subject_id, 'exp': utc_now() - timedelta(seconds=1)}, TEST_SECRET_KEY),
             ({'sub': subject_id}, TEST_SECRET_KEY),
+            ({'sub': subject_id, 'exp': expiry}, TEST_SECRET_KEY),
             ({'exp': expiry}, TEST_SECRET_KEY),
             ({'sub': subject_id, 'exp': expiry}, 'fixture-wrong-key-only-not-for-deployment'),
         ):
@@ -184,13 +185,14 @@ class AuthenticationSecurityTests(unittest.TestCase):
         self.assertEqual(self.request('GET', '/auth/me', token='invalid-token')[0], 401)
 
     def test_inactive_blocked_and_unknown_user_ids_remain_rejected(self):
+        import uuid
         from app.core.security import create_access_token
         status, _ = self.request('POST', '/auth/register', {
             'nome': 'Conta Teste', 'email': 'state@example.com',
             'senha': 'fixture-password-only', 'consentimento_lgpd': True})
         self.assertEqual(status, 202)
         account = {'id': self.registered_id('state@example.com')}
-        token = create_access_token({'sub': str(account['id'])})
+        token = access_token_for_user_id(account['id'])
         self.assertEqual(self.request('GET', '/auth/me', token=token)[0], 200)
         db = main.SessionLocal()
         try:
@@ -202,7 +204,7 @@ class AuthenticationSecurityTests(unittest.TestCase):
             self.assertEqual(self.request('GET', '/auth/me', token=token)[0], 403)
         finally:
             db.close()
-        self.assertEqual(self.request('GET', '/auth/me', token=create_access_token({'sub': '2147483647'}))[0], 401)
+        self.assertEqual(self.request('GET', '/auth/me', token=create_access_token({'sub': '2147483647', 'sid': str(uuid.uuid4())}))[0], 401)
 
     def test_refresh_issues_access_token_for_same_immutable_id(self):
         from http.cookies import SimpleCookie

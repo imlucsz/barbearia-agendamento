@@ -13,7 +13,7 @@ from sqlalchemy import update
 from app.core.email import send_password_reset_email
 from app.core.clock import utc_now_naive
 from app.core.security import verify_password_and_update, get_password_hash, create_access_token
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.config import parse_cors_origins, settings as load_settings
 from app.core.password_reset_limits import reserve_request, finish_reservation, prune_expired
 from app.core.login_rate_limit import claim_login_reservation, record_login_outcome, Outcome, Reason
@@ -200,8 +200,8 @@ def login_user(user: UserLogin, request: Request, response: Response, db: Sessio
                             headers={"Retry-After": "1"})
 
     # Create access token
-    access_token = create_access_token(data={"sub": str(db_user.id)})
-    refresh_token, _refresh_row = _new_refresh_token(db, db_user.id)
+    refresh_token, refresh_row = _new_refresh_token(db, db_user.id)
+    access_token = create_access_token(data={"sub": str(db_user.id), "sid": refresh_row.family_id})
     record_audit(db, request, actor=db_user, acao="auth.login", entidade="sessao")
     if request.state.login_cancelled.is_set():
         db.rollback()
@@ -282,7 +282,8 @@ def refresh_session(
         raise HTTPException(status_code=401, detail="Sessão revogada")
     db.commit()
     _set_refresh_cookie(response, replacement_token)
-    return {"access_token": create_access_token(data={"sub": str(user.id)}), "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": str(user.id), "sid": replacement.family_id})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @router.post("/logout")
@@ -323,7 +324,7 @@ def esqueci_senha(payload: EsqueciSenhaRequest, request: Request, db: Session = 
         return public_response
     now = utc_now_naive()
     email = normalize_email(payload.email)
-    ip = get_client_ip(request)
+    ip = rate_limit_key(get_client_ip(request))
     try:
         reservation = reserve_request(db, email, ip, now, configured)
         if not reservation:

@@ -12,7 +12,7 @@ from sqlalchemy import text
 
 from app.config import settings as load_settings
 from app.core.clock import utc_now_naive
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
 from app.core.login_rate_limit import limit_login
@@ -25,7 +25,7 @@ AUTH_PATHS = {
 }
 REGISTER_PATH = "/auth/register"
 EXPORT_PATH = "/users/me/exportacao"
-EXPORT_PATHS = {EXPORT_PATH, "/users/me/export"}
+EXPORT_PATHS = {EXPORT_PATH, "/users/me/export", "/users/me/export.pdf"}
 
 
 def _cleanup_old_attempts():
@@ -90,7 +90,7 @@ def _finish_registration(identifier, success):
 
 
 async def _limit_registration(request, call_next):
-    identifier, retry_after = await run_in_threadpool(_reserve_registration, get_client_ip(request))
+    identifier, retry_after = await run_in_threadpool(_reserve_registration, rate_limit_key(get_client_ip(request)))
     if identifier is None:
         return JSONResponse({"detail": "Muitas tentativas. Tente novamente mais tarde."}, status_code=429,
                             headers={"Retry-After": str(retry_after)})
@@ -114,10 +114,7 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
         is_auth = request.url.path in AUTH_PATHS and request.method == "POST"
         if not is_export and not is_auth:
             return await call_next(request)
-        try:
-            ip = get_client_ip(request)
-        except Exception:
-            raise
+        ip = rate_limit_key(get_client_ip(request))
         now = utc_now_naive()
         window_start = now - timedelta(minutes=RATE_SETTINGS.rate_limit_block_minutes)
         db = SessionLocal()

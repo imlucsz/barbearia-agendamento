@@ -76,6 +76,7 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     _validate_access_subject(to_encode.get("sub"))
+    _validate_session_id(to_encode.get("sid"))
     expire = utc_now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -86,9 +87,10 @@ def decode_access_token(token: str) -> dict:
             token,
             SECRET_KEY,
             algorithms=[ALGORITHM],
-            options={"require": ["exp", "sub"]},
+            options={"require": ["exp", "sub", "sid"]},
         )
         _validate_access_subject(payload.get("sub"))
+        _validate_session_id(payload.get("sid"))
         return payload
     except InvalidTokenError as exc:
         raise ValueError("Token inválido ou expirado") from exc
@@ -100,3 +102,10 @@ def _validate_access_subject(subject) -> None:
             or re.fullmatch(r"[1-9][0-9]{0,9}", subject) is None
             or int(subject) > 2147483647):
         raise ValueError("Token sem usuário válido")
+
+
+def _validate_session_id(session_id) -> None:
+    # Refresh token family that issued this access token; checked on every request.
+    if (not isinstance(session_id, str)
+            or re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", session_id) is None):
+        raise ValueError("Token sem sessão válida")

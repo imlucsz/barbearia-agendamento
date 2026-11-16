@@ -66,6 +66,10 @@ class AuthenticationSessionTests(unittest.TestCase):
             {"email": email, "senha": password}, return_headers=True,
         )
 
+    def me(self, access_token):
+        return asgi_request(self.application, "GET", "/auth/me",
+                            headers={"Authorization": f"Bearer {access_token}"})
+
     def refresh(self, raw_token, origin=None):
         headers = {"Cookie": f"refresh_token={raw_token}"}
         if origin is not None:
@@ -146,6 +150,28 @@ class AuthenticationSessionTests(unittest.TestCase):
         self.assertIn("max-age=0", headers["set-cookie"].lower())
         self.assertEqual(self.refresh(token, self.origin)[0], 401)
 
+    def test_logout_invalidates_access_token_of_that_session_only(self):
+        self.create_user("logout-access@example.com")
+        _status, first, first_headers = self.login("logout-access@example.com")
+        _status, second, _headers = self.login("logout-access@example.com")
+        self.assertEqual(self.me(first["access_token"])[0], 200)
+        status, _body = asgi_request(self.application, "POST", "/auth/logout", headers={
+            "Cookie": f"refresh_token={cookie_token(first_headers)}", "Origin": self.origin})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.me(first["access_token"]), (401, {"detail": "Sessão encerrada"}))
+        self.assertEqual(self.me(second["access_token"])[0], 200)
+
+    def test_rotated_refresh_keeps_session_access_token_valid_until_family_is_revoked(self):
+        self.create_user("rotation-access@example.com")
+        _status, login_body, headers = self.login("rotation-access@example.com")
+        status, refreshed, refreshed_headers = self.refresh(cookie_token(headers), self.origin)
+        self.assertEqual(status, 200)
+        self.assertEqual(self.me(login_body["access_token"])[0], 200)
+        self.assertEqual(self.me(refreshed["access_token"])[0], 200)
+        self.assertEqual(self.refresh(cookie_token(headers), self.origin)[0], 401)
+        self.assertEqual(self.me(login_body["access_token"])[0], 401)
+        self.assertEqual(self.me(refreshed["access_token"])[0], 401)
+
     def test_expired_refresh_token_is_rejected(self):
         self.create_user("expired@example.com")
         _status, body, _headers = self.login("expired@example.com")
@@ -186,6 +212,7 @@ class AuthenticationSessionTests(unittest.TestCase):
         )
         self.assertEqual(status, 200)
         self.assertEqual(self.refresh(cookie_token(_headers), self.origin)[0], 401)
+        self.assertEqual(self.me(login_body["access_token"]), (401, {"detail": "Sessão encerrada"}))
 
     def test_account_deactivation_revokes_refresh_tokens(self):
         user_id = self.create_user("deactivate@example.com")

@@ -95,8 +95,20 @@ class JwtConfigurationTests(unittest.TestCase):
 
     def test_configured_key_signs_and_verifies_tokens_but_another_key_does_not(self):
         self.assertEqual(os.environ["SECRET_KEY"], TEST_SECRET_KEY)
-        token = create_access_token({"sub": "123"})
+        session_id = "0f8b2c1e-6a4d-4c3b-9e2f-1a2b3c4d5e6f"
+        token = create_access_token({"sub": "123", "sid": session_id})
         self.assertEqual(decode_access_token(token)["sub"], "123")
+        self.assertEqual(decode_access_token(token)["sid"], session_id)
+        for invalid_sid in (None, "", "sessao", 123, session_id.upper()):
+            with self.subTest(sid=invalid_sid), self.assertRaises(ValueError):
+                create_access_token({"sub": "123", "sid": invalid_sid})
+        token_without_sid = jwt.encode(
+            {"sub": "123", "exp": utc_now() + timedelta(minutes=5)},
+            TEST_SECRET_KEY,
+            algorithm=ALGORITHM,
+        )
+        with self.assertRaises(ValueError):
+            decode_access_token(token_without_sid)
 
         wrong_key = "different-test-signing-key-that-is-not-configured"
         wrong_token = jwt.encode(
