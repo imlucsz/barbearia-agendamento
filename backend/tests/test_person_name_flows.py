@@ -18,8 +18,7 @@ class PersonNameFlowTests(unittest.TestCase):
             "nome": "  Jose\u0301\u00a0 da  Silva  ", "email": "  Mixed+tag@Example.COM  ",
             "senha": "  fixture-only  ", "consentimento_lgpd": True,
         })
-        self.assertEqual(status, 201)
-        self.assertEqual(body["nome"], "José da Silva")
+        self.assertEqual(status, 202, body)
         with main.SessionLocal() as db:
             row = db.query(User).one()
             self.assertTrue(row.email == "mixed+tag@example.com")

@@ -11,6 +11,7 @@ from support import asgi_request, load_app_for_environment, main, reset_database
 from app.core.clock import utc_now_naive
 from app.core.security import get_password_hash
 from app.models.user import ConsentimentoLGPD, RefreshToken, RoleEnum, User
+from app.routers import auth
 from app.routers.auth import _set_refresh_cookie
 
 
@@ -26,10 +27,10 @@ class AuthenticationSessionTests(unittest.TestCase):
         status, body, _ = self.login("  MIXED.CASE@EXAMPLE.COM  ")
         self.assertEqual(status, 200, body)
         self.assertEqual(body["user"]["email"], "mixed.case@example.com")
-        status, _ = asgi_request(self.application, "POST", "/auth/register", {
+        status, body = asgi_request(self.application, "POST", "/auth/register", {
             "nome": "Duplicata", "email": "Mixed.Case@example.com", "senha": "client-pass-123", "consentimento_lgpd": True,
         })
-        self.assertEqual(status, 400)
+        self.assertEqual((status, body), (202, {"mensagem": auth.REGISTRATION_ACCEPTED_MESSAGE}))
         with patch("app.routers.auth.send_password_reset_email") as send:
             status, _ = asgi_request(self.application, "POST", "/auth/esqueci-senha", {"email": " MIXED.CASE@EXAMPLE.COM "})
             self.assertEqual(status, 200)
@@ -80,7 +81,7 @@ class AuthenticationSessionTests(unittest.TestCase):
             {"nome": "Consent QA", "email": "consent@example.com", "senha": "client-pass-123", "consentimento_lgpd": True},
             headers={"Origin": self.origin},
         )
-        self.assertEqual(status, 201, _body)
+        self.assertEqual(status, 202, _body)
         db = main.SessionLocal()
         try:
             consent = db.query(ConsentimentoLGPD).one()

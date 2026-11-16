@@ -51,7 +51,7 @@ class InstitutionalInfoTests(unittest.TestCase):
              "senha": "client-institutional-pass", "consentimento_lgpd": True},
             headers={"Origin": "https://frontend.test.invalid"},
         )
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
         status, body = asgi_request(
             self.app, "POST", "/auth/login",
             {"email": "cliente-institucional@example.com", "senha": "client-institutional-pass"},

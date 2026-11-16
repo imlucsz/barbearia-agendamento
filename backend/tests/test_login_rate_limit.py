@@ -152,6 +152,56 @@ class LoginRateLimitTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     Policy.from_env()
 
+    def test_unknown_identity_still_pays_argon2_cost(self):
+        from app.core import security
+        with patch.object(security.password_hash, "verify", wraps=security.password_hash.verify) as verify:
+            self.assertEqual(self.login()[0], 401)
+        verify.assert_called_once_with("wrong", security._UNKNOWN_IDENTITY_HASH)
+        self.assertEqual(security.verify_password_and_update("wrong", None), (False, None))
+
+    def failures(self, count, ip):
+        for _ in range(count):
+            self.assertEqual(self.login(email="good@example.com", ip=ip)[0], 401)
+
+    def test_account_backoff_grows_and_resets_only_on_success(self):
+        self.assertEqual(self.login(email="good@example.com", password="correct-password")[0], 200)
+        self.failures(5, "10.0.0.1")
+        self.assertEqual(self.login(email="good@example.com", ip="10.0.0.2")[2]["retry-after"], "60")
+        self.now += timedelta(seconds=60)
+        self.failures(5, "10.0.0.2")
+        status, _, headers = self.login(email="good@example.com", ip="10.0.0.3")
+        self.assertEqual((status, headers["retry-after"]), (429, "120"))
+        # The IP that already authenticated this account only waits the short window.
+        status, _, headers = self.login(email="good@example.com", password="correct-password")
+        self.assertEqual((status, headers["retry-after"]), (429, "60"))
+        self.now += timedelta(seconds=60)
+        self.assertEqual(self.login(email="good@example.com", ip="10.0.0.3")[0], 429)
+        self.assertEqual(self.login(email="good@example.com", password="correct-password")[0], 200)
+        self.assertEqual(self.login(email="good@example.com", ip="10.0.0.3")[0], 401)
+
+    def test_account_backoff_is_capped_and_unknown_accounts_escalate_equally(self):
+        for round_index in range(8):
+            for i in range(5):
+                self.assertEqual(self.login(ip=f"10.1.{round_index}.{i}")[0], 401)
+            status, _, headers = self.login(ip="10.2.0.1")
+            self.assertEqual(status, 429)
+            wait = int(headers["retry-after"])
+            self.assertEqual(wait, min(60 * 2 ** round_index, 3600))
+            self.now += timedelta(seconds=wait)
+
+    def test_account_daily_cap(self):
+        from app.core import login_rate_limit as limiter
+        from dataclasses import replace
+        self.assertEqual(self.login(email="good@example.com", password="correct-password")[0], 200)
+        with patch.object(limiter, "POLICY", replace(limiter.POLICY, account_daily_failures=7)):
+            self.failures(5, "10.0.0.1")
+            self.now += timedelta(seconds=60)
+            self.failures(2, "10.0.0.2")
+            self.now += timedelta(seconds=3600)
+            status, _, headers = self.login(email="good@example.com", ip="10.0.0.3")
+            self.assertEqual((status, headers["retry-after"]), (429, str(86400 - 3660)))
+            self.assertEqual(self.login(email="good@example.com", password="correct-password")[0], 200)
+
     def test_known_account_block_prevents_password_work(self):
         for _ in range(5):
             self.assertEqual(self.login(email="good@example.com")[0], 401)

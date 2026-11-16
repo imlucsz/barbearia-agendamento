@@ -51,7 +51,7 @@ async function register(event) {
       senha: form.elements.senha.value,
       consentimento_lgpd: form.elements.consentimento_lgpd.checked,
     }, { auth: false });
-    showMessage("Cadastro realizado. Entre com seu e-mail e senha para continuar.", "success");
+    showMessage("Cadastro recebido. Entre com seu e-mail e senha para continuar.", "success");
     form.reset();
     window.setTimeout(() => { window.location.href = "login.html"; }, 1200);
   } catch (error) {

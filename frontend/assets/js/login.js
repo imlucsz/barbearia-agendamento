@@ -184,7 +184,7 @@ registerForm.addEventListener('submit', (e) => {
         .then(() => {
             modal.classList.remove('active');
             registerForm.reset();
-            mostrarMensagem(loginForm, 'Conta criada. Faça login para continuar.', 'sucesso');
+            mostrarMensagem(loginForm, 'Cadastro recebido. Faça login para continuar.', 'sucesso');
         })
         .catch((error) => {
             mostrarMensagem(registerForm, error.message || 'Não foi possível conectar com o backend.');

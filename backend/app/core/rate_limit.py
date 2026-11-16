@@ -1,12 +1,14 @@
 """Database-backed consecutive failure limits for authentication endpoints."""
 
 from datetime import timedelta
+import hashlib
 import math
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.background import BackgroundTasks
 from starlette.middleware.base import BaseHTTPMiddleware
+from sqlalchemy import text
 
 from app.config import settings as load_settings
 from app.core.clock import utc_now_naive
@@ -14,12 +16,14 @@ from app.core.request_context import get_client_ip
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
 from app.core.login_rate_limit import limit_login
+from starlette.concurrency import run_in_threadpool
 
 RATE_SETTINGS = load_settings()
 
 AUTH_PATHS = {
     "/auth/login", "/auth/register", "/auth/redefinir-senha",
 }
+REGISTER_PATH = "/auth/register"
 EXPORT_PATH = "/users/me/exportacao"
 EXPORT_PATHS = {EXPORT_PATH, "/users/me/export"}
 
@@ -39,10 +43,73 @@ def _cleanup_old_attempts():
         db.close()
 
 
+def _lock_ip_scope(db, scope):
+    if db.get_bind().dialect.name == "sqlite":
+        db.connection().exec_driver_sql("BEGIN IMMEDIATE")
+    else:
+        db.connection(execution_options={"isolation_level": "READ COMMITTED"})
+        identifier = int.from_bytes(hashlib.sha256(scope.encode()).digest()[:8], "big", signed=True)
+        db.execute(text("SELECT pg_advisory_xact_lock(:identifier)"), {"identifier": identifier})
+
+
+def _reserve_registration(ip):
+    """Count every registration attempt per IP in a fixed window, whatever its result."""
+    configured = RATE_SETTINGS
+    window = timedelta(minutes=configured.rate_limit_block_minutes)
+    db = SessionLocal()
+    try:
+        _lock_ip_scope(db, "register-ip:" + ip)
+        now = utc_now_naive()
+        attempts = (db.query(LoginAttempt.ocorrido_em).filter(
+            LoginAttempt.ip == ip, LoginAttempt.rota == REGISTER_PATH,
+            LoginAttempt.ocorrido_em > now - window,
+        ).order_by(LoginAttempt.ocorrido_em.desc()).limit(configured.rate_limit_max_attempts).all())
+        if len(attempts) >= configured.rate_limit_max_attempts:
+            db.rollback()
+            return None, max(1, math.ceil((attempts[-1][0] + window - now).total_seconds()))
+        attempt = LoginAttempt(ip=ip, rota=REGISTER_PATH, sucesso=False, ocorrido_em=now)
+        db.add(attempt)
+        db.flush()
+        identifier = attempt.id
+        db.commit()
+        return identifier, None
+    finally:
+        db.close()
+
+
+def _finish_registration(identifier, success):
+    db = SessionLocal()
+    try:
+        db.query(LoginAttempt).filter(LoginAttempt.id == identifier).update(
+            {LoginAttempt.sucesso: success}, synchronize_session=False)
+        db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
+async def _limit_registration(request, call_next):
+    identifier, retry_after = await run_in_threadpool(_reserve_registration, get_client_ip(request))
+    if identifier is None:
+        return JSONResponse({"detail": "Muitas tentativas. Tente novamente mais tarde."}, status_code=429,
+                            headers={"Retry-After": str(retry_after)})
+    response = await call_next(request)
+    await run_in_threadpool(_finish_registration, identifier, response.status_code < 400)
+    tasks = BackgroundTasks()
+    if response.background is not None:
+        tasks.add_task(response.background)
+    tasks.add_task(_cleanup_old_attempts)
+    response.background = tasks
+    return response
+
+
 class AuthRateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         if request.url.path.rstrip("/") == "/auth/login" and request.method == "POST":
             return await limit_login(request, call_next, _cleanup_old_attempts)
+        if request.url.path == REGISTER_PATH and request.method == "POST":
+            return await _limit_registration(request, call_next)
         is_export = request.url.path in EXPORT_PATHS and request.method == "GET"
         is_auth = request.url.path in AUTH_PATHS and request.method == "POST"
         if not is_export and not is_auth:

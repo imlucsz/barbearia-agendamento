@@ -55,6 +55,9 @@ def record_login_outcome(request, outcome, reason):
 class Policy:
     account_failures: int = 5
     account_window_seconds: int = 60
+    account_backoff_max_seconds: int = 3600
+    account_daily_failures: int = 100
+    account_daily_window_seconds: int = 86400
     ip_failures: int = 30
     ip_window_seconds: int = 300
     ip_requests: int = 60
@@ -80,6 +83,7 @@ class Policy:
 
 
 POLICY = Policy.from_env()
+TRUSTED_IP_LOOKBACK = timedelta(days=30)
 
 
 class Limited(Exception):
@@ -103,6 +107,45 @@ def _lock(db, ip, key):
         identifiers = sorted({int.from_bytes(hashlib.sha256(scope.encode()).digest()[:8], "big", signed=True) for scope in scopes})
         for identifier in identifiers:
             db.execute(text("SELECT pg_advisory_xact_lock(:identifier)"), {"identifier": identifier})
+
+
+def _is_success(row):
+    if row.resultado is None:
+        return bool(row.sucesso)
+    return row.resultado == Outcome.SUCCESS.value
+
+
+def _ip_authenticated_account(db, ip, key, now):
+    """An IP that already logged into the account skips the long penalties, limiting victim lockout."""
+    return db.query(LoginAttempt.id).filter(
+        LoginAttempt.rota == PATH, LoginAttempt.account_key == key, LoginAttempt.ip == ip,
+        LoginAttempt.ocorrido_em > now - TRUSTED_IP_LOOKBACK,
+        or_(LoginAttempt.resultado == Outcome.SUCCESS.value,
+            LoginAttempt.resultado.is_(None) & LoginAttempt.sucesso.is_(True)),
+    ).first() is not None
+
+
+def _account_streak_waits(db, key, now, policy, consumes_failure_budget):
+    """Failures since the account's last successful login: doubling backoff per round plus a daily cap."""
+    window = timedelta(seconds=policy.account_daily_window_seconds)
+    rows = db.query(LoginAttempt).filter(
+        LoginAttempt.rota == PATH, LoginAttempt.account_key == key,
+        LoginAttempt.ocorrido_em > now - window,
+    ).order_by(LoginAttempt.ocorrido_em.asc(), LoginAttempt.id.asc()).all()
+    streak = []
+    for row in rows:
+        if _is_success(row):
+            streak = []
+        elif consumes_failure_budget(row):
+            streak.append(row.ocorrido_em)
+    waits = []
+    rounds = len(streak) // policy.account_failures
+    if rounds:
+        delay = min(policy.account_window_seconds * 2 ** (rounds - 1), policy.account_backoff_max_seconds)
+        waits.append((streak[rounds * policy.account_failures - 1] + timedelta(seconds=delay) - now).total_seconds())
+    if len(streak) >= policy.account_daily_failures:
+        waits.append((streak[len(streak) - policy.account_daily_failures] + window - now).total_seconds())
+    return [wait for wait in waits if wait > 0]
 
 
 def reserve(ip, email):
@@ -153,6 +196,8 @@ def reserve(ip, email):
             check([window(row, seconds) for row in scoped if window(row, seconds) > now and (not failures_only or consumes_failure_budget(row))], maximum)
         for scoped, maximum in ((account_rows, policy.account_concurrency), (ip_rows, policy.ip_concurrency)):
             check([row.expira_em for row in scoped if row.em_andamento and row.expira_em and row.expira_em > now], maximum)
+        if key and not _ip_authenticated_account(db, ip, key, now):
+            waits.extend(_account_streak_waits(db, key, now, policy, consumes_failure_budget))
         if waits:
             raise Limited(max(waits))
         reservation = LoginAttempt(ip=ip, rota=PATH, account_key=key, sucesso=False,
