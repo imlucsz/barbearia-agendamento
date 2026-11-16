@@ -1,32 +1,32 @@
-# Graph Report - resolve-pr47  (2026-11-16)
+# Graph Report - resolve-pr45  (2026-11-16)
 
 ## Corpus Check
-- 354 files · ~234,932 words
+- 356 files · ~236,251 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 38 file(s) not represented in the graph (top: .css 22, (none) 9, .ttf 4)
 
 ## Summary
-- 3201 nodes · 7660 edges · 231 communities (153 shown, 78 thin omitted)
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 743 edges (avg confidence: 0.92)
+- 3240 nodes · 7777 edges · 228 communities (144 shown, 84 thin omitted)
+- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 751 edges (avg confidence: 0.92)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a3cd4eb2`
+- Built from commit: `b82be76f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- RoleEnum
-- services.py
-- seed_database.py
-- sqlalchemy
-- LoginOutcomeTests
-- login_user
+- Appointment
+- schemas/institucional.py
+- pathlib
+- support.py
+- LoginRateLimitTests
+- auth.py
 - initialize
 - home-experience.mjs
 - asgi_request
-- send_password_reset_email
-- login_rate_limit.py
+- .test_two_simultaneous_registrations_resolve_real_unique_conflict
+- Service
 - gsap.min.js
 - Web Design Reviewer
 - with
@@ -35,31 +35,31 @@
 - services
 - LoginCapacityLifecycleTests
 - json
-- admin.py
+- PasswordResetTests
 - @playwright/test
 - ApplicationConfigurationTests
 - Sistema de Agendamento Online para Barbearia
 - api.js
 - ScrollTrigger.min.js
-- F2LoginResilienceTests
+- models/user.py
 - Status de auditoria dos requisitos
 - ref_node_url
 - BookingTemporalTests
 - load_settings
-- main.py
-- Schemas Pydantic
+- observability.py
+- appointment.py
 - ServiceRecordTests
 - AuditCatalogTests
 - README.md
 - run_worker
 - AuthorizationTests
 - s
-- LoginRateLimitTests
+- Service
 - AuthenticationSessionTests
 - booking-calendar.mjs
 - especies.js
 - agenda_admin.js
-- appointments.py
+- RoleEnum
 - Ritual: diagnóstico Chrome / Edge — 2026-11-02
 - ref_node_assert
 - Histórico das respostas — fechamento beta até v1.0.0-rc.1
@@ -69,20 +69,20 @@
 - three
 - malha.js
 - widget.js
-- test_password_reset.py
+- Stage2Reproductions
 - home.js
-- observability.py
+- test_audit_catalog.py
 - backup.py
-- Dc
-- routers/institucional.py
-- schemas/user.py
+- SQLiteSchemaMigrationTests
+- schemas/institucional.py
+- PersonNameTests
 - CustomEase.min.js
 - Immersive Frontend UI Craftsmanship
 - BookingIntegrityTests
-- test_schema_migrations.py
+- is_email_conflict
 - video-checks.mjs
-- BookingAbuseLimitTests
-- Ampliação proposta — qualidade dos dados e UX de autenticação
+- LgpdPortabilityTests
+- Stage2ConcurrencyTests
 - healthcheck
 - la
 - ce
@@ -91,17 +91,17 @@
 - 09 — Implantação, suporte e retenção
 - checks.mjs
 - A híbrida — a identidade permanece, a composição evolui
-- config.py
-- initial_admin.py
+- BookingCalendarTests
+- SecurityControlTests
 - 07 — Processo comercial, prospecção e proposta
 - Composição e arquivos por commit
 - auth.js
-- PasswordResetTests
-- BarberServiceAssignmentTests
-- initial_admin.py
-- utc_now_naive
-- Security review
-- finish
+- verify_password
+- routers/horario.py
+- create_initial_admin
+- admin.py
+- AppointmentReviewTests
+- AuthenticationSecurityTests
 - 06 — Crescer com várias instalações, sem multi-tenancy prematura
 - HOME Motion Integration — Contract Map
 - Plano de backup e recuperação de desastres
@@ -115,29 +115,29 @@
 - 04 — Precificação, unit economics e planilha conceitual
 - 08 — Demonstração, objeções e justificativa do preço
 - 12 — Prompts de estudo e simulação para NotebookLM/Gemini
-- create_isolated_postgres_test_schema
+- PostgresBookingMigrationTests
 - Precisão que transforma — laboratório visual
-- support.py
-- get_current_user
-- Modelo de ameaças — Barbearia Agendamento
+- User
+- AuthenticationRegressionTests
+- ScheduleBlockLifecycleTests
 - 05 — Infraestrutura, preços e redução de custos
 - 10 — Riscos, dados, contrato e operação
 - 11 — Roadmap comercial e plano de 90 dias
 - financeiro_admin.js
 - Token-Efficient Workflow
-- get_client_ip
-- Objetivo e limites
-- FinancialReportTests
-- ref_node_fs
+- RequestContextTests
+- verifyBooking
+- test_financial_report.py
+- test_jwt_configuration.py
 - Reutilização e atualização por instalação
 - F1 — implementação e validação local de origem única
-- Stage2ConcurrencyTests
+- bench_disponiveis.py
 - Instruções do projeto
 - 11. Uso de agentes
-- AppointmentReviewTests
-- Recuperação de senha e seleção administrativa — alteração local
+- login_rate_limit.py
+- test_password_reset.py
 - TestDatabaseSelectionTests
-- User
+- BookingAbuseLimitTests
 - Parte 2 — três direções para aprovação visual
 - Rodada de UX — 2026-10-31
 - Identidade e unicidade de e-mails — composição independente
@@ -145,27 +145,28 @@
 - password-visibility.mjs
 - ritual-diagnostics.js
 - updates
-- L
-- Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04
+- create_service
+- AccountErasureConfirmationLimitTests
 - login.js
-- RenderStartTests
+- PasswordResetLimitsMigrationTests
 - test_same_origin_deployment.py
-- PostgresBookingMigrationTests
+- 20261028_01_initial_schema.py
 - Checklist de prontidão para UAT e produção
 - Monitoramento e operação (RNF-17)
 - Rastreabilidade entre requisitos e implementação
 - Home editorial com ritual visual
 - Identidade JWT e credencial concorrente
-- AuthenticationSecurityTests
 - JwtConfigurationTests
+- Ampliação proposta — qualidade dos dados e UX de autenticação
 - Parte 2 — identidade editorial nas telas internas
-- TwoInstallationIsolationTests
-- ScheduleBlockLifecycleTests
+- AuditLog
+- Security review
 - Agendamento inteligente — Parte 1
 - Requisitos do sistema (fonte de verdade para o Codex)
-- PR35 — integração com a segurança atual
+- test_route_authorization_matrix.py
+- Ritual cinematográfico — estudo isolado
 - InstallationScaffoldTests
-- verify_password_and_update
+- Modelo de ameaças — Barbearia Agendamento
 - Continuidade editorial — telas do produto
 - product-navigation.mjs
 - Privacidade e atendimento de solicitações LGPD
@@ -173,13 +174,12 @@
 - especies.d.ts
 - F1 — frontend e API na mesma origem
 - home-experience.config.mjs
-- oc
-- routers/horario.py
+- F2PostgreSQLTests
+- PostgreSQLSchemaMigrationTests
 - 2026-11-07-part2-hybrid.md
 - create.py
 - Correção pontual de clientes e agenda administrativa
 - SEC-01 e UX-01
-- Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04
 - 2026-11-02-ritual-continuo.md
 - 2026-11-07-auth-f1-same-origin.md
 - branding/README.md
@@ -197,78 +197,82 @@
 - ACESSORIOS
 - ANIMACOES
 - Evidências RF23 / RNF-14 — 2026-11-01
-- Etapa 1 executada — evidências e limites
 - Workflow local do Codex
-- .reject_control_characters
+- schemas/horario.py
 - createDust
-- verifyBooking
-- Proposta de implementação por área
-- Ritual cinematográfico — estudo isolado
+- Correções direcionadas de CI — 2026-10-30
 - Painéis da equipe — plano de UX implementado
 - 2026-11-07-home-editorial-integration.md
-- Ra
-- he
-- EmailIdentityMigrationTests
+- Objetivo e limites
+- ref_node_fs
 - staff-summary.test.mjs
+- main.py
+- Recuperação de senha e seleção administrativa — alteração local
+- Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04
+- F2TransactionTests
+- F2LoginResilienceTests
+- PR35 — integração com a segurança atual
+- 2026-11-07-staff-workspace.md
+- Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04
+- Etapa 1 executada — evidências e limites
+- Proposta de implementação por área
 - Lote 1 autorizado e implementado localmente — 2026-11-04
-- Za
+- .reject_control_characters
 - pr36/README.md
 - 2026-11-08-pr35-integration.md
-- PasswordResetLimitsMigrationTests
-- 20261028_01_initial_schema.py
-- bench_disponiveis.py
-- 20261031_01_email_identity.py
-- 2026-11-07-staff-workspace.md
-- M
-- 20261027_01_remove_legacy_booking_unique.py
-- 20261029_02_security_controls.py
-- 20261107_01_login_reservations.py
-- 20261107_02_login_outcomes.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `User` - 198 edges
-2. `asgi_request()` - 197 edges
-3. `RoleEnum` - 117 edges
-4. `load_app_for_environment()` - 83 edges
-5. `Service` - 80 edges
-6. `reset_database()` - 79 edges
+1. `User` - 201 edges
+2. `asgi_request()` - 200 edges
+3. `RoleEnum` - 119 edges
+4. `load_app_for_environment()` - 85 edges
+5. `reset_database()` - 81 edges
+6. `Service` - 80 edges
 7. `Appointment` - 69 edges
-8. `utc_now_naive()` - 61 edges
-9. `get_password_hash()` - 50 edges
+8. `utc_now_naive()` - 66 edges
+9. `get_password_hash()` - 51 edges
 10. `load_settings()` - 45 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Resultados de login: revisão aditiva 20261107_02` --references--> `finish()`  [INFERRED]
-  docs/security/AUTH_STAGE2_ROLLOUT.md → backend/app/core/login_rate_limit.py
+- `Confirmação de senha fora do login — limite e vaga própria` --references--> `verify_password_confirmation()`  [INFERRED]
+  docs/REQUISITOS_STATUS.md → backend/app/core/security.py
 - `3. Regras que afetam a venda e o suporte` --references--> `get_available_slots()`  [INFERRED]
   docs/business/notebooklm/01_PRODUTO_E_ARQUITETURA.md → backend/app/routers/appointments.py
 - `Enumeração de e-mails e força bruta (cadastro/login)` --references--> `UserResponse`  [INFERRED]
   docs/REQUISITOS_STATUS.md → backend/app/schemas/user.py
 - `Requisitos não funcionais` --references--> `parse_cors_origins()`  [INFERRED]
   docs/RASTREABILIDADE.md → backend/app/config.py
-- `Empacotamento para o commit local` --references--> `finish()`  [INFERRED]
-  docs/validation-stage2/postgresql/F2_FIX.md → backend/app/core/login_rate_limit.py
+- `Resultados de login: revisão aditiva 20261107_02` --references--> `finish()`  [INFERRED]
+  docs/security/AUTH_STAGE2_ROLLOUT.md → backend/app/core/login_rate_limit.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (231 total, 78 thin omitted)
+## Communities (228 total, 84 thin omitted)
 
-### Community 0 - "RoleEnum"
-Cohesion: 0.12
-Nodes (23): Appointment, AppointmentStatusEnum, Avaliacao, BarbearioServico, BloqueioHorario, ConsentimentoLGPD, JornadaTrabalho, PasswordResetToken (+15 more)
+### Community 0 - "Appointment"
+Cohesion: 0.18
+Nodes (8): Appointment, Avaliacao, AppointmentRelationshipTests, PublicReviewTests, ReviewModerationTests, Matriz detalhada: requisito, classes/módulos, rotas e testes, Regras de negócio, Requisitos funcionais
 
-### Community 1 - "services.py"
-Cohesion: 0.16
-Nodes (11): create_service(), delete_service(), get_service(), get_services(), update_service(), AvaliacaoCreate, ServiceBase, ServiceCreate (+3 more)
-
-### Community 3 - "sqlalchemy"
+### Community 1 - "schemas/institucional.py"
 Cohesion: 0.17
-Nodes (6): upgrade(), upgrade(), upgrade(), upgrade(), downgrade(), upgrade()
+Nodes (7): AvaliacaoCreate, ServiceBase, ServiceCreate, ServiceResponse, ServiceUpdate, BookingInputSafetyTests, SchemaValidationTests
 
-### Community 5 - "login_user"
-Cohesion: 0.29
-Nodes (11): esqueci_senha(), _lock_refresh_user(), login_user(), logout_session(), _new_refresh_token(), redefinir_senha(), refresh_session(), _require_allowed_origin() (+3 more)
+### Community 2 - "pathlib"
+Cohesion: 0.26
+Nodes (3): request(), TwoInstallationIsolationTests, unused_port()
+
+### Community 3 - "support.py"
+Cohesion: 0.05
+Nodes (19): downgrade(), _target_unique_constraints(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade() (+11 more)
+
+### Community 4 - "LoginRateLimitTests"
+Cohesion: 0.05
+Nodes (23): _account_streak_waits(), finish(), _is_success(), Limited, reserve(), consumes_failure_budget(), LoginOutcomeTests, reject_then_cancel() (+15 more)
+
+### Community 5 - "auth.py"
+Cohesion: 0.09
+Nodes (34): email_key(), is_email_conflict(), normalize_email(), normalize_person_name(), seed_demo(), ConsentimentoLGPD, esqueci_senha(), _lock_refresh_user() (+26 more)
 
 ### Community 6 - "initialize"
 Cohesion: 0.05
@@ -279,20 +283,16 @@ Cohesion: 0.06
 Nodes (36): start(), pole(), scissors(), createHeroIntro(), scissorsAngle(), settle(), start(), createVideoRitual() (+28 more)
 
 ### Community 8 - "asgi_request"
-Cohesion: 0.06
-Nodes (7): asgi_request(), AuditTests, AuthenticationRegressionTests, BookingCalendarTests, LgpdPortabilityTests, ReadinessTests, SameOriginFrontendTests
-
-### Community 9 - "send_password_reset_email"
 Cohesion: 0.07
-Nodes (8): EmailDeliveryError, send_password_reset_email(), EsqueciSenhaRequest, EmailIdentityDeliveryTests, EmailIdentityPostgresTests, register(), Preview, resolve_asset()
+Nodes (6): asgi_request(), AuditTests, recover(), ReadinessTests, RenderStartTests, SameOriginFrontendTests
 
-### Community 10 - "login_rate_limit.py"
-Cohesion: 0.09
-Nodes (16): account_key(), _account_streak_waits(), _ip_authenticated_account(), _is_success(), limit_login(), Limited, _lock(), reserve() (+8 more)
+### Community 10 - "Service"
+Cohesion: 0.18
+Nodes (8): BarbearioServico, BloqueioHorario, JornadaTrabalho, Service, BarberServiceAssignmentTests, run(), Classes do domínio (SQLAlchemy), run_benchmark()
 
 ### Community 11 - "gsap.min.js"
 Cohesion: 0.06
-Nodes (20): Gc(), Hc(), ia(), ja(), Lc(), Nc(), oa(), pa() (+12 more)
+Nodes (27): Context(), Db(), Eb(), fb(), Gc(), Hc(), ja(), kb() (+19 more)
 
 ### Community 12 - "Web Design Reviewer"
 Cohesion: 0.05
@@ -314,25 +314,17 @@ Nodes (14): boina(), braco(), cafe(), capa(), crachas(), folha(), gerarPet(), mo
 Cohesion: 0.05
 Nodes (36): databases, databaseName, name, plan, postgresMajorVersion, user, fromDatabase, fromService (+28 more)
 
-### Community 17 - "LoginCapacityLifecycleTests"
-Cohesion: 0.18
-Nodes (5): LoginCapacityLifecycleTests, route(), scenario(), call_next(), work()
-
 ### Community 18 - "json"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (9): git(), orchestrate(), preserved_files(), save(), checksum(), main(), probe(), main() (+1 more)
 
-### Community 19 - "admin.py"
-Cohesion: 0.29
-Nodes (8): _csv_safe(), export_financial_report_csv(), get_agenda_by_date(), get_all_reviews(), get_financial_report(), get_my_agenda_by_date(), listar_auditoria(), toggle_avaliacao_oculta()
+### Community 19 - "PasswordResetTests"
+Cohesion: 0.09
+Nodes (7): EmailDeliveryError, send_password_reset_email(), BrevoDeliveryTests, EmailIdentityDeliveryTests, asgi_post(), PasswordResetTests, request()
 
 ### Community 20 - "@playwright/test"
 Cohesion: 0.08
 Nodes (11): user, runAuthSessionChecks(), cases, agendaDate, bookingDate, projectRoot, admin, client (+3 more)
-
-### Community 21 - "ApplicationConfigurationTests"
-Cohesion: 0.06
-Nodes (3): ApplicationConfigurationTests, _asgi_exchange(), SecurityControlTests
 
 ### Community 22 - "Sistema de Agendamento Online para Barbearia"
 Cohesion: 0.06
@@ -343,48 +335,48 @@ Cohesion: 0.19
 Nodes (7): API_BASE_URL, formatApiError(), messages, refreshAccessToken(), request(), expireSessionOnUnauthorized(), shouldRefreshSession()
 
 ### Community 24 - "ScrollTrigger.min.js"
-Cohesion: 0.07
-Nodes (4): ic(), Ka(), La(), rb()
+Cohesion: 0.05
+Nodes (47): A(), B(), C(), Db(), Dc(), Mq(), Nq(), Tq() (+39 more)
+
+### Community 25 - "models/user.py"
+Cohesion: 0.12
+Nodes (5): utc_now(), utc_now_naive(), get_password_hash(), PasswordResetToken, RefreshToken
 
 ### Community 26 - "Status de auditoria dos requisitos"
 Cohesion: 0.06
-Nodes (31): Agendamento inteligente — Parte 1 (2026-11-07), Atualização técnica Render — 2026-10-30, Correção da agenda administrativa — 2026-11-04, Correção F2 — finalização após commit do login, Correções da revisão final — 2026-10-31, Correções direcionadas de CI — 2026-10-30, Critério mínimo de avanço, Enumeração de e-mails e força bruta (cadastro/login) (+23 more)
+Nodes (31): Agendamento inteligente — Parte 1 (2026-11-07), Atualização técnica Render — 2026-10-30, Confirmação de senha fora do login — limite e vaga própria, Correção da agenda administrativa — 2026-11-04, Correção F2 — finalização após commit do login, Correções da revisão final — 2026-10-31, Critério mínimo de avanço, Enumeração de e-mails e força bruta (cadastro/login) (+23 more)
 
 ### Community 27 - "ref_node_url"
 Cohesion: 0.16
 Nodes (10): frontend, source, backendRoot, getBookingDate(), projectRoot, startTestEnvironment(), buildStaticSite(), collectHtml() (+2 more)
 
 ### Community 29 - "load_settings"
-Cohesion: 0.16
-Nodes (5): load_settings(), brevo_environment(), BrevoConfigurationTests, ApplicationSettingsTests, valid_production_environment()
+Cohesion: 0.06
+Nodes (25): _canonical(), _existing_identity_index(), upgrade(), _get(), get_app_environment(), load_settings(), _normalize_cors_hostname(), parse_allowed_hosts() (+17 more)
 
-### Community 30 - "main.py"
-Cohesion: 0.10
-Nodes (12): check_schema_revision(), expected_migration_heads(), health(), lifespan(), _ping_database(), prometheus_metrics(), readiness(), root() (+4 more)
+### Community 30 - "observability.py"
+Cohesion: 0.13
+Nodes (8): _label(), _method(), metrics_text(), record_request(), RequestObservabilityMiddleware, reset_metrics_for_tests(), _route_template(), ObservabilityTests
 
-### Community 31 - "Schemas Pydantic"
-Cohesion: 0.09
-Nodes (30): AdminAppointmentCreate, AppointmentBase, AppointmentCreate, AppointmentResponse, AppointmentUpdate, AvaliacaoBase, AvaliacaoResponse, BarbearioServicoBase (+22 more)
+### Community 31 - "appointment.py"
+Cohesion: 0.27
+Nodes (5): AdminAppointmentCreate, AppointmentBase, AppointmentCreate, AvaliacaoBase, AvaliacaoResponse
 
 ### Community 34 - "README.md"
 Cohesion: 0.13
 Nodes (7): Compatibilidade do frontend, Estrelinha — assinatura cinematográfica, Atualização F1: origem única, Planos de implementação, Sincronização dos checks — 2026-11-03, E2E com Playwright, HOME — decisões confirmadas
 
 ### Community 35 - "run_worker"
-Cohesion: 0.28
+Cohesion: 0.32
 Nodes (7): run_worker(), addError(), addFailure(), addSkip(), problem(), startTest(), stopTest()
 
 ### Community 37 - "s"
-Cohesion: 0.18
-Nodes (21): _a(), Ao(), _assertThisInitialized(), cb(), cc(), ga(), gb(), hb() (+13 more)
+Cohesion: 0.14
+Nodes (26): _a(), Ao(), _assertThisInitialized(), cb(), cc(), ga(), gb(), ha() (+18 more)
 
-### Community 38 - "LoginRateLimitTests"
-Cohesion: 0.15
-Nodes (4): Policy, LoginRateLimitTests, reserve(), reserve()
-
-### Community 39 - "AuthenticationSessionTests"
-Cohesion: 0.16
-Nodes (5): AuthenticationSessionTests, cookie_token(), Stage2Reproductions, gate(), refresh_worker()
+### Community 38 - "Service"
+Cohesion: 0.10
+Nodes (29): availability_days(), ensure_client_booking_capacity(), is_on_slot_grid(), lock_barber_for_booking(), normalize_datetime(), now_local(), schedule_bounds(), scheduling_timezone() (+21 more)
 
 ### Community 40 - "booking-calendar.mjs"
 Cohesion: 0.25
@@ -398,9 +390,9 @@ Nodes (16): BOCA_ABERTA, BOCA_PEQUENA, CORES, ESCALA, LENTE, normalizar(), OLHO_
 Cohesion: 0.10
 Nodes (37): agendaDayLabel, agendaList, carregarAgendaDoDia(), clearSession(), dateRoll, DIAS_SEMANA, focusSelectedDate(), formatDateForAPI() (+29 more)
 
-### Community 43 - "appointments.py"
-Cohesion: 0.11
-Nodes (28): availability_days(), ensure_client_booking_capacity(), is_on_slot_grid(), lock_barber_for_booking(), normalize_datetime(), now_local(), schedule_bounds(), scheduling_timezone() (+20 more)
+### Community 43 - "RoleEnum"
+Cohesion: 0.13
+Nodes (15): RoleEnum, export_financial_report_csv(), get_agenda_by_date(), get_all_reviews(), get_financial_report(), get_my_agenda_by_date(), listar_auditoria(), toggle_avaliacao_oculta() (+7 more)
 
 ### Community 44 - "Ritual: diagnóstico Chrome / Edge — 2026-11-02"
 Cohesion: 0.17
@@ -438,65 +430,61 @@ Nodes (15): ACESSORIOS, ANIMACOES, criarEstudio(), criarPet3D(), FACES, geometri
 Cohesion: 0.12
 Nodes (18): animate(), AVENTAL, barberPole, camera, canvas, fill, interagir(), ITENS (+10 more)
 
-### Community 53 - "test_password_reset.py"
-Cohesion: 0.15
-Nodes (9): settings(), Settings, finish_reservation(), identity_key(), prune_expired(), _reserve(), reserve_request(), PasswordResetLimit (+1 more)
+### Community 53 - "Stage2Reproductions"
+Cohesion: 0.27
+Nodes (3): Stage2Reproductions, gate(), refresh_worker()
 
 ### Community 54 - "home.js"
 Cohesion: 0.19
 Nodes (13): mapsUrls(), whatsappUrl(), allServices, categorize(), loadBusinessInfo(), loadServices(), money, renderBusinessHours() (+5 more)
 
-### Community 55 - "observability.py"
-Cohesion: 0.12
-Nodes (8): _label(), _method(), metrics_text(), record_request(), RequestObservabilityMiddleware, reset_metrics_for_tests(), _route_template(), ObservabilityTests
+### Community 55 - "test_audit_catalog.py"
+Cohesion: 0.17
+Nodes (4): main(), expired_access(), revoke_fixture_sessions(), state()
 
 ### Community 56 - "backup.py"
 Cohesion: 0.21
 Nodes (16): backup_dir(), connect(), create_backup(), encrypted_dump(), fail(), latest_backup(), prune(), remote_copy() (+8 more)
 
-### Community 57 - "Dc"
-Cohesion: 0.17
-Nodes (14): C(), Dc(), Mq(), Nq(), Tq(), Ia(), Ja(), pb() (+6 more)
+### Community 57 - "SQLiteSchemaMigrationTests"
+Cohesion: 0.29
+Nodes (4): assert_matches_models(), migration_config(), schema_snapshot(), SQLiteSchemaMigrationTests
 
-### Community 58 - "routers/institucional.py"
+### Community 58 - "schemas/institucional.py"
 Cohesion: 0.16
-Nodes (6): InformacaoInstitucional, create_or_update_informacoes(), get_informacoes(), update_informacoes(), InformacaoInstitucionalUpdate, _validate_url()
+Nodes (9): InformacaoInstitucional, create_or_update_informacoes(), get_informacoes(), update_informacoes(), InformacaoInstitucionalBase, InformacaoInstitucionalCreate, InformacaoInstitucionalResponse, InformacaoInstitucionalUpdate (+1 more)
 
-### Community 59 - "schemas/user.py"
-Cohesion: 0.15
-Nodes (7): normalize_person_name(), PasswordConfirmation, RedefinirSenhaRequest, UserLogin, UserResponse, UserUpdate, PersonNameTests
+### Community 59 - "PersonNameTests"
+Cohesion: 0.17
+Nodes (3): UserUpdate, EmailIdentityContractTests, PersonNameTests
 
 ### Community 60 - "CustomEase.min.js"
-Cohesion: 0.16
-Nodes (12): arcToSegment(), CustomEase(), n(), q(), r(), stringToRawPath(), y(), Context() (+4 more)
+Cohesion: 0.23
+Nodes (8): arcToSegment(), CustomEase(), n(), q(), r(), stringToRawPath(), y(), Gw()
 
 ### Community 61 - "Immersive Frontend UI Craftsmanship"
 Cohesion: 0.12
 Nodes (15): 1. Establishing the Creative Foundation, 2.1 The Entry Sequence (Preloading & Initialization), 2.2 The Hero Architecture, 2.3 Fluid & Contextual Navigation, 2. Structural Requirements for Immersive UI, 3.1 Scroll-Driven Narratives, 3.2 High-Fidelity Micro-Interactions, 3. The Motion Design System (+7 more)
 
-### Community 63 - "test_schema_migrations.py"
-Cohesion: 0.24
-Nodes (4): assert_matches_models(), migration_config(), schema_snapshot(), SQLiteSchemaMigrationTests
-
 ### Community 64 - "video-checks.mjs"
 Cohesion: 0.16
 Nodes (8): artifacts, lab, report, seek(), server, snapshot(), state(), waitForPresentedSeek()
 
-### Community 66 - "Ampliação proposta — qualidade dos dados e UX de autenticação"
-Cohesion: 0.17
-Nodes (12): Ampliação proposta — qualidade dos dados e UX de autenticação, Aprovação e riscos de compatibilidade, Arquivos envolvidos, sem alterações de produto nesta etapa, Diagnóstico confirmado no código/local, Evidências efetivamente executadas agora, Lote 2 autorizado — testes de identidade e unicidade — 2026-11-04, Organização local dos commits autorizada — 2026-11-04, Prioridade e limites (+4 more)
+### Community 66 - "Stage2ConcurrencyTests"
+Cohesion: 0.23
+Nodes (3): Stage2ConcurrencyTests, gate(), worker()
 
 ### Community 67 - "healthcheck"
 Cohesion: 0.14
 Nodes (13): POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER, interval, retries, test, timeout, environment (+5 more)
 
 ### Community 68 - "la"
-Cohesion: 0.16
-Nodes (12): Aa(), Animation(), Ca(), Da(), la(), ma(), na(), Ua() (+4 more)
+Cohesion: 0.18
+Nodes (11): Aa(), Animation(), Ca(), Da(), la(), na(), Ua(), Va() (+3 more)
 
 ### Community 69 - "ce"
-Cohesion: 0.22
-Nodes (14): Ae(), ce(), $d(), ee(), ha(), ka(), le(), me() (+6 more)
+Cohesion: 0.19
+Nodes (15): Ae(), ce(), $d(), ee(), he(), ka(), le(), ma() (+7 more)
 
 ### Community 71 - "03 — Oferta, valor e modelo de negócio"
 Cohesion: 0.15
@@ -514,10 +502,6 @@ Nodes (16): artifacts, measurements, normalErrors, observe(), results, server, u
 Cohesion: 0.06
 Nodes (28): Arquivos, Build, segurança e implantação, HOME editorial — integração local aprovada, O que foi integrado, Validação efetivamente executada, A híbrida — a identidade permanece, a composição evolui, Evidências, O que foi preservado (+20 more)
 
-### Community 75 - "config.py"
-Cohesion: 0.15
-Nodes (13): _get(), get_app_environment(), _normalize_cors_hostname(), parse_allowed_hosts(), parse_cors_origins(), _validate_database_url(), _validate_reset_url(), validate_scheduling_timezone() (+5 more)
-
 ### Community 77 - "07 — Processo comercial, prospecção e proposta"
 Cohesion: 0.17
 Nodes (11): 07 — Processo comercial, prospecção e proposta, 1. Funil com passagem verificável, 2. Canais para um desenvolvedor individual, 3. Primeiros 3, 10 e 30 clientes, 4. Roteiros naturais por canal e situação, 5. Descoberta em conversa, não interrogatório, 6. Proposta comercial editável, Até três: validar que alguém paga e usa (+3 more)
@@ -530,25 +514,21 @@ Nodes (12): 13c072a — feat(ui): adicionar visibilidade acessível de senhas, 1
 Cohesion: 0.32
 Nodes (10): setToken(), forgotPassword(), login(), moneySafeDestinations, register(), resetPassword(), safeDestination(), setBusy() (+2 more)
 
-### Community 80 - "PasswordResetTests"
-Cohesion: 0.21
-Nodes (3): asgi_post(), PasswordResetTests, request()
-
-### Community 82 - "initial_admin.py"
-Cohesion: 0.08
-Nodes (13): email_key(), is_email_conflict(), normalize_email(), create_initial_admin(), main(), validate_installation_for_admin_bootstrap(), seed_demo(), register_user() (+5 more)
-
-### Community 83 - "utc_now_naive"
+### Community 80 - "verify_password"
 Cohesion: 0.10
-Nodes (19): utc_now_naive(), personal_data_pdf(), main(), purge_audit(), AuditLog, _collect_personal_data(), excluir_minha_conta(), export_pdf() (+11 more)
+Nodes (14): _load_password_verification_limit(), _password_unavailable(), _verify_in_lane(), verify_password(), verify_password_and_update(), verify_password_confirmation(), route(), scenario() (+6 more)
 
-### Community 84 - "Security review"
-Cohesion: 0.18
-Nodes (10): Controls observed, Findings, Hypotheses reviewed, Limitations, Low — Revoked refresh sessions do not revoke issued access tokens, Medium — Access token is readable by same-origin JavaScript, Medium — Authentication rate limiting is IP-based and race-prone, Medium — Frontend Content Security Policy does not restrict scripts (+2 more)
+### Community 81 - "routers/horario.py"
+Cohesion: 0.23
+Nodes (10): ensure_owner_id(), ensure_resource_owner(), create_bloqueio(), create_jornada(), delete_bloqueio(), delete_jornada(), get_bloqueios_barbeiro(), get_jornadas_barbeiro() (+2 more)
 
-### Community 85 - "finish"
-Cohesion: 0.20
-Nodes (11): finish(), Outcome, Reason, record_login_outcome(), reject_then_cancel(), Causa e correção, Comandos e checks históricos, Correção exclusiva de F2 (+3 more)
+### Community 82 - "create_initial_admin"
+Cohesion: 0.17
+Nodes (5): create_initial_admin(), main(), validate_installation_for_admin_bootstrap(), InitialAdminTests, attempt()
+
+### Community 83 - "admin.py"
+Cohesion: 0.16
+Nodes (6): record(), _safe_details(), get_db(), require_roles(), _csv_safe(), Matriz de autorização
 
 ### Community 86 - "06 — Crescer com várias instalações, sem multi-tenancy prematura"
 Cohesion: 0.18
@@ -567,8 +547,8 @@ Cohesion: 0.18
 Nodes (10): Autorização e implementação, Classificação explícita — revisão 20261107_02 autorizada, Decisão posterior autorizada: capacidade local pragmática, Etapa 2: sessões e limitação de autenticação, Evidência, Infraestrutura e pendências, Objetivo e limites, Reproduções (+2 more)
 
 ### Community 91 - "jf"
-Cohesion: 0.27
-Nodes (11): jf(), lf(), mf(), N(), nf(), O(), of(), tf() (+3 more)
+Cohesion: 0.22
+Nodes (13): ia(), u(), jf(), lf(), mf(), N(), nf(), O() (+5 more)
 
 ### Community 92 - "frontend.py"
 Cohesion: 0.29
@@ -598,25 +578,13 @@ Nodes (10): 08 — Demonstração, objeções e justificativa do preço, 1. Prep
 Cohesion: 0.20
 Nodes (9): 12 — Prompts de estudo e simulação para NotebookLM/Gemini, Como avaliar as respostas da ferramenta, Demo, objeções e negociação, Descoberta e prospecção, Operação e múltiplas instalações, Plano de execução e avaliação crítica, Preço e economia unitária, Produto e cliente (+1 more)
 
-### Community 99 - "create_isolated_postgres_test_schema"
-Cohesion: 0.15
-Nodes (7): _cleanup_postgres_test_schemas(), create_isolated_postgres_test_schema(), _create_postgres_schema(), drop_isolated_postgres_test_schema(), _postgres_url_for_schema(), PostgreSQLSchemaMigrationTests, Migrações antes do startup no Render Free — 2026-10-31
-
 ### Community 100 - "Precisão que transforma — laboratório visual"
 Cohesion: 0.20
 Nodes (8): Abrir, Como ler as métricas, Experimentar, Gesto e materiais, Precisão que transforma — laboratório visual, Rodada atual: Ritual em vídeo, Timeline desktop, Validação
 
-### Community 101 - "support.py"
+### Community 101 - "User"
 Cohesion: 0.07
-Nodes (13): utc_now(), create_access_token(), decode_access_token(), _validate_access_subject(), _validate_session_id(), verify_password(), LoginAttempt, RefreshToken (+5 more)
-
-### Community 102 - "get_current_user"
-Cohesion: 0.19
-Nodes (6): get_current_user(), require_roles(), _all_api_routes(), _dependency_calls(), RouteAuthorizationMatrixTests, Matriz de autorização
-
-### Community 103 - "Modelo de ameaças — Barbearia Agendamento"
-Cohesion: 0.20
-Nodes (9): Atacantes considerados, Ativos e sensibilidade, Controles observados e dependências operacionais, Entradas e exposição, Escopo e origem das informações, Modelo de ameaças — Barbearia Agendamento, Questões em aberto e etiquetas, Riscos aceitos, exclusões e regra de priorização (+1 more)
+Nodes (10): User, access_token_for_user(), load_app_for_environment(), reset_database(), InstitutionalInfoTests, PersonNameFlowTests, PublicCatalogTests, cleanup() (+2 more)
 
 ### Community 104 - "05 — Infraestrutura, preços e redução de custos"
 Cohesion: 0.22
@@ -638,13 +606,9 @@ Nodes (7): api, currency, exportReport(), form, generateReport(), renderBreakdow
 Cohesion: 0.25
 Nodes (7): Avoid routine context noise, Classify the task, Important limits, Keep changes and output focused, Provenance, Token-Efficient Workflow, Work from narrow evidence
 
-### Community 109 - "get_client_ip"
-Cohesion: 0.19
-Nodes (6): _validate_smtp_host(), get_client_ip(), _parse_ip(), rate_limit_key(), request_with_ip(), RequestContextTests
-
-### Community 110 - "Objetivo e limites"
-Cohesion: 0.22
-Nodes (9): Aceite, Decisões propostas e alternativas, Evidências da fase de diagnóstico, anteriores à aprovação, Execução local aprovada — evidências posteriores, Objetivo e limites, Riscos e recuperação, Validação, Validação manual futura em homologação (+1 more)
+### Community 112 - "test_jwt_configuration.py"
+Cohesion: 0.24
+Nodes (7): create_access_token(), decode_access_token(), _validate_access_subject(), _validate_session_id(), get_current_user(), access_token_for_user_id(), Revogação imediata do access token por sessão — 2026-11-16
 
 ### Community 113 - "Reutilização e atualização por instalação"
 Cohesion: 0.25
@@ -654,9 +618,9 @@ Nodes (7): Atualização de schema em cada banco, Inventário de identidade e co
 Cohesion: 0.25
 Nodes (7): Alterações, Causa e solução, Evidência Chromium, F1 — implementação e validação local de origem única, Render, passos externos e limites, Revisão final para commit local, Testes reais e resultados
 
-### Community 115 - "Stage2ConcurrencyTests"
-Cohesion: 0.23
-Nodes (3): Stage2ConcurrencyTests, gate(), worker()
+### Community 115 - "bench_disponiveis.py"
+Cohesion: 0.18
+Nodes (4): _run_migrations(), run_migrations_online(), _engine(), main()
 
 ### Community 116 - "Instruções do projeto"
 Cohesion: 0.29
@@ -666,13 +630,13 @@ Nodes (6): Autonomia dentro do escopo, Fluxo eficiente de contexto, graphify, In
 Cohesion: 0.29
 Nodes (6): 11. Uso de agentes, Como criar, Coordenação e correções, Modelo e esforço, Preservação e revisão, Quando delegar
 
-### Community 119 - "Recuperação de senha e seleção administrativa — alteração local"
-Cohesion: 0.25
-Nodes (8): Arquivos alterados nesta tarefa, Checklist antes de qualquer deploy, Diagnóstico e correções, Evidências e comandos, Migração e reversibilidade, Procedimento futuro de migração em homologação — não executado, Recuperação de senha e seleção administrativa — alteração local, Riscos e investigação pendente
+### Community 118 - "login_rate_limit.py"
+Cohesion: 0.08
+Nodes (29): settings(), claim_login_reservation(), _ip_authenticated_account(), limit_login(), _lock(), Outcome, Policy, Reason (+21 more)
 
-### Community 121 - "User"
-Cohesion: 0.06
-Nodes (15): get_password_hash(), User, read_current_user(), access_token_for_user(), load_app_for_environment(), reset_database(), BrevoDeliveryTests, recover() (+7 more)
+### Community 119 - "test_password_reset.py"
+Cohesion: 0.16
+Nodes (8): account_key(), finish_reservation(), identity_key(), prune_expired(), _reserve(), reserve_request(), PasswordResetLimit, reserve_in_process()
 
 ### Community 122 - "Parte 2 — três direções para aprovação visual"
 Cohesion: 0.29
@@ -702,17 +666,21 @@ Nodes (5): frame(), record(), report(), set(), stop()
 Cohesion: 0.29
 Nodes (6): interval, updates, directory, package-ecosystem, schedule, version
 
-### Community 129 - "L"
-Cohesion: 0.20
-Nodes (12): A(), B(), F(), G(), fd(), L(), P(), Q() (+4 more)
-
-### Community 130 - "Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04"
-Cohesion: 0.25
-Nodes (8): Contratos revisados, Higiene, dependências e credenciais, Matriz de arquivos e origem, Organização local posteriormente autorizada — 2026-11-04, Problemas e riscos residuais, Resultados executados nesta revisão, Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04, Sequência exata recomendada de commits (somente proposta)
+### Community 129 - "create_service"
+Cohesion: 0.24
+Nodes (5): create_service(), delete_service(), get_service(), get_services(), update_service()
 
 ### Community 131 - "login.js"
 Cohesion: 0.18
 Nodes (9): apiPost(), abrirCadastro, fecharCadastro, limparErro(), loginForm, modal, mostrarErro(), registerForm (+1 more)
+
+### Community 132 - "PasswordResetLimitsMigrationTests"
+Cohesion: 0.36
+Nodes (3): PasswordResetLimitsMigrationTests, after_select(), insert_limit()
+
+### Community 134 - "20261028_01_initial_schema.py"
+Cohesion: 0.39
+Nodes (5): _foreign_keys(), _type_family(), _unique_indexes(), upgrade(), _validate_existing_schema()
 
 ### Community 135 - "Checklist de prontidão para UAT e produção"
 Cohesion: 0.33
@@ -734,13 +702,21 @@ Nodes (5): Encerramento dos blocos, Evidência, Home editorial com ritual visual
 Cohesion: 0.33
 Nodes (5): Identidade JWT e credencial concorrente, Implementação, Objetivo e limites, Progresso, Riscos e validação
 
+### Community 141 - "Ampliação proposta — qualidade dos dados e UX de autenticação"
+Cohesion: 0.17
+Nodes (12): Ampliação proposta — qualidade dos dados e UX de autenticação, Aprovação e riscos de compatibilidade, Arquivos envolvidos, sem alterações de produto nesta etapa, Diagnóstico confirmado no código/local, Evidências efetivamente executadas agora, Lote 2 autorizado — testes de identidade e unicidade — 2026-11-04, Organização local dos commits autorizada — 2026-11-04, Prioridade e limites (+4 more)
+
 ### Community 142 - "Parte 2 — identidade editorial nas telas internas"
 Cohesion: 0.22
 Nodes (8): Arquivos desta continuação, Correções verificadas durante o trabalho, Evidências visuais, Limites e pendências, O que mudou, Parte 2 — identidade editorial nas telas internas, Reprodução local, Validação executada
 
-### Community 143 - "TwoInstallationIsolationTests"
-Cohesion: 0.24
-Nodes (3): request(), TwoInstallationIsolationTests, unused_port()
+### Community 143 - "AuditLog"
+Cohesion: 0.53
+Nodes (4): main(), purge_audit(), AuditLog, Requisitos não funcionais
+
+### Community 144 - "Security review"
+Cohesion: 0.18
+Nodes (10): Controls observed, Findings, Hypotheses reviewed, Limitations, Low — Revoked refresh sessions do not revoke issued access tokens, Medium — Access token is readable by same-origin JavaScript, Medium — Authentication rate limiting is IP-based and race-prone, Medium — Frontend Content Security Policy does not restrict scripts (+2 more)
 
 ### Community 145 - "Agendamento inteligente — Parte 1"
 Cohesion: 0.40
@@ -750,13 +726,17 @@ Nodes (5): Agendamento inteligente — Parte 1, Comportamento, Entradas e XSS, E
 Cohesion: 0.40
 Nodes (4): Regras de negócio (RN), Requisitos do sistema (fonte de verdade para o Codex), Requisitos funcionais (RF), Requisitos não funcionais (RNF)
 
-### Community 147 - "PR35 — integração com a segurança atual"
-Cohesion: 0.33
-Nodes (5): Implantação e recuperação, PR35 — integração com a segurança atual, Reprodução e isolamento, Resolução, Resultados executados
+### Community 147 - "test_route_authorization_matrix.py"
+Cohesion: 0.60
+Nodes (3): _all_api_routes(), _dependency_calls(), RouteAuthorizationMatrixTests
 
-### Community 150 - "verify_password_and_update"
-Cohesion: 0.10
-Nodes (13): claim_login_reservation(), _load_password_verification_limit(), _password_unavailable(), verify_password_and_update(), PasswordCapacityTests, verify(), Histórico: alternativa pragmática anterior à classificação explícita, Etapa 2: reservas, locks e troca de versão (+5 more)
+### Community 148 - "Ritual cinematográfico — estudo isolado"
+Cohesion: 0.20
+Nodes (10): Abrir e comparar, Apresentação, Arquitetura, Corte narrativo, Encoding, Evidência da revisão de composição, Evidência final desta rodada, Master e análise (+2 more)
+
+### Community 150 - "Modelo de ameaças — Barbearia Agendamento"
+Cohesion: 0.20
+Nodes (9): Atacantes considerados, Ativos e sensibilidade, Controles observados e dependências operacionais, Entradas e exposição, Escopo e origem das informações, Modelo de ameaças — Barbearia Agendamento, Questões em aberto e etiquetas, Riscos aceitos, exclusões e regra de priorização (+1 more)
 
 ### Community 151 - "Continuidade editorial — telas do produto"
 Cohesion: 0.40
@@ -782,21 +762,9 @@ Nodes (3): DadosPet, OpcoesPet, ParteDados
 Cohesion: 0.29
 Nodes (7): Causa e arquitetura, Cookies, CORS e CSRF, Estado, F1 — frontend e API na mesma origem, Limites, Render: preparação versionada e aplicação externa pendente, Reprodução local e Chromium
 
-### Community 160 - "oc"
-Cohesion: 0.20
-Nodes (10): Db(), J(), nb(), oc(), qc(), Tb(), Ua(), Va() (+2 more)
-
-### Community 161 - "routers/horario.py"
-Cohesion: 0.15
-Nodes (13): record(), _safe_details(), get_db(), ensure_owner_id(), ensure_resource_owner(), create_bloqueio(), create_jornada(), delete_bloqueio() (+5 more)
-
 ### Community 164 - "create.py"
-Cohesion: 0.27
+Cohesion: 0.19
 Nodes (7): copy_clean_tree(), create_installation(), is_private_file(), main(), make_frontend_config(), valid_api_origin(), main()
-
-### Community 168 - "Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04"
-Cohesion: 0.40
-Nodes (5): Arquivos e implementação delimitada, Decisões e compatibilidade, Limites e validação manual pendente, Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04, Testes e evidências
 
 ### Community 172 - "essential-flows.spec.mjs"
 Cohesion: 0.22
@@ -806,85 +774,77 @@ Nodes (4): admin, barber, client, mobileClient
 Cohesion: 0.50
 Nodes (3): Contratos adicionais, Evidências RF23 / RNF-14 — 2026-11-01, Validação
 
-### Community 199 - "Etapa 1 executada — evidências e limites"
-Cohesion: 0.40
-Nodes (5): Cadeia de codificação, Etapa 1 executada — evidências e limites, Normalização — verificações em memória, Separação de trabalho e riscos de conflito, zxcvbn-ts — compatibilidade do build
-
 ### Community 200 - "Workflow local do Codex"
 Cohesion: 0.50
 Nodes (4): Checks e hooks, Codex helpers, Instruções versus proteção técnica, Workflow local do Codex
 
-### Community 204 - "Proposta de implementação por área"
-Cohesion: 0.40
-Nodes (5): E-mails, Medidor de força, Mostrar/ocultar senha, Nomes e textos, Proposta de implementação por área
-
-### Community 206 - "Ritual cinematográfico — estudo isolado"
-Cohesion: 0.20
-Nodes (10): Abrir e comparar, Apresentação, Arquitetura, Corte narrativo, Encoding, Evidência da revisão de composição, Evidência final desta rodada, Master e análise (+2 more)
+### Community 201 - "schemas/horario.py"
+Cohesion: 0.16
+Nodes (19): AppointmentResponse, AppointmentUpdate, BarbearioServicoBase, BarbearioServicoCreate, BarbearioServicoResponse, BarbearioServicoWithBarbeiroResponse, ORMModel, SchemaModel (+11 more)
 
 ### Community 207 - "Painéis da equipe — plano de UX implementado"
 Cohesion: 0.29
 Nodes (6): Arquivos desta implementação, Comportamento, Limitações e próximos passos, Painéis da equipe — plano de UX implementado, Reprodução, Validação executada
 
-### Community 210 - "Ra"
-Cohesion: 0.53
-Nodes (6): Eb(), Ma(), Na(), Oa(), Ra(), z()
-
-### Community 211 - "he"
-Cohesion: 0.40
-Nodes (5): he(), Md(), Nd(), Od(), Pd()
+### Community 211 - "Objetivo e limites"
+Cohesion: 0.22
+Nodes (9): Aceite, Decisões propostas e alternativas, Evidências da fase de diagnóstico, anteriores à aprovação, Execução local aprovada — evidências posteriores, Objetivo e limites, Riscos e recuperação, Validação, Validação manual futura em homologação (+1 more)
 
 ### Community 213 - "staff-summary.test.mjs"
 Cohesion: 0.50
 Nodes (3): summarizeDay(), now, rows
 
-### Community 214 - "Lote 1 autorizado e implementado localmente — 2026-11-04"
+### Community 216 - "main.py"
+Cohesion: 0.10
+Nodes (12): check_schema_revision(), expected_migration_heads(), health(), lifespan(), _ping_database(), prometheus_metrics(), readiness(), root() (+4 more)
+
+### Community 218 - "Recuperação de senha e seleção administrativa — alteração local"
+Cohesion: 0.25
+Nodes (8): Arquivos alterados nesta tarefa, Checklist antes de qualquer deploy, Diagnóstico e correções, Evidências e comandos, Migração e reversibilidade, Procedimento futuro de migração em homologação — não executado, Recuperação de senha e seleção administrativa — alteração local, Riscos e investigação pendente
+
+### Community 219 - "Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04"
+Cohesion: 0.25
+Nodes (8): Contratos revisados, Higiene, dependências e credenciais, Matriz de arquivos e origem, Organização local posteriormente autorizada — 2026-11-04, Problemas e riscos residuais, Resultados executados nesta revisão, Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04, Sequência exata recomendada de commits (somente proposta)
+
+### Community 223 - "PR35 — integração com a segurança atual"
+Cohesion: 0.33
+Nodes (5): Implantação e recuperação, PR35 — integração com a segurança atual, Reprodução e isolamento, Resolução, Resultados executados
+
+### Community 229 - "Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04"
+Cohesion: 0.40
+Nodes (5): Arquivos e implementação delimitada, Decisões e compatibilidade, Limites e validação manual pendente, Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04, Testes e evidências
+
+### Community 230 - "Etapa 1 executada — evidências e limites"
+Cohesion: 0.40
+Nodes (5): Cadeia de codificação, Etapa 1 executada — evidências e limites, Normalização — verificações em memória, Separação de trabalho e riscos de conflito, zxcvbn-ts — compatibilidade do build
+
+### Community 231 - "Proposta de implementação por área"
+Cohesion: 0.40
+Nodes (5): E-mails, Medidor de força, Mostrar/ocultar senha, Nomes e textos, Proposta de implementação por área
+
+### Community 233 - "Lote 1 autorizado e implementado localmente — 2026-11-04"
 Cohesion: 0.50
 Nodes (4): Evidência de implementação e validação, Lote 1 autorizado e implementado localmente — 2026-11-04, Política implementada, Riscos e limites do lote
 
-### Community 215 - "Za"
-Cohesion: 0.40
-Nodes (5): kb(), ob(), ra(), rb(), Za()
-
-### Community 219 - "PasswordResetLimitsMigrationTests"
-Cohesion: 0.36
-Nodes (3): PasswordResetLimitsMigrationTests, after_select(), insert_limit()
-
-### Community 221 - "20261028_01_initial_schema.py"
-Cohesion: 0.39
-Nodes (5): _foreign_keys(), _type_family(), _unique_indexes(), upgrade(), _validate_existing_schema()
-
-### Community 222 - "bench_disponiveis.py"
-Cohesion: 0.43
-Nodes (3): _engine(), main(), run_benchmark()
-
-### Community 223 - "20261031_01_email_identity.py"
-Cohesion: 0.47
-Nodes (3): _canonical(), _existing_identity_index(), upgrade()
-
-### Community 227 - "20261027_01_remove_legacy_booking_unique.py"
-Cohesion: 0.83
-Nodes (3): downgrade(), _target_unique_constraints(), upgrade()
-
 ## Knowledge Gaps
 - **5 isolated node(s):** `ESCALA`, `CORES`, `PETS`, `ANIMACOES`, `ACESSORIOS`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1166 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **78 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1178 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **84 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `User` connect `User` to `RoleEnum`, `services.py`, `LoginOutcomeTests`, `login_user`, `asgi_request`, `send_password_reset_email`, `AuthenticationSecurityTests`, `ScheduleBlockLifecycleTests`, `LoginCapacityLifecycleTests`, `admin.py`, `ApplicationConfigurationTests`, `F2LoginResilienceTests`, `BookingTemporalTests`, `main.py`, `ServiceRecordTests`, `routers/horario.py`, `AuditCatalogTests`, `AuthorizationTests`, `LoginRateLimitTests`, `AuthenticationSessionTests`, `appointments.py`, `routers/institucional.py`, `BookingIntegrityTests`, `BookingAbuseLimitTests`, `PasswordResetTests`, `BarberServiceAssignmentTests`, `initial_admin.py`, `utc_now_naive`, `bench_disponiveis.py`, `support.py`, `get_current_user`, `FinancialReportTests`, `Stage2ConcurrencyTests`, `AppointmentReviewTests`?**
+- **Why does `User` connect `User` to `Appointment`, `create_service`, `AccountErasureConfirmationLimitTests`, `support.py`, `LoginRateLimitTests`, `auth.py`, `asgi_request`, `Service`, `LoginCapacityLifecycleTests`, `PasswordResetTests`, `models/user.py`, `BookingTemporalTests`, `F2PostgreSQLTests`, `AuditCatalogTests`, `ServiceRecordTests`, `AuthorizationTests`, `Service`, `AuthenticationSessionTests`, `RoleEnum`, `Stage2Reproductions`, `test_audit_catalog.py`, `schemas/institucional.py`, `PersonNameTests`, `BookingIntegrityTests`, `is_email_conflict`, `LgpdPortabilityTests`, `Stage2ConcurrencyTests`, `schemas/horario.py`, `BookingCalendarTests`, `SecurityControlTests`, `routers/horario.py`, `create_initial_admin`, `admin.py`, `AppointmentReviewTests`, `AuthenticationSecurityTests`, `main.py`, `F2LoginResilienceTests`, `AuthenticationRegressionTests`, `ScheduleBlockLifecycleTests`, `test_financial_report.py`, `test_jwt_configuration.py`, `BookingAbuseLimitTests`?**
   _High betweenness centrality (0.181) - this node is a cross-community bridge._
-- **Are the 102 inferred relationships involving `User` (e.g. with `availability_days()` and `ensure_client_booking_capacity()`) actually correct?**
-  _`User` has 102 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 103 inferred relationships involving `User` (e.g. with `availability_days()` and `ensure_client_booking_capacity()`) actually correct?**
+  _`User` has 103 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ESCALA`, `CORES`, `PETS` to the rest of the system?**
   _5 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `RoleEnum` be split into smaller, more focused modules?**
-  _Cohesion score 0.11561771561771562 - nodes in this community are weakly interconnected._
-- **Why does `Matriz de investigação e fechamento` connect `appointments.py` to `login_user`, `Evidências RF23 / RNF-14 — 2026-11-01`, `auth.js`, `initial_admin.py`, `admin.py`, `utc_now_naive`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
+- **Should `support.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.05217391304347826 - nodes in this community are weakly interconnected._
+- **Why does `Status de auditoria dos requisitos` connect `Status de auditoria dos requisitos` to `PostgreSQLSchemaMigrationTests`, `README.md`, `Service`, `Correções direcionadas de CI — 2026-10-30`, `AuditLog`, `verify_password`, `test_jwt_configuration.py`?**
+  _High betweenness centrality (0.148) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `asgi_request()` (e.g. with `receive()` and `send()`) actually correct?**
   _`asgi_request()` has 3 INFERRED edges - model-reasoned connections that need verification._
-- **Should `initialize` be split into smaller, more focused modules?**
-  _Cohesion score 0.05017921146953405 - nodes in this community are weakly interconnected._
+- **Should `LoginRateLimitTests` be split into smaller, more focused modules?**
+  _Cohesion score 0.05311676909569798 - nodes in this community are weakly interconnected._

@@ -1,5 +1,11 @@
 # Status de auditoria dos requisitos
 
+## Integração do PR #45 com main — 2026-11-16
+
+- Conflito de documentação resolvido preservando confirmação de senha e revogação de sessões. Fixtures de autenticação usam sessões válidas com `sid`.
+- Confirmação de senha preserva o agrupamento IPv6 por `/64`. Evidência: sete testes em `test_password_confirmation_limits.py` aprovados, incluindo regressão que falhava antes da integração; 69 testes Node aprovados. PostgreSQL não executado: sem banco descartável configurado.
+- Validação final: `python -m unittest discover -s tests` em SQLite temporário — 439 testes, nenhuma falha, 17 ignorados; `git diff --cached --check` sem erros.
+
 ## Integração do PR #47 com main — 2026-11-16
 
 - Conflitos dos testes resolvidos preservando cadastro neutro (202), sessões válidas com `sid` e agrupamento IPv6 por `/64` no novo limite de cadastro.
@@ -16,6 +22,13 @@
 
 
 
+
+## Confirmação de senha fora do login — limite e vaga própria
+
+- `DELETE /users/me` passa a ter limite de falhas de confirmação de senha por conta e por IP (`RATE_LIMIT_MAX_ATTEMPTS` em `RATE_LIMIT_BLOCK_MINUTES`, persistido em `login_attempts` com rota própria e sem migração). Excedido o limite, responde 429 com Retry-After antes de qualquer verificação de senha. Saturação (503) não conta como falha.
+- A confirmação usa uma vaga de verificação própria e não bloqueante (`verify_password_confirmation`), separada do semáforo de `AUTH_PASSWORD_MAX_CONCURRENCY`, que fica exclusivo do login. O pico por processo passa a ser essa capacidade + 1.
+- A contagem e o registro da tentativa são serializados por IP e por conta (`pg_advisory_xact_lock` em PostgreSQL, `BEGIN IMMEDIATE` em SQLite), então requisições concorrentes, inclusive de processos diferentes, não ultrapassam o limite.
+- Evidência: `python -m unittest discover -s tests -p test_password_confirmation_limits.py`, com 6 aprovados (inclui 6 reservas concorrentes na última vaga: 1 admitida, 5 com 429); suíte Python completa em SQLite temporário, com 416 testes, 17 ignorados e nenhuma falha. PostgreSQL apenas no CI do PR (`python-postgres`).
 ## Revogação imediata do access token por sessão — 2026-11-16
 
 - Achado de code scan: logout e redefinição de senha revogavam só refresh tokens; o access JWT continuava válido até expirar. Status: **implementado**.
