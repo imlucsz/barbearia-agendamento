@@ -89,7 +89,7 @@ class AuditTests(unittest.TestCase):
                 "nome": "Resilient User", "email": "resilient@example.com",
                 "senha": "resilient-password", "consentimento_lgpd": True,
             })
-        self.assertEqual(status, 201, body)
+        self.assertEqual(status, 202, body)
 
     def test_logout_service_mutation_and_personal_export_are_audited(self):
         admin_token = self.login("admin@example.com")
@@ -192,7 +192,7 @@ class AuditTests(unittest.TestCase):
             status, _ = asgi_request(self.app, "POST", "/auth/register", {
                 "nome": "Fixture", "email": "safe-failure@example.com", "senha": "audit-password",
                 "consentimento_lgpd": True})
-        self.assertEqual(status, 201)
+        self.assertEqual(status, 202)
         self.assertNotIn("fixture-private-credential", " ".join(captured.output))
         event = json.loads(captured.records[0].getMessage())
         self.assertEqual(event["event"], "audit_persist_failed")

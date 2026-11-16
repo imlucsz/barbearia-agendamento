@@ -92,8 +92,7 @@ class InitialAdminTests(unittest.TestCase):
                 "role": "admin",
             },
         )
-        self.assertEqual(status, 201)
-        self.assertEqual(body["role"], "cliente")
+        self.assertEqual(status, 202, body)
         with main.SessionLocal() as db:
             user = db.query(User).filter(User.email == "public@example.com").one()
             self.assertEqual(user.role, RoleEnum.CLIENTE)

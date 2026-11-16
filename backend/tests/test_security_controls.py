@@ -100,13 +100,40 @@ class SecurityControlTests(unittest.TestCase):
 
     def test_other_auth_route_keeps_legacy_limit(self):
         for _ in range(4):
-            self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {})[0], 422)
-        status, _, headers = asgi_request(self.app, "POST", "/auth/register", {}, return_headers=True)
+            self.assertEqual(asgi_request(self.app, "POST", "/auth/redefinir-senha", {})[0], 422)
+        status, _, headers = asgi_request(self.app, "POST", "/auth/redefinir-senha", {}, return_headers=True)
         self.assertEqual(status, 429)
         self.assertGreater(int(headers["retry-after"]), 0)
 
-    def test_legacy_auth_limit_groups_ipv6_by_64(self):
-        for i in range(4):
+    def register(self, email, ip="127.0.0.1"):
+        return asgi_request(self.app, "POST", "/auth/register", {
+            "nome": "Fixture", "email": email, "senha": "fixture-password", "consentimento_lgpd": True,
+        }, client_ip=ip, return_headers=True)
+
+    def test_registration_cap_counts_every_attempt_per_ip(self):
+        statuses = [self.register(email)[0] for email in (
+            "new1@example.com", "new1@example.com", "new2@example.com", "new3@example.com")]
+        self.assertEqual(statuses, [202, 202, 202, 202])
+        self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip="127.0.0.1")[0], 422)
+        # Successful registrations must not reset the per-IP budget.
+        status, body, headers = self.register("new4@example.com")
+        self.assertEqual((status, body), (429, {"detail": "Muitas tentativas. Tente novamente mais tarde."}))
+        self.assertGreater(int(headers["retry-after"]), 0)
+        self.assertEqual(self.register("new4@example.com", "127.0.0.2")[0], 202)
+        with main.SessionLocal() as db:
+            self.assertEqual(db.query(User).filter(User.email == "new4@example.com").count(), 1)
+
+    def test_registration_response_is_neutral_and_hashes_for_existing_email(self):
+        from app.routers import auth
+        with patch("app.routers.auth.get_password_hash", wraps=auth.get_password_hash) as hashed:
+            created = self.register("neutral@example.com", "127.0.0.3")
+            duplicate = self.register(" NEUTRAL@example.com ", "127.0.0.4")
+        self.assertEqual(created[:2], duplicate[:2])
+        self.assertEqual(created[:2], (202, {"mensagem": auth.REGISTRATION_ACCEPTED_MESSAGE}))
+        self.assertEqual(hashed.call_count, 2)
+
+    def test_registration_limit_groups_ipv6_by_64(self):
+        for i in range(5):
             self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip=f"2001:db8:5:6::{i + 1}")[0], 422)
         self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip="2001:db8:5:6:abcd::9")[0], 429)
         self.assertEqual(asgi_request(self.app, "POST", "/auth/register", {}, client_ip="2001:db8:5:7::1")[0], 422)

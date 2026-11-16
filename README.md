@@ -2,6 +2,8 @@
 
 O limite por IP da confirmação de senha em `DELETE /users/me` agrupa endereços IPv6 por `/64`, assim como os demais limites de autenticação.
 
+O limite de tentativas de cadastro agrupa endereços IPv6 por `/64`; a resposta neutra de cadastro permanece compatível com a revogação de sessões do login.
+
 
 
 Aplicação web para uma barbearia por instalação: apresentação pública dos serviços, reserva de horários pelo cliente e gestão da agenda pela equipe. Cada instalação possui configuração e banco próprios; o sistema não implementa multi-tenancy.
@@ -239,12 +241,18 @@ Correção F2: o login publica um marcador interno após confirmar CAS, sessão 
 | Variáveis LOGIN_RATE_* | Padrões | Controle |
 |---|---|---|
 | ACCOUNT_FAILURES / ACCOUNT_WINDOW_SECONDS | 5 / 60s | Falhas e reservas por conta, mesmo com IPs diferentes |
+| ACCOUNT_BACKOFF_MAX_SECONDS | 3600s | Backoff por conta: a cada ACCOUNT_FAILURES falhas desde o último login bem-sucedido, a espera dobra a partir de ACCOUNT_WINDOW_SECONDS até este teto |
+| ACCOUNT_DAILY_FAILURES / ACCOUNT_DAILY_WINDOW_SECONDS | 100 / 86400s | Teto de falhas por conta desde o último login bem-sucedido |
 | IP_FAILURES / IP_WINDOW_SECONDS | 30 / 300s | Falhas e reservas por IP/rota |
 | IP_REQUESTS / REQUEST_WINDOW_SECONDS | 60 / 60s | Todas as tentativas por IP/rota, inclusive sucessos e payload inválido |
 | ACCOUNT_CONCURRENCY / IP_CONCURRENCY | 2 / 4 | Reservas simultâneas por conta e IP |
 | LEASE_SECONDS | 120s | Recuperação de reservas abandonadas |
 
 `AUTH_PASSWORD_MAX_CONCURRENCY` controla separadamente verificações simultâneas por processo: padrão **1**, inteiro de **1 a 16**, validado ao iniciar. Alterações exigem reinício. Use capacidade proporcional à memória/CPU; não é recomendação de aumentar paralelismo no plano free. O verificador comum usa semáforo não bloqueante: saturação retorna 503 genérico com Retry-After=1, sem fila adicional aguardando esse semáforo. Essa capacidade é exclusiva do login; verificação bcrypt e upgrade Argon2 ocupam a mesma vaga até o fim. Confirmações de senha fora do login (`DELETE /users/me`) usam uma vaga própria e não bloqueante por processo, portanto o pico é `AUTH_PASSWORD_MAX_CONCURRENCY` + 1 verificação, e nunca consomem a vaga do login. Essas confirmações também têm limite de falhas por conta e por IP (`RATE_LIMIT_MAX_ATTEMPTS` falhas em `RATE_LIMIT_BLOCK_MINUTES`); excedido o limite, retornam 429 com Retry-After antes de qualquer trabalho de senha. Saturação da vaga de confirmação retorna 503 com Retry-After=1 e não conta como falha. Geração de hashes em cadastro/reset não integra esse teto de verificações; parâmetros criptográficos não foram reduzidos.
+
+Backoff e teto diário por conta só zeram com login bem-sucedido e não se aplicam ao IP que já autenticou a conta nos últimos 30 dias, para que terceiros não bloqueiem facilmente o titular; esse IP continua sujeito à janela curta. E-mails inexistentes executam verificação Argon2 com hash fictício, sem diferença de custo perceptível no login.
+
+`POST /auth/register` responde **202** com `{"mensagem": "Cadastro recebido. Entre com seu e-mail e senha para continuar."}` tanto para e-mail novo quanto já cadastrado (inclusive em corrida de unicidade), sempre gerando o hash da senha. O limite de cadastro por IP conta todas as tentativas (sucessos, duplicados e payload inválido) em janela fixa: `RATE_LIMIT_MAX_ATTEMPTS` tentativas a cada `RATE_LIMIT_BLOCK_MINUTES`, sem reinício por sucesso.
 
 Use o prefixo completo, por exemplo `LOGIN_RATE_ACCOUNT_FAILURES`. Valores são validados na inicialização e precisam ser consistentes entre processos, assim como SECRET_KEY. Trocar a chave reinicia a identidade dos contadores por conta; o histórico por IP permanece. Os padrões permitem uso normal de uma barbearia pequena sem bloqueio global. Ataques distribuídos por muitas contas e IPs ainda podem exigir proteção do edge.
 

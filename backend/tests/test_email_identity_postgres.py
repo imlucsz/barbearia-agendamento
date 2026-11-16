@@ -63,10 +63,9 @@ class EmailIdentityPostgresTests(unittest.TestCase):
                     results = list(executor.map(register, [first, second]))
             finally:
                 event.remove(main.engine, "after_cursor_execute", after_lookup)
-            self.assertEqual(sorted(status for status, _ in results), [201, 409])
+            self.assertEqual([status for status, _ in results], [202, 202])
             self.assertEqual(len(backend_pids), 2)
-            failure = next(body for status, body in results if status == 409)
-            self.assertEqual(failure, {"detail":"E-mail já cadastrado"})
+            self.assertEqual(results[0], results[1])
             with main.SessionLocal() as db:
                 self.assertEqual(db.query(User).filter(User.email == canonical).count(), 1)
 
