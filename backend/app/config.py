@@ -61,6 +61,7 @@ class Settings:
     brevo_api_key: str = field(repr=False)
     email_timeout_seconds: float
     retention_days: int = 365
+    max_active_appointments_per_client: int = 3
     metrics_token: str = field(default="", repr=False)
     password_reset_cooldown_seconds: int = 60
     password_reset_account_max_requests: int = 5
@@ -213,6 +214,17 @@ def validate_secret_key(value: str | None, *, production: bool = False) -> str:
     if production and len(set(secret)) < 16:
         raise RuntimeError("SECRET_KEY must use a high-entropy value in production")
     return secret
+
+
+def max_active_appointments_per_client(source: Mapping[str, str] | None = None) -> int:
+    source = os.environ if source is None else source
+    try:
+        value = int(_get(source, "MAX_ACTIVE_APPOINTMENTS_PER_CLIENT", "3"))
+    except ValueError:
+        raise RuntimeError("MAX_ACTIVE_APPOINTMENTS_PER_CLIENT must be a positive integer") from None
+    if not 1 <= value <= 50:
+        raise RuntimeError("MAX_ACTIVE_APPOINTMENTS_PER_CLIENT must be between 1 and 50")
+    return value
 
 
 def get_app_environment(source: Mapping[str, str] | None = None) -> str:
@@ -411,6 +423,7 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         raise RuntimeError("RETENTION_DAYS must be a positive integer") from None
     if not 1 <= retention_days <= 36500:
         raise RuntimeError("RETENTION_DAYS must be between 1 and 36500")
+    max_active_appointments = max_active_appointments_per_client(source)
     metrics_token = _get(source, "METRICS_TOKEN")
     if metrics_token and (len(metrics_token.encode("utf-8")) < 32 or any(char.isspace() or ord(char) < 32 for char in metrics_token)):
         raise RuntimeError("METRICS_TOKEN must contain at least 32 non-whitespace characters")
@@ -519,6 +532,7 @@ def load_settings(source: Mapping[str, str] | None = None) -> Settings:
         brevo_api_key=brevo_api_key,
         email_timeout_seconds=email_timeout,
         retention_days=retention_days,
+        max_active_appointments_per_client=max_active_appointments,
         metrics_token=metrics_token,
         **reset_limits,
     )

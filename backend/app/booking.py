@@ -3,6 +3,7 @@ from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import validate_scheduling_timezone
@@ -75,6 +76,23 @@ def lock_barber_for_booking(db: Session, barber_id: int) -> None:
     db.query(User.id).filter(User.id == barber_id).with_for_update().first()
 
 
+def ensure_client_booking_capacity(db: Session, client_id: int, limit: int) -> None:
+    """Cap the client's future active bookings; call after lock_barber_for_booking."""
+    if db.get_bind().dialect.name != "sqlite":
+        db.query(User.id).filter(User.id == client_id).with_for_update().first()
+    active = db.query(func.count(Appointment.id)).filter(
+        Appointment.user_id == client_id,
+        Appointment.status.in_(ACTIVE_APPOINTMENT_STATUSES),
+        Appointment.data_hora >= now_local(),
+    ).scalar()
+    if active >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Limite de {limit} agendamentos ativos por cliente atingido. "
+            "Cancele ou conclua um agendamento antes de reservar outro horário.",
+        )
+
+
 def normalize_datetime(value: datetime) -> datetime:
     if value.tzinfo is not None:
         return value.astimezone(scheduling_timezone()).replace(tzinfo=None)
@@ -102,6 +120,7 @@ def validate_slot_against_loaded_data(
     now: datetime,
     exclude_appointment_id: int | None = None,
     duration_minutes: int | None = None,
+    enforce_slot_grid: bool = True,
 ) -> datetime:
     """Apply the reservation rule to data already loaded for this working day."""
     start = normalize_datetime(start)
@@ -129,6 +148,14 @@ def validate_slot_against_loaded_data(
         existing_end = existing.data_hora + timedelta(minutes=existing.duracao_minutos)
         if start < existing_end and end > existing.data_hora:
             raise HTTPException(status_code=409, detail="O horário selecionado conflita com outro agendamento")
+    if enforce_slot_grid and (
+        start.second or start.microsecond
+        or (start - opening) % timedelta(minutes=SLOT_INTERVAL_MINUTES)
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=f"O horário deve seguir a grade de {SLOT_INTERVAL_MINUTES} minutos a partir da abertura da jornada",
+        )
     return start
 
 
@@ -139,6 +166,7 @@ def validate_booking_slot(
     start: datetime,
     exclude_appointment_id: int | None = None,
     duration_minutes: int | None = None,
+    enforce_slot_grid: bool = True,
 ) -> datetime:
     start = normalize_datetime(start)
     now = now_local()
@@ -185,7 +213,7 @@ def validate_booking_slot(
     return validate_slot_against_loaded_data(
         service, barber_id, start, schedule=schedule, blocks=[block] if block is not None else [],
         appointments=appointments_query.all(), now=now, exclude_appointment_id=exclude_appointment_id,
-        duration_minutes=duration_minutes,
+        duration_minutes=duration_minutes, enforce_slot_grid=enforce_slot_grid,
     )
 
 
@@ -234,4 +262,5 @@ def validate_appointment_status_transition(
             appointment.data_hora,
             exclude_appointment_id=appointment.id,
             duration_minutes=appointment.duracao_minutos,
+            enforce_slot_grid=False,
         )

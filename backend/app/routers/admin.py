@@ -43,7 +43,9 @@ def create_manual_appointment(
         raise HTTPException(status_code=404, detail="Serviço não encontrado")
 
     lock_barber_for_booking(db, assigned_barber_id)
-    start = validate_booking_slot(db, service, assigned_barber_id, appointment.data_hora)
+    start = validate_booking_slot(
+        db, service, assigned_barber_id, appointment.data_hora, enforce_slot_grid=False,
+    )
     manual_appointment = Appointment(
         user_id=client.id if client else None,
         nome_cliente=client.nome if client else appointment.nome_cliente,

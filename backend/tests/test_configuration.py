@@ -63,6 +63,18 @@ class ApplicationSettingsTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     load_settings(candidate)
 
+    def test_active_appointment_limit_defaults_and_bounds_are_validated(self):
+        values = valid_production_environment()
+        self.assertEqual(load_settings(values).max_active_appointments_per_client, 3)
+        values["MAX_ACTIVE_APPOINTMENTS_PER_CLIENT"] = "5"
+        self.assertEqual(load_settings(values).max_active_appointments_per_client, 5)
+        for invalid in ("0", "51", "many"):
+            with self.subTest(limit=invalid):
+                candidate = valid_production_environment()
+                candidate["MAX_ACTIVE_APPOINTMENTS_PER_CLIENT"] = invalid
+                with self.assertRaises(RuntimeError):
+                    load_settings(candidate)
+
     def test_valid_production_configuration_is_explicit_and_secret_safe(self):
         values = valid_production_environment()
         loaded = load_settings(values)
