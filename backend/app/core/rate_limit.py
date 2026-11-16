@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings as load_settings
 from app.core.clock import utc_now_naive
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.database import SessionLocal
 from app.models.user import LoginAttempt
 from app.core.login_rate_limit import limit_login
@@ -47,10 +47,7 @@ class AuthRateLimitMiddleware(BaseHTTPMiddleware):
         is_auth = request.url.path in AUTH_PATHS and request.method == "POST"
         if not is_export and not is_auth:
             return await call_next(request)
-        try:
-            ip = get_client_ip(request)
-        except Exception:
-            raise
+        ip = rate_limit_key(get_client_ip(request))
         now = utc_now_naive()
         window_start = now - timedelta(minutes=RATE_SETTINGS.rate_limit_block_minutes)
         db = SessionLocal()

@@ -13,7 +13,7 @@ from sqlalchemy import update
 from app.core.email import send_password_reset_email
 from app.core.clock import utc_now_naive
 from app.core.security import verify_password_and_update, get_password_hash, create_access_token
-from app.core.request_context import get_client_ip
+from app.core.request_context import get_client_ip, rate_limit_key
 from app.config import parse_cors_origins, settings as load_settings
 from app.core.password_reset_limits import reserve_request, finish_reservation, prune_expired
 from app.core.login_rate_limit import claim_login_reservation, record_login_outcome, Outcome, Reason
@@ -327,7 +327,7 @@ def esqueci_senha(payload: EsqueciSenhaRequest, request: Request, db: Session = 
         return public_response
     now = utc_now_naive()
     email = normalize_email(payload.email)
-    ip = get_client_ip(request)
+    ip = rate_limit_key(get_client_ip(request))
     try:
         reservation = reserve_request(db, email, ip, now, configured)
         if not reservation:
