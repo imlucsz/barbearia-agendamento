@@ -21,7 +21,7 @@ AUTH_PATHS = {
     "/auth/login", "/auth/register", "/auth/redefinir-senha",
 }
 EXPORT_PATH = "/users/me/exportacao"
-EXPORT_PATHS = {EXPORT_PATH, "/users/me/export"}
+EXPORT_PATHS = {EXPORT_PATH, "/users/me/export", "/users/me/export.pdf"}
 
 
 def _cleanup_old_attempts():
