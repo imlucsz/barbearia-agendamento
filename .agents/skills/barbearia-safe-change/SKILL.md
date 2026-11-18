@@ -9,7 +9,7 @@ description: Fluxo seguro, economico e verificavel para alteracoes no projeto ba
 
 
 
-Use esta skill para implementar, corrigir, refatorar ou revisar alteraÃ§Ãµes no projeto `barbearia-agendamento`.
+Use esta skill para implementar, corrigir, refatorar ou revisar alterações no projeto `barbearia-agendamento`.
 
 
 
@@ -19,17 +19,17 @@ Use esta skill para implementar, corrigir, refatorar ou revisar alteraÃ§Ãµes
 
 \- Minimizar consumo de contexto e tokens.
 
-\- Entender o impacto antes de alterar cÃ³digo.
+\- Entender o impacto antes de alterar código.
 
-\- Fazer a menor mudanÃ§a correta possÃ­vel.
+\- Fazer a menor mudança correta possível.
 
-\- Preservar alteraÃ§Ãµes locais existentes.
+\- Preservar alterações locais existentes.
 
-\- Evitar regressÃµes.
+\- Evitar regressões.
 
-\- Manter seguranÃ§a, banco, migraÃ§Ãµes e contratos consistentes.
+\- Manter segurança, banco, migrações e contratos consistentes.
 
-\- NÃ£o executar aÃ§Ãµes irreversÃ­veis ou publicar alteraÃ§Ãµes sem autorizaÃ§Ã£o explÃ­cita.
+\- Não executar ações irreversíveis ou publicar alterações sem autorização explícita.
 
 
 
@@ -43,9 +43,9 @@ Antes de alterar arquivos:
 
 1\. Execute `git status --short`.
 
-2\. Considere modificaÃ§Ãµes existentes como trabalho do usuÃ¡rio.
+2\. Considere modificações existentes como trabalho do usuário.
 
-3\. NÃ£o reverta, sobrescreva, mova, apague ou inclua alteraÃ§Ãµes nÃ£o relacionadas.
+3\. Não reverta, sobrescreva, mova, apague ou inclua alterações não relacionadas.
 
 4\. Nunca execute automaticamente:
 
@@ -57,13 +57,13 @@ Antes de alterar arquivos:
 
 &#x20;  - comandos destrutivos equivalentes
 
-5\. NÃ£o faÃ§a commit, push, merge, deploy ou alteraÃ§Ã£o em produÃ§Ã£o sem autorizaÃ§Ã£o explÃ­cita.
+5\. Não faça commit, push, merge, deploy ou alteração em produção sem autorização explícita.
 
 6\. Nunca exponha secrets, tokens, senhas, hashes ou URLs de banco contendo credenciais.
 
 
 
-Arquivos/diretÃ³rios locais ou de trabalho devem ser preservados quando nÃ£o fizerem parte da tarefa, incluindo:
+Arquivos/diretórios locais ou de trabalho devem ser preservados quando não fizerem parte da tarefa, incluindo:
 
 
 
@@ -77,7 +77,7 @@ Arquivos/diretÃ³rios locais ou de trabalho devem ser preservados quando nÃ£o
 
 
 
-O fato de um arquivo estar modificado ou nÃ£o rastreado nÃ£o autoriza sua alteraÃ§Ã£o.
+O fato de um arquivo estar modificado ou não rastreado não autoriza sua alteração.
 
 
 
@@ -85,13 +85,13 @@ O fato de um arquivo estar modificado ou nÃ£o rastreado nÃ£o autoriza sua al
 
 
 
-Para perguntas ou tarefas relacionadas ao cÃ³digo:
+Para perguntas ou tarefas relacionadas ao código:
 
 
 
 1\. Consulte o knowledge graph antes de buscas amplas.
 
-2\. Prefira consultas pequenas e especÃ­ficas.
+2\. Prefira consultas pequenas e específicas.
 
 
 
@@ -99,33 +99,33 @@ Exemplo:
 
 
 
-`graphify query "<pergunta especÃ­fica>" --budget 800`
+`graphify query "<pergunta específica>" --budget 800`
 
 
 
-Use tambÃ©m quando adequado:
+Use também quando adequado:
 
 
 
-\- `graphify explain "<sÃ­mbolo>"`
+\- `graphify explain "<símbolo>"`
 
 \- `graphify path "<A>" "<B>"`
 
-\- `graphify affected "<sÃ­mbolo>"`
+\- `graphify affected "<símbolo>"`
 
 
 
-3\. NÃ£o aumente automaticamente o orÃ§amento sÃ³ porque a resposta foi truncada.
+3\. Não aumente automaticamente o orçamento só porque a resposta foi truncada.
 
-4\. Primeiro refine a pergunta, o sÃ­mbolo ou o contexto.
+4\. Primeiro refine a pergunta, o símbolo ou o contexto.
 
-5\. Leia arquivos brutos somente depois que Graphify, Git, testes ou uma busca direcionada indicarem quais arquivos sÃ£o relevantes.
+5\. Leia arquivos brutos somente depois que Graphify, Git, testes ou uma busca direcionada indicarem quais arquivos são relevantes.
 
-6\. NÃ£o leia o repositÃ³rio inteiro por padrÃ£o.
+6\. Não leia o repositório inteiro por padrão.
 
 
 
-Se Graphify nÃ£o tiver informaÃ§Ã£o suficiente, use busca direcionada com `rg`, helpers do projeto ou Git.
+Se Graphify não tiver informação suficiente, use busca direcionada com `rg`, helpers do projeto ou Git.
 
 
 
@@ -141,19 +141,19 @@ Antes de editar:
 
 2\. Defina o comportamento esperado.
 
-3\. Localize os arquivos e sÃ­mbolos envolvidos.
+3\. Localize os arquivos e símbolos envolvidos.
 
 4\. Identifique contratos e testes relacionados.
 
-5\. Determine o risco da mudanÃ§a.
+5\. Determine o risco da mudança.
 
 
 
-Para bugs, tente reproduzir ou localizar evidÃªncia concreta antes da correÃ§Ã£o.
+Para bugs, tente reproduzir ou localizar evidência concreta antes da correção.
 
 
 
-NÃ£o altere cÃ³digo apenas com base em hipÃ³tese quando houver forma razoÃ¡vel de verificar a causa.
+Não altere código apenas com base em hipótese quando houver forma razoável de verificar a causa.
 
 
 
@@ -165,9 +165,9 @@ Prefira:
 
 
 
-\- alteraÃ§Ã£o localizada;
+\- alteração localizada;
 
-\- reutilizaÃ§Ã£o de estruturas existentes;
+\- reutilização de estruturas existentes;
 
 \- compatibilidade com contratos atuais;
 
@@ -179,19 +179,19 @@ Evite:
 
 
 
-\- refatoraÃ§Ãµes nÃ£o solicitadas;
+\- refatorações não solicitadas;
 
 \- reescrita de arquivos inteiros;
 
-\- mudanÃ§as cosmÃ©ticas nÃ£o relacionadas;
+\- mudanças cosméticas não relacionadas;
 
-\- novas dependÃªncias sem necessidade;
+\- novas dependências sem necessidade;
 
-\- criaÃ§Ã£o de abstraÃ§Ãµes prematuras.
+\- criação de abstrações prematuras.
 
 
 
-Se encontrar outro problema nÃ£o relacionado, informe-o separadamente em vez de expandir silenciosamente a tarefa.
+Se encontrar outro problema não relacionado, informe-o separadamente em vez de expandir silenciosamente a tarefa.
 
 
 
@@ -199,53 +199,53 @@ Se encontrar outro problema nÃ£o relacionado, informe-o separadamente em vez d
 
 
 
-Para mudanÃ§as de schema:
+Para mudanças de schema:
 
 
 
-\- modelos SQLAlchemy e migraÃ§Ãµes devem permanecer coerentes;
+\- modelos SQLAlchemy e migrações devem permanecer coerentes;
 
-\- criar nova revisÃ£o Alembic encadeada Ã  revisÃ£o atual;
+\- criar nova revisão Alembic encadeada à revisão atual;
 
-\- nÃ£o editar migraÃ§Ãµes histÃ³ricas jÃ¡ aplicadas;
+\- não editar migrações históricas já aplicadas;
 
-\- nÃ£o usar `stamp` como atalho para esconder inconsistÃªncia;
+\- não usar `stamp` como atalho para esconder inconsistência;
 
-\- nÃ£o apagar tabelas ou dados reais;
+\- não apagar tabelas ou dados reais;
 
-\- preservar compatibilidade e dados existentes sempre que aplicÃ¡vel.
-
-
-
-Testes de banco devem usar bancos temporÃ¡rios/descartÃ¡veis.
+\- preservar compatibilidade e dados existentes sempre que aplicável.
 
 
 
-Nunca executar migraÃ§Ã£o destrutiva ou experimental no banco de produÃ§Ã£o.
+Testes de banco devem usar bancos temporários/descartáveis.
 
 
 
-PostgreSQL real de produÃ§Ã£o exige autorizaÃ§Ã£o explÃ­cita.
+Nunca executar migração destrutiva ou experimental no banco de produção.
 
 
 
-\## 6. SeguranÃ§a
+PostgreSQL real de produção exige autorização explícita.
 
 
 
-MudanÃ§as envolvendo qualquer item abaixo recebem revisÃ£o de seguranÃ§a adicional:
+\## 6. Segurança
 
 
 
-\- autenticaÃ§Ã£o;
+Mudanças envolvendo qualquer item abaixo recebem revisão de segurança adicional:
 
-\- autorizaÃ§Ã£o;
 
-\- JWT/sessÃµes;
 
-\- recuperaÃ§Ã£o de senha;
+\- autenticação;
 
-\- e-mail de autenticaÃ§Ã£o;
+\- autorização;
+
+\- JWT/sessões;
+
+\- recuperação de senha;
+
+\- e-mail de autenticação;
 
 \- upload;
 
@@ -261,33 +261,33 @@ MudanÃ§as envolvendo qualquer item abaixo recebem revisÃ£o de seguranÃ§a a
 
 \- secrets;
 
-\- integraÃ§Ãµes externas.
+\- integrações externas.
 
 
 
-Verifique conforme aplicÃ¡vel:
+Verifique conforme aplicável:
 
 
 
-\- validaÃ§Ã£o de entrada;
+\- validação de entrada;
 
-\- autorizaÃ§Ã£o por papel e propriedade;
+\- autorização por papel e propriedade;
 
-\- exposiÃ§Ã£o de dados;
+\- exposição de dados;
 
 \- mensagens de erro;
 
 \- armazenamento de secrets;
 
-\- enumeraÃ§Ã£o de usuÃ¡rios;
+\- enumeração de usuários;
 
-\- replay/expiraÃ§Ã£o de tokens;
+\- replay/expiração de tokens;
 
-\- integridade e concorrÃªncia.
+\- integridade e concorrência.
 
 
 
-NÃ£o enfraqueÃ§a controles de seguranÃ§a apenas para fazer um teste ou deploy passar.
+Não enfraqueça controles de segurança apenas para fazer um teste ou deploy passar.
 
 
 
@@ -295,7 +295,7 @@ NÃ£o enfraqueÃ§a controles de seguranÃ§a apenas para fazer um teste ou dep
 
 
 
-NÃ£o execute toda a suÃ­te automaticamente para qualquer alteraÃ§Ã£o.
+Não execute toda a suíte automaticamente para qualquer alteração.
 
 
 
@@ -303,11 +303,11 @@ Comece pelos testes diretamente relacionados.
 
 
 
-Amplie a validaÃ§Ã£o conforme o risco.
+Amplie a validação conforme o risco.
 
 
 
-\### AlteraÃ§Ã£o pequena e isolada
+\### Alteração pequena e isolada
 
 
 
@@ -315,7 +315,7 @@ Execute testes focados.
 
 
 
-\### Backend/regra de negÃ³cio
+\### Backend/regra de negócio
 
 
 
@@ -323,11 +323,11 @@ Execute testes focados e testes relacionados do backend.
 
 
 
-\### Banco/migraÃ§Ã£o/integridade
+\### Banco/migração/integridade
 
 
 
-Execute os testes relevantes em SQLite quando aplicÃ¡vel e PostgreSQL descartÃ¡vel quando necessÃ¡rio.
+Execute os testes relevantes em SQLite quando aplicável e PostgreSQL descartável quando necessário.
 
 
 
@@ -339,41 +339,41 @@ Execute testes JS relacionados.
 
 
 
-Use Playwright quando a mudanÃ§a afetar fluxo real do usuÃ¡rio, integraÃ§Ã£o frontend/backend ou comportamento visual/interativo importante.
+Use Playwright quando a mudança afetar fluxo real do usuário, integração frontend/backend ou comportamento visual/interativo importante.
 
 
 
-\### Auth, autorizaÃ§Ã£o, agenda, pagamentos futuros, migraÃ§Ãµes ou alteraÃ§Ã£o transversal
+\### Auth, autorização, agenda, pagamentos futuros, migrações ou alteração transversal
 
 
 
-Considere suÃ­te mais ampla antes de concluir.
+Considere suíte mais ampla antes de concluir.
 
 
 
-NÃ£o execute testes caros sem relaÃ§Ã£o com a mudanÃ§a apenas para produzir uma lista maior de testes aprovados.
+Não execute testes caros sem relação com a mudança apenas para produzir uma lista maior de testes aprovados.
 
 
 
-\## 8. ImplementaÃ§Ã£o
+\## 8. Implementação
 
 
 
-Durante a implementaÃ§Ã£o:
+Durante a implementação:
 
 
 
-1\. FaÃ§a alteraÃ§Ãµes pequenas.
+1\. Faça alterações pequenas.
 
 2\. Preserve estilo e arquitetura existentes.
 
-3\. NÃ£o quebre rotas, schemas ou comportamento pÃºblico sem necessidade explÃ­cita.
+3\. Não quebre rotas, schemas ou comportamento público sem necessidade explícita.
 
-4\. NÃ£o esconda erros apenas para fazer testes passarem.
+4\. Não esconda erros apenas para fazer testes passarem.
 
-5\. NÃ£o altere testes para aceitar comportamento incorreto.
+5\. Não altere testes para aceitar comportamento incorreto.
 
-6\. Adicione ou atualize testes quando houver mudanÃ§a real de comportamento.
+6\. Adicione ou atualize testes quando houver mudança real de comportamento.
 
 
 
@@ -381,7 +381,7 @@ Durante a implementaÃ§Ã£o:
 
 
 
-Depois de alteraÃ§Ãµes de cÃ³digo bem-sucedidas:
+Depois de alterações de código bem-sucedidas:
 
 
 
@@ -389,7 +389,7 @@ Depois de alteraÃ§Ãµes de cÃ³digo bem-sucedidas:
 
 
 
-NÃ£o faÃ§a reconstruÃ§Ãµes completas com LLM quando uma atualizaÃ§Ã£o AST local for suficiente.
+Não faça reconstruções completas com LLM quando uma atualização AST local for suficiente.
 
 
 
@@ -403,13 +403,13 @@ Antes de concluir:
 
 1\. Execute `git diff --check`.
 
-2\. Examine `git diff` somente nos arquivos relacionados Ã  tarefa.
+2\. Examine `git diff` somente nos arquivos relacionados à tarefa.
 
-3\. Confirme que nÃ£o houve alteraÃ§Ã£o acidental.
+3\. Confirme que não houve alteração acidental.
 
 4\. Confira novamente `git status --short`.
 
-5\. NÃ£o inclua arquivos locais nÃ£o relacionados.
+5\. Não inclua arquivos locais não relacionados.
 
 
 
@@ -523,9 +523,9 @@ Prefira, nesta ordem:
 
 
 
-1\. Graphify especÃ­fico;
+1\. Graphify específico;
 
-2\. Git para mudanÃ§as;
+2\. Git para mudanças;
 
 3\. helpers existentes;
 
@@ -533,17 +533,17 @@ Prefira, nesta ordem:
 
 5\. leitura de trechos relevantes;
 
-6\. leitura de arquivo completo somente quando necessÃ¡ria;
+6\. leitura de arquivo completo somente quando necessária;
 
-7\. busca ampla apenas como Ãºltimo recurso.
-
-
-
-NÃ£o releia arquivos jÃ¡ compreendidos sem motivo.
+7\. busca ampla apenas como último recurso.
 
 
 
-NÃ£o despeje logs enormes no contexto quando resumo + trecho relevante forem suficientes.
+Não releia arquivos já compreendidos sem motivo.
+
+
+
+Não despeje logs enormes no contexto quando resumo + trecho relevante forem suficientes.
 
 
 
@@ -551,7 +551,7 @@ NÃ£o despeje logs enormes no contexto quando resumo + trecho relevante forem s
 
 
 
-O relatÃ³rio final deve ser curto e verificÃ¡vel.
+O relatório final deve ser curto e verificável.
 
 
 
@@ -567,10 +567,10 @@ Informe:
 
 \- testes realmente executados e resultados;
 
-\- riscos ou pendÃªncias;
+\- riscos ou pendências;
 
-\- aÃ§Ãµes que exigem autorizaÃ§Ã£o do usuÃ¡rio.
+\- ações que exigem autorização do usuário.
 
 
 
-Nunca diga que algo foi testado, validado, implantado ou estÃ¡ pronto para produÃ§Ã£o se isso nÃ£o tiver sido efetivamente comprovado.
+Nunca diga que algo foi testado, validado, implantado ou está pronto para produção se isso não tiver sido efetivamente comprovado.

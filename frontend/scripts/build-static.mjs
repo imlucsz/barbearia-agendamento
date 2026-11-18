@@ -42,6 +42,25 @@ export async function buildStaticSite({
     await cp(path.join(source, entry.name), path.join(output, entry.name), { recursive: true });
   }
 
+  // Internal debugging tools are not part of the public site.
+  for (const debugPath of [
+    "pages/debug-estrelinha.html",
+    "assets/css/debug-estrelinha.css",
+    "assets/js/estrelinha/debug.js",
+  ]) {
+    await rm(path.join(output, debugPath), { force: true });
+  }
+  const imagesDir = path.join(output, "assets", "images");
+  let imageEntries = [];
+  try {
+    imageEntries = await readdir(imagesDir);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  for (const entry of imageEntries) {
+    if (entry.startsWith("debug-estrelinha-")) await rm(path.join(imagesDir, entry), { force: true });
+  }
+
   const runtimeConfigPath = path.join(output, "assets", "js", "render-api-config.js");
   await mkdir(path.dirname(runtimeConfigPath), { recursive: true });
   await writeFile(
