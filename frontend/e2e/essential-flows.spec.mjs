@@ -904,7 +904,7 @@ test("cliente não encontra mutações administrativas na tela", async ({ page }
   await expect(page.locator(".admin-only")).toHaveCount(0);
 });
 
-test("preferências de cookies, rodapé legal e mapa só com consentimento", async ({ page }) => {
+test("mapa do Google aparece por padrão, sem sandbox, e pode ser desativado nas preferências", async ({ page }) => {
   const googleRequests = [];
   page.on("request", (request) => {
     if (/google\.com|googletagmanager|google-analytics/.test(new URL(request.url()).hostname)) googleRequests.push(request.url());
@@ -917,8 +917,10 @@ test("preferências de cookies, rodapé legal e mapa só com consentimento", asy
   } }));
   await page.goto("/pages/index.html");
   await expect(page.locator("[data-consent-banner]")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Carregar mapa do Google" })).toBeVisible();
-  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  const map = page.locator("#map-container iframe");
+  await expect(map).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  expect(await map.getAttribute("sandbox")).toBeNull();
+  await expect(page.getByRole("button", { name: "Exibir mapa do Google" })).toHaveCount(0);
   const legalNav = page.getByRole("navigation", { name: "Informações legais" });
   await expect(legalNav.getByRole("link", { name: "Política de Privacidade" })).toHaveAttribute("href", "privacidade.html");
   await expect(legalNav.getByRole("link", { name: "Termos de Uso" })).toHaveAttribute("href", "termos.html");
@@ -926,19 +928,21 @@ test("preferências de cookies, rodapé legal e mapa só com consentimento", asy
   const preferences = page.getByRole("button", { name: "Preferências de cookies" });
   await preferences.click();
   const panel = page.getByRole("region", { name: "Preferências de cookies" });
+  await expect(panel).toContainText("Escolha atual: mapa do Google exibido (padrão).");
   await expect(panel.getByRole("button", { name: "Usar somente essenciais" })).toBeFocused();
   await panel.getByRole("button", { name: "Usar somente essenciais" }).click();
   await expect(panel).toHaveCount(0);
   await expect(preferences).toBeFocused();
+  await expect(map).toHaveCount(0);
+
+  googleRequests.length = 0;
   await page.reload();
-  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Exibir mapa do Google" })).toBeVisible();
+  await expect(map).toHaveCount(0);
   expect(googleRequests).toEqual([]);
 
-  await page.getByRole("button", { name: "Preferências de cookies" }).click();
-  const reopened = page.getByRole("region", { name: "Preferências de cookies" });
-  await expect(reopened).toContainText("Escolha atual: somente essenciais.");
-  await reopened.getByRole("button", { name: "Permitir conteúdo de terceiros" }).click();
-  await expect(page.locator("#map-container iframe")).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  await page.getByRole("button", { name: "Exibir mapa do Google" }).click();
+  await expect(map).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
 });
 
 test("documentos legais exibem dados configuráveis sem inventar CNPJ", async ({ page }) => {

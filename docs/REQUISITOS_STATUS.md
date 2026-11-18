@@ -474,3 +474,11 @@ pública de avaliações inclui as ocultas (`GET /appointments/avaliacoes/resumo
 contraste dos cards de serviço e Escape no menu móvel corrigidos.
 Nenhuma migração. Detalhes e pendências do controlador:
 [Conformidade legal](CONFORMIDADE_LEGAL.md).
+
+## Mapa do Google sem botão (2026-11-18)
+
+O iframe do Google Maps volta a carregar por padrão (legítimo interesse,
+desativável em "Preferências de cookies") e não usa mais `sandbox`, que fazia o
+Chrome bloquear o Google Maps aberto a partir do mapa (`ERR_BLOCKED_BY_RESPONSE`).
+Política de Privacidade, Política de Cookies e
+[Conformidade legal](CONFORMIDADE_LEGAL.md) atualizadas.

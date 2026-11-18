@@ -41,9 +41,10 @@ export function saveConsent(storage, terceiros, now = new Date()) {
 
 const pageChoices = new WeakMap();
 
-export function hasThirdPartyConsent(windowRef = globalThis.window) {
+// O mapa do Google é exibido por padrão (legítimo interesse); o visitante pode desativá-lo.
+export function isThirdPartyContentEnabled(windowRef = globalThis.window) {
   if (windowRef && pageChoices.has(windowRef)) return pageChoices.get(windowRef);
-  return readConsent(storageOf(windowRef))?.terceiros === true;
+  return readConsent(storageOf(windowRef))?.terceiros ?? true;
 }
 
 export function setThirdPartyConsent(terceiros, windowRef = globalThis.window) {
@@ -76,7 +77,7 @@ export function showConsentBanner(documentRef = globalThis.document, { returnFoc
   title.textContent = "Preferências de cookies";
 
   const text = documentRef.createElement("p");
-  text.textContent = "Usamos apenas cookies e armazenamento local essenciais para login, segurança e funcionamento do agendamento. Não usamos cookies de publicidade nem ferramentas de análise, como Google Analytics. Conteúdo de terceiros, como o mapa do Google, só é carregado se você permitir.";
+  text.textContent = "Usamos apenas cookies e armazenamento local essenciais para login, segurança e funcionamento do agendamento. Não usamos cookies de publicidade nem ferramentas de análise, como Google Analytics. A página inicial exibe o mapa do Google para mostrar a localização da barbearia; ao carregá-lo, o Google recebe seu endereço IP e pode usar cookies próprios. Você pode desativar o mapa aqui.";
 
   const more = documentRef.createElement("a");
   more.href = "cookies.html";
@@ -98,15 +99,14 @@ export function showConsentBanner(documentRef = globalThis.document, { returnFoc
 
   const current = readConsent(storageOf(windowRef));
   banner.append(title, text);
-  if (current) {
-    const status = documentRef.createElement("p");
-    status.className = "consent-banner__status";
-    status.textContent = current.terceiros
+  const status = documentRef.createElement("p");
+  status.className = "consent-banner__status";
+  status.textContent = !current
+    ? "Escolha atual: mapa do Google exibido (padrão)."
+    : current.terceiros
       ? "Escolha atual: conteúdo de terceiros permitido."
       : "Escolha atual: somente essenciais.";
-    banner.append(status);
-  }
-  banner.append(more, actions);
+  banner.append(status, more, actions);
 
   banner.addEventListener("click", (event) => {
     const choice = event.target.closest?.("[data-consent-choice]")?.dataset.consentChoice;

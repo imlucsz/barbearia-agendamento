@@ -852,9 +852,9 @@
     "semantic_hash": ""
   },
   "frontend/assets/js/home.js": {
-    "mtime": 1795003272.0019388,
-    "seen": 1795003994.959906,
-    "ast_hash": "70236aa5a908d45d5b49d4f2e0c2ead6",
+    "mtime": 1795005889.5562582,
+    "seen": 1795005921.5942855,
+    "ast_hash": "5515fa4e83e7ecd0876082572b8aa8e7",
     "semantic_hash": ""
   },
   "frontend/assets/js/installation-brand.mjs": {
@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "frontend/e2e/essential-flows.spec.mjs": {
-    "mtime": 1795003617.935931,
-    "seen": 1795003994.9599326,
-    "ast_hash": "1971f8ce8d434f5c97603394fa6de86a",
+    "mtime": 1795005889.5562582,
+    "seen": 1795005921.5943148,
+    "ast_hash": "95f3cadb0bc7c67ec04131e7e7256bcc",
     "semantic_hash": ""
   },
   "frontend/e2e/estrelinha-cinematic.config.mjs": {
@@ -1524,9 +1524,9 @@
     "semantic_hash": ""
   },
   "docs/IMPLANTACAO_E_REUTILIZACAO.md": {
-    "mtime": 1795003664.954645,
-    "seen": 1795003994.9600277,
-    "ast_hash": "7e8d07f8582e59bacb7c598b9bd7d235",
+    "mtime": 1795005889.5582583,
+    "seen": 1795005921.5944185,
+    "ast_hash": "eda9ae6b1391670bb12fbaeedaa1d4c6",
     "semantic_hash": ""
   },
   "docs/INTEGRACAO_QUALIDADE_AUTH_UX_INDEPENDENTE_20261104.md": {
@@ -1536,9 +1536,9 @@
     "semantic_hash": ""
   },
   "docs/LGPD.md": {
-    "mtime": 1795003664.9536448,
-    "seen": 1795003994.9600291,
-    "ast_hash": "bf44b197e4bdddac0dd2fcbd5e93503f",
+    "mtime": 1795005889.5582583,
+    "seen": 1795005921.59442,
+    "ast_hash": "6999d47a883f287a1fe630402163d851",
     "semantic_hash": ""
   },
   "docs/MATRIZ_AUTORIZACAO.md": {
@@ -1572,9 +1572,9 @@
     "semantic_hash": ""
   },
   "docs/REQUISITOS_STATUS.md": {
-    "mtime": 1795003671.7206037,
-    "seen": 1795003994.960036,
-    "ast_hash": "43fb1ca6ffb8dcd2ecd4172afc1364c4",
+    "mtime": 1795005889.5582583,
+    "seen": 1795005921.594427,
+    "ast_hash": "5930f202dd3a20c839ff9a7f96a7e8d8",
     "semantic_hash": ""
   },
   "docs/REUTILIZACAO_E_ATUALIZACAO.md": {
@@ -2532,9 +2532,9 @@
     "semantic_hash": ""
   },
   "frontend/assets/js/cookie-consent.mjs": {
-    "mtime": 1795004516.980542,
-    "seen": 1795004535.6683116,
-    "ast_hash": "6b9669c45a693dc423e28af090b0d61e",
+    "mtime": 1795005889.5542583,
+    "seen": 1795005921.5942676,
+    "ast_hash": "87f1f168bfcee3a22d31121489de12fb",
     "semantic_hash": ""
   },
   "frontend/assets/js/legal-page.mjs": {
@@ -2562,15 +2562,15 @@
     "semantic_hash": ""
   },
   "frontend/tests/legal.test.mjs": {
-    "mtime": 1795004522.7235074,
-    "seen": 1795004535.6684175,
-    "ast_hash": "9e20b85bc63d5839306b75af996b033a",
+    "mtime": 1795005889.5562582,
+    "seen": 1795005921.594359,
+    "ast_hash": "ed59126a9664d7506203929d6ca7c87d",
     "semantic_hash": ""
   },
   "docs/CONFORMIDADE_LEGAL.md": {
-    "mtime": 1795003664.8386455,
-    "seen": 1795003994.9600224,
-    "ast_hash": "c6516915914fb4af316bf88d807e6b85",
+    "mtime": 1795005889.5582583,
+    "seen": 1795005921.594413,
+    "ast_hash": "e910bd012c2da31005a8736e8ef7a982",
     "semantic_hash": ""
   },
   "docs/superpowers/plans/2026-11-18-conformidade-lgpd-acessibilidade.md": {
@@ -2580,15 +2580,15 @@
     "semantic_hash": ""
   },
   "frontend/pages/cookies.html": {
-    "mtime": 1795003617.935931,
-    "seen": 1795003994.9600942,
-    "ast_hash": "20c450adb02d87db206e7065abfc8e96",
+    "mtime": 1795005889.5572584,
+    "seen": 1795005921.5944877,
+    "ast_hash": "02c3b75bf82c814db79a8d23a7592fbb",
     "semantic_hash": ""
   },
   "frontend/pages/privacidade.html": {
-    "mtime": 1795003245.8720999,
-    "seen": 1795003994.9600985,
-    "ast_hash": "2a5d6e26331a1d6bfd6fb771ad3af809",
+    "mtime": 1795005889.5572584,
+    "seen": 1795005921.5944922,
+    "ast_hash": "fcbc1f6fb41cb730721353e728b6fe8c",
     "semantic_hash": ""
   },
   "frontend/pages/termos.html": {

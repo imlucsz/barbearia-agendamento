@@ -1,6 +1,6 @@
 import { api, getCurrentUser, getToken, logout } from "./api.js";
 import { whatsappUrl, mapsUrls } from "./contact-links.mjs";
-import { CONSENT_EVENT, hasThirdPartyConsent, setThirdPartyConsent } from "./cookie-consent.mjs";
+import { CONSENT_EVENT, isThirdPartyContentEnabled, setThirdPartyConsent } from "./cookie-consent.mjs";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 let allServices = [];
@@ -300,15 +300,15 @@ function renderMapEmbed(container, embedUrl) {
   mapConsentListener = () => renderMapEmbed(container, embedUrl);
   window.addEventListener(CONSENT_EVENT, mapConsentListener);
   container.replaceChildren();
-  if (!hasThirdPartyConsent()) {
+  if (!isThirdPartyContentEnabled()) {
     const notice = document.createElement("div");
     notice.className = "map-consent";
     const message = document.createElement("p");
-    message.textContent = "O mapa é fornecido pelo Google, que pode coletar seu endereço IP e usar cookies próprios. Ele só é carregado com a sua permissão.";
+    message.textContent = "Você desativou o conteúdo de terceiros, por isso o mapa do Google não foi carregado.";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "btn btn-outline";
-    button.textContent = "Carregar mapa do Google";
+    button.textContent = "Exibir mapa do Google";
     button.addEventListener("click", () => {
       setThirdPartyConsent(true);
       container.querySelector("iframe")?.focus();
@@ -322,7 +322,6 @@ function renderMapEmbed(container, embedUrl) {
   iframe.title = "Mapa da barbearia (Google Maps)";
   iframe.loading = "lazy";
   iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
   container.append(iframe);
 }
 

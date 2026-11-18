@@ -73,7 +73,7 @@ O Blueprint aplica HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-O
 
 ## CSP e cabeçalhos para arquivos estáticos
 
-Inventário do frontend atual: a página inicial carrega Three.js `0.186.0` local por um import map inline; o mapa institucional pode criar, somente após consentimento do visitante, iframe em host `google.com` ou `google.com.br`; não foram encontrados fontes remotas. CSS, módulos e imagens ficam em `frontend/`. O import map inline exige hash CSP atualizado quando seu conteúdo mudar. Este exemplo é orientação para o host estático/proxy, não uma configuração de deploy aplicada:
+Inventário do frontend atual: a página inicial carrega Three.js `0.186.0` local por um import map inline; o mapa institucional pode criar, salvo se o visitante o desativar, iframe em host `google.com` ou `google.com.br`; não foram encontrados fontes remotas. CSS, módulos e imagens ficam em `frontend/`. O import map inline exige hash CSP atualizado quando seu conteúdo mudar. Este exemplo é orientação para o host estático/proxy, não uma configuração de deploy aplicada:
 
 ```text
 Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'sha256-<hash-SHA256-do-conteudo-inline-do-importmap>'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://api.dominio.com; frame-src https://www.google.com https://www.google.com.br https://maps.google.com; upgrade-insecure-requests
