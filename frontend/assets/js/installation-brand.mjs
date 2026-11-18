@@ -13,7 +13,7 @@ export const DEFAULT_INSTALLATION_COPY = Object.freeze({
   homePrimaryAction: "Escolher meu horário",
   homeSecondaryAction: "Explorar serviços",
   homeFooterMessage: "Um bom corte muda o dia.",
-  consentText: "Li e aceito o tratamento dos meus dados pessoais para cadastro e gestão dos agendamentos.",
+  consentText: "Li e aceito os Termos de Uso e estou ciente da Política de Privacidade.",
 });
 
 const MAX_BRAND_NAME_LENGTH = 80;

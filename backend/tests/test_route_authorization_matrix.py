@@ -15,6 +15,7 @@ PUBLIC_ROUTES = {
     ("POST", "/auth/esqueci-senha"), ("POST", "/auth/redefinir-senha"),
     ("GET", "/services/"), ("GET", "/services/{service_id}"),
     ("GET", "/informacoes/"), ("GET", "/appointments/avaliacoes"),
+    ("GET", "/appointments/avaliacoes/resumo"),
 }
 
 

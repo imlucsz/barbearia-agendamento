@@ -1,14 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { readFile } from 'node:fs/promises';
 
 test('three brief cameos share a decorative canvas and honor reduced motion', async ({ page }) => {
-  // Use the locally installed Three.js in the test, without relying on the CDN.
-  await page.route('https://cdn.jsdelivr.net/npm/three@0.186.0/build/*', async route => {
-    const name = new URL(route.request().url()).pathname.split('/').pop();
-    if (!['three.module.js', 'three.core.js'].includes(name)) return route.abort();
-    const body = await readFile(new URL(`./motion-lab/node_modules/three/build/${name}`, import.meta.url));
-    await route.fulfill({ contentType: 'text/javascript', body });
-  });
   await page.addInitScript(() => sessionStorage.setItem('barbearia.home.intro.v1', 'seen'));
   await page.goto('/pages/index.html#services');
   const slots = page.locator('[data-estrelinha-cameo]');

@@ -52,6 +52,7 @@ CHECKLIST = """# Checklist de instalação
 - [ ] Criar banco PostgreSQL novo, usuário exclusivo e credencial em secret store/passfile. Nunca reutilizar banco ou dados de outra instalação.
 - [ ] Preencher `backend/.env`: `INSTALLATION_NAME`, URL do banco, segredo forte próprio, `CORS_ALLOWED_ORIGINS` com a origem exata, `SCHEDULING_TIMEZONE`, `TERMS_VERSION` e SMTP/reset URL.
 - [ ] Sincronizar o texto `content.consentText` com `TERMS_VERSION` e os termos legais aprovados pela instalação.
+- [ ] Preencher `legal` em `frontend/assets/js/installation-config.mjs` (razão social, CNPJ, endereço, e-mail/telefone do canal do titular, encarregado ou canal LGPD, data e versão dos documentos) e revisar `privacidade.html`, `termos.html` e `cookies.html` com assessoria jurídica: `docs/CONFORMIDADE_LEGAL.md`.
 - [ ] Instalar dependências em `backend/.venv`; executar `python -m alembic upgrade head` no banco novo.
 - [ ] Criar o primeiro administrador com `python -m app.initial_admin` no ambiente configurado.
 - [ ] Preencher dados institucionais no painel (contatos, endereço, mapa, horários) e criar serviços/equipe.
@@ -99,7 +100,12 @@ def make_frontend_config(name: str, api_url: str) -> str:
             "homePrimaryAction": "Escolher meu horário",
             "homeSecondaryAction": "Explorar serviços",
             "homeFooterMessage": "Um bom corte muda o dia.",
-            "consentText": "Li e aceito o tratamento dos meus dados pessoais para cadastro e gestão dos agendamentos.",
+            "consentText": "Li e aceito os Termos de Uso e estou ciente da Política de Privacidade.",
+        },
+        "legal": {
+            "razaoSocial": "", "cnpj": "", "endereco": "", "email": "", "telefone": "",
+            "encarregadoNome": "", "encarregadoEmail": "",
+            "documentosAtualizadosEm": "", "versaoDocumentos": "1.0",
         },
         "features": {"estrelinhaWidget": True},
     }

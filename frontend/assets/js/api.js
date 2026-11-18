@@ -2,8 +2,12 @@ import { expireSessionOnUnauthorized, shouldRefreshSession } from "./session.mjs
 import { formatApiError } from "./api-errors.mjs";
 import { INSTALLATION_CONFIG } from "./installation-config.mjs";
 import { applyInstallationBrand } from "./installation-brand.mjs";
+import { applyLegalFooter } from "./legal.mjs";
+import { initCookieConsent } from "./cookie-consent.mjs";
 
 applyInstallationBrand();
+applyLegalFooter();
+initCookieConsent();
 
 const API_BASE_URL = (window.BARBEARIA_API_URL || INSTALLATION_CONFIG.apiBaseUrl).replace(/\/+$/, "");
 let refreshInFlight = null;

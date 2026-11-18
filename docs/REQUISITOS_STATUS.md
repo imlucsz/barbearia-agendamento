@@ -463,3 +463,14 @@ verificações Chromium. Entradas potencialmente maliciosas renderizadas como te
 nenhum XSS executável identificado nos caminhos revisados.
 Pins exatos e suíte geral de navegador continuam pendentes.
 Detalhes: [Parte 1](BOOKING_SMART_PART1.md).
+
+## Conformidade LGPD, jurídica e acessibilidade (2026-11-18)
+
+Implementados: Política de Privacidade, Termos de Uso e Política de Cookies
+públicas com links no rodapé; dados legais configuráveis (sem dados inventados)
+e copyright com o titular; Three.js servido localmente (sem CDN); mapa do Google
+somente com consentimento; cadastro com coleta mínima e aceite com links; média
+pública de avaliações inclui as ocultas (`GET /appointments/avaliacoes/resumo`);
+contraste dos cards de serviço e Escape no menu móvel corrigidos.
+Nenhuma migração. Detalhes e pendências do controlador:
+[Conformidade legal](CONFORMIDADE_LEGAL.md).
