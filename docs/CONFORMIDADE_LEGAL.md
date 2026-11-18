@@ -12,7 +12,7 @@ Referência técnica para o controlador de cada instalação. **Não substitui p
 | Tracking | Nenhum Google Analytics, Tag Manager, pixel, Hotjar ou Clarity no código. | Mantido sem tracking. Teste Node impede inclusão acidental nas páginas principais. |
 | Scripts de terceiros | A home baixava Three.js de `cdn.jsdelivr.net` em toda visita (envio de IP a terceiro sem necessidade). | Three.js `0.186.0` servido localmente em `frontend/assets/js/vendor/three/` com a licença MIT. |
 | Cookies | Somente `refresh_token` (HttpOnly, essencial) e armazenamento local essencial. | Sem banner automático (não há cookie opcional). Preferências de cookies no rodapé e escolha salva por 12 meses em `barbearia.consent.v1`. |
-| Google Maps | Iframe carregado sem consentimento, com `no-referrer-when-downgrade`. | Mapa só carrega após "Carregar mapa do Google" ou permissão nas preferências; `referrerpolicy=strict-origin-when-cross-origin`. |
+| Google Maps | Iframe carregado sem consentimento, com `no-referrer-when-downgrade`. | Mapa exibido por padrão com base em legítimo interesse, informado na Política de Privacidade e na Política de Cookies, e desativável em "Preferências de cookies"; `referrerpolicy=strict-origin-when-cross-origin`, sem `sandbox` (o sandbox herdado bloqueava a abertura do Google Maps com `ERR_BLOCKED_BY_RESPONSE`). |
 | Formulário de cadastro | Pedia "nome completo"; aceite misturava consentimento com execução de contrato. | Pede apenas "Nome", e-mail e senha; aceite dos Termos e ciência da Política, com links e aviso de finalidade. |
 | Avaliações | Média pública calculada só com avaliações visíveis: ocultar críticas aumentaria a nota (risco de prática enganosa, CDC art. 37). | `GET /appointments/avaliacoes/resumo` calcula média e total com todas as avaliações. Formulário avisa publicação sem nome; admin recebe critério de moderação. Avaliações continuam restritas ao dono de atendimento concluído, uma por atendimento. |
 | Contraste | axe-core: `.service-index` 2,55:1 e 3,88:1; `.service-details`/`.service-duration` 4,41:1. | Tokens dos cards de serviço ajustados para ≥ 4,5:1. |
@@ -21,7 +21,7 @@ Referência técnica para o controlador de cada instalação. **Não substitui p
 ## Pendências do controlador
 
 - Preencher `legal` (razão social, CNPJ, endereço, e-mail, telefone, encarregado ou canal LGPD, data e versão) e manter `versaoDocumentos` igual a `TERMS_VERSION` do backend.
-- Validar bases legais, prazos de retenção e o texto dos documentos com assessoria jurídica.
+- Validar bases legais, prazos de retenção e o texto dos documentos com assessoria jurídica, inclusive o legítimo interesse do mapa do Google (alternativa mais conservadora: carregar o mapa somente após consentimento).
 - Indicar encarregado (art. 41) ou confirmar a dispensa de agente de pequeno porte (Resolução CD/ANPD nº 2/2022), mantendo canal de atendimento ao titular.
 - Listar operadores (hospedagem, banco, e-mail) e confirmar o mecanismo do art. 33 para transferências internacionais.
 - Revisar direitos de imagem de fotos e vídeos publicados e a licença dos arquivos GSAP em `frontend/assets/js/vendor/gsap/`.

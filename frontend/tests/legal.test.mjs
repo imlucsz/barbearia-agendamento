@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { formatDocumentDate, isValidCnpj, legalIdentificationLine, normalizeLegalConfiguration } from "../assets/js/legal.mjs";
-import { CONSENT_MAX_AGE_DAYS, CONSENT_STORAGE_KEY, hasThirdPartyConsent, readConsent, saveConsent, setThirdPartyConsent } from "../assets/js/cookie-consent.mjs";
+import { CONSENT_MAX_AGE_DAYS, CONSENT_STORAGE_KEY, isThirdPartyContentEnabled, readConsent, saveConsent, setThirdPartyConsent } from "../assets/js/cookie-consent.mjs";
 import { INSTALLATION_CONFIG } from "../assets/js/installation-config.mjs";
 
 function memoryStorage() {
@@ -54,6 +54,14 @@ test("third-party consent is stored, validated and expires", () => {
   assert.equal(readConsent(storage, now), null);
 });
 
+test("Google map is shown by default until the visitor disables it", () => {
+  const stored = new Map();
+  const storage = { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value), removeItem: (key) => stored.delete(key) };
+  assert.equal(isThirdPartyContentEnabled({ localStorage: storage }), true);
+  setThirdPartyConsent(false, { localStorage: storage });
+  assert.equal(isThirdPartyContentEnabled({ localStorage: storage }), false);
+});
+
 test("revocation wins over a stored permission when storage cannot be written", () => {
   const stored = new Map([[CONSENT_STORAGE_KEY, JSON.stringify({ version: 1, terceiros: true, decididoEm: new Date().toISOString() })]]);
   const storage = {
@@ -62,9 +70,9 @@ test("revocation wins over a stored permission when storage cannot be written", 
     removeItem: (key) => stored.delete(key),
   };
   const windowRef = { localStorage: storage };
-  assert.equal(hasThirdPartyConsent(windowRef), true);
+  assert.equal(isThirdPartyContentEnabled(windowRef), true);
   setThirdPartyConsent(false, windowRef);
-  assert.equal(hasThirdPartyConsent(windowRef), false);
+  assert.equal(isThirdPartyContentEnabled(windowRef), false);
   assert.equal(readConsent(storage), null);
 });
 

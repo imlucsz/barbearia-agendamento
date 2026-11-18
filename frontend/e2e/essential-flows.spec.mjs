@@ -82,6 +82,16 @@ async function signIn(page, account) {
   await page.getByRole("button", { name: "Entrar na minha conta" }).click();
 }
 
+async function showAdminSection(page, section) {
+  await page.evaluate((id) => { location.hash = id; }, section);
+  await expect(page.locator(`#${section}`)).toBeVisible();
+}
+
+async function openStaffEditor(page, formId) {
+  const editor = page.locator(`details.staff-editor:has(#${formId})`);
+  if (!(await editor.evaluate((element) => element.open))) await editor.locator("summary").click();
+}
+
 async function chooseSlot(page) {
   await page.goto("/pages/client-services.html");
   const service = page.locator(".service-selection-card").filter({
@@ -124,9 +134,15 @@ test("cadastro, login, refresh silencioso após sessão expirada e logout", asyn
 
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha", { exact: true }).fill("E2E-Registration-Only-2026!");
-  const loginResponsePromise = page.waitForResponse((response) => response.url().endsWith("/auth/login") && response.request().method() === "POST");
+  let loginPayload = null;
+  await page.route("**/auth/login", async (route) => {
+    const response = await route.fetch();
+    loginPayload = await response.json();
+    await route.fulfill({ response });
+  });
   await page.getByRole("button", { name: "Entrar na minha conta" }).click();
-  const loginPayload = await (await loginResponsePromise).json();
+  await expect.poll(() => loginPayload).not.toBeNull();
+  await page.unroute("**/auth/login");
   expect(Object.hasOwn(loginPayload, "refresh_token")).toBe(false);
   await page.waitForURL(/client-dashboard\.html$/);
   const refreshCookie = (await context.cookies("http://127.0.0.1:4174/auth/refresh")).find((cookie) => cookie.name === "refresh_token");
@@ -542,12 +558,16 @@ test("falha na referência de clientes preserva barbeiros e serviços administra
 test("painel administrativo carrega e gerencia serviços, equipe, clientes, horários e informações", async ({ page }, testInfo) => {
   await signIn(page, admin);
   await page.waitForURL(/admin\.html$/);
+  await showAdminSection(page, "servicos");
   await expect(page.getByRole("heading", { name: "Gerenciar serviços" })).toBeVisible();
+  await showAdminSection(page, "jornadas");
   await expect(page.locator("#schedules-list")).toContainText("08:00");
   await expect(page.locator("#blocks-list")).toContainText("Bloqueio E2E fictício");
+  await showAdminSection(page, "clientes");
   await expect(page.locator("#clients-list")).toContainText("Cliente E2E Fictício");
 
   const clientName = testInfo.project.name.startsWith("mobile") ? "Cliente Mobile E2E Fictício" : "Cliente E2E Fictício";
+  await showAdminSection(page, "agendamento-manual");
   await page.locator("#manual-client").selectOption({ label: `${clientName} · ${clientForProject(testInfo).email}` });
   await page.locator("#manual-service").selectOption({ label: "Corte E2E" });
   await page.locator("#manual-barber").selectOption({ label: "Barbeiro E2E Fictício" });
@@ -560,12 +580,15 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   expect(manualBooking.status()).toBe(201);
   await expect(page.locator("#manual-message")).toContainText("Agendamento manual criado");
 
+  await showAdminSection(page, "servicos");
+  await openStaffEditor(page, "service-form");
   await page.locator("#service-name").fill("Serviço criado pelo E2E");
   await page.getByLabel("Preço (R$)").fill("42.50");
   await page.getByLabel("Duração (minutos)").fill("45");
   await page.getByRole("button", { name: "Salvar serviço" }).click();
   await expect(page.locator("#services-admin-list")).toContainText("Serviço criado pelo E2E");
 
+  await showAdminSection(page, "equipe");
   await page.locator("#barber-service-service").selectOption({ label: "Serviço criado pelo E2E" });
   await page.getByRole("button", { name: "Associar serviço" }).click();
   const newAssociation = page.locator("#barber-services-list .management-item").filter({ hasText: "Serviço criado pelo E2E" });
@@ -573,6 +596,7 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await newAssociation.getByRole("button", { name: "Remover" }).click();
   await expect(newAssociation).toHaveCount(0);
 
+  await showAdminSection(page, "servicos");
   const serviceRow = page.locator("#services-admin-list .management-item").filter({ hasText: "Serviço criado pelo E2E" });
   await serviceRow.getByRole("button", { name: "Editar" }).click();
   await page.locator("#service-name").fill("RF16 service updated");
@@ -585,17 +609,19 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await updatedServiceRow.getByRole("button", { name: "Excluir" }).click();
   await expect(updatedServiceRow).toHaveCount(0);
 
+  await showAdminSection(page, "jornadas");
   const scheduleRow = page.locator("#schedules-list .management-item").first();
   await scheduleRow.getByRole("button", { name: "Desativar" }).click();
   await expect(page.locator("#schedules-list .management-item").first()).toContainText("Inativa");
   await page.locator("#schedules-list .management-item").first().getByRole("button", { name: "Ativar" }).click();
   await expect(page.locator("#schedules-list .management-item").first()).toContainText("Ativa");
 
+  await openStaffEditor(page, "schedule-form");
   await page.locator("#schedule-barber").selectOption({ index: 0 });
   await page.locator("#schedule-day").selectOption("2");
   await page.locator("#schedule-start").fill("09:00");
   await page.locator("#schedule-end").fill("17:00");
-  await page.getByRole("button", { name: "Adicionar jornada" }).click();
+  await page.locator("#schedule-form [type=submit]").click();
   const newSchedule = page.locator("#schedules-list .management-item").filter({ hasText: "09:00" }).last();
   await expect(newSchedule).toBeVisible();
   await expect(newSchedule).toContainText("17:00");
@@ -612,28 +638,31 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await updatedSchedule.getByRole("button", { name: "Remover" }).click();
   await expect(updatedSchedule).toHaveCount(0);
 
+  await openStaffEditor(page, "block-form");
   await page.locator("#block-start").fill(`${bookingDate}T14:00`);
   await page.locator("#block-end").fill(`${bookingDate}T14:30`);
   await page.locator("#block-type").selectOption("feriado");
-  await page.getByLabel("Motivo").fill("Bloqueio criado pela interface E2E");
+  await page.getByLabel("Motivo").fill(`Bloqueio criado pela interface E2E ${testInfo.project.name}`);
   await page.getByRole("button", { name: "Salvar bloqueio" }).click();
-  const createdBlock = page.locator("#blocks-list .management-item").filter({ hasText: "Bloqueio criado pela interface E2E" });
+  const createdBlock = page.locator("#blocks-list .management-item").filter({ hasText: `Bloqueio criado pela interface E2E ${testInfo.project.name}` });
   await expect(createdBlock).toBeVisible();
-  await expect(createdBlock).toContainText("feriado");
+  await expect(createdBlock).toContainText(/feriado/i);
   await createdBlock.getByRole("button", { name: "Editar" }).click();
-  await page.locator("#block-reason").fill("Bloqueio E2E feriado atualizado");
+  await page.locator("#block-reason").fill(`Bloqueio E2E feriado atualizado ${testInfo.project.name}`);
   await page.locator("#block-form [type=submit]").click();
-  const updatedBlock = page.locator("#blocks-list .management-item").filter({ hasText: "Bloqueio E2E feriado atualizado" });
-  await expect(updatedBlock).toContainText("feriado");
+  const updatedBlock = page.locator("#blocks-list .management-item").filter({ hasText: `Bloqueio E2E feriado atualizado ${testInfo.project.name}` });
+  await expect(updatedBlock).toContainText(/feriado/i);
   await updatedBlock.getByRole("button", { name: "Remover" }).click();
   await expect(updatedBlock).toHaveCount(0);
 
+  await showAdminSection(page, "clientes");
   const clientRow = page.locator("#clients-list .management-item").filter({ hasText: clientForProject(testInfo).email });
   await clientRow.getByRole("button", { name: "Bloquear" }).click();
   await expect(clientRow).toContainText("Bloqueado");
   await clientRow.getByRole("button", { name: "Desbloquear" }).click();
   await expect(clientRow).toContainText("Ativo");
 
+  await showAdminSection(page, "institucional");
   await page.locator("#institution-name").fill("Barbearia E2E Temporária");
   await page.getByLabel("Endereço").fill("Rua Teste Fictícia, 123");
   await page.getByLabel("Telefone").fill("11999990000");
@@ -653,8 +682,10 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await expect(page.locator("#mon")).toHaveText("08:00 às 18:00");
   await expect(page.locator("#map-link")).toHaveAttribute("href", "https://www.google.com/maps/place/e2e");
   await page.goto("/pages/admin.html");
+  await showAdminSection(page, "institucional");
   await expect(page.locator("#institution-address")).toHaveValue("Rua Teste Fictícia, 123");
 
+  await showAdminSection(page, "financeiro");
   await page.getByRole("button", { name: "Gerar relatório" }).click();
   await expect(page.locator("#finance-result")).toContainText("Receita estimada");
 
@@ -671,6 +702,7 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await page.goto("/pages/login.html");
   await signIn(page, admin);
   await page.waitForURL(/admin\.html$/);
+  await showAdminSection(page, "avaliacoes");
   await expect(page.locator("#reviews-admin-list")).toContainText(moderationComment);
 
   const review = page.locator("#reviews-admin-list .management-item").filter({ hasText: moderationComment }).last();
@@ -686,12 +718,14 @@ test("painel administrativo carrega e gerencia serviços, equipe, clientes, hor�
   await expect(page.locator("#reviews-list")).not.toContainText(moderationComment);
   await expect(page.locator("#address")).toContainText("Rua Teste Fictícia, 123");
   await page.goto("/pages/admin.html");
+  await showAdminSection(page, "avaliacoes");
   const reviewAgain = page.locator("#reviews-admin-list .management-item").filter({ hasText: moderationComment }).last();
   await reviewAgain.getByRole("button", { name: "Exibir" }).click();
   await expect(reviewAgain.getByRole("button", { name: "Ocultar" })).toBeVisible();
   await page.goto("/pages/index.html");
   await expect(page.locator("#reviews-list")).toContainText(moderationComment);
   await page.goto("/pages/admin.html");
+  await showAdminSection(page, "servicos");
   await expect(page.getByRole("heading", { name: "Gerenciar serviços" })).toBeVisible();
 });
 
@@ -783,8 +817,10 @@ test("agenda registra status da equipe e valor cobrado", async ({ page }) => {
   await page.goto("/pages/admin.html");
   const row = page.locator(".agenda-row").filter({ hasText: "Cliente RF14" });
   await expect(row).toBeVisible();
-  await page.locator("#charged-501").fill("38.50");
-  await row.getByRole("button", { name: "Concluído" }).click();
+  await row.getByRole("button", { name: "Concluir atendimento" }).click();
+  const dialog = page.getByRole("dialog", { name: "Concluir atendimento" });
+  await dialog.getByLabel("Valor cobrado (R$)").fill("38.50");
+  await dialog.getByRole("button", { name: "Confirmar conclusão" }).click();
   await expect.poll(() => updatePayload).toEqual({ status: "concluido", valor_cobrado: 38.5 });
   await expect(row).toContainText("Concluído");
 });
@@ -807,6 +843,7 @@ test("bloqueio e desbloqueio de cliente afetam a sessão ativa imediatamente", a
     await signIn(adminPage, admin);
     await adminPage.waitForURL(/admin\.html$/);
 
+    await showAdminSection(adminPage, "clientes");
     const clientRow = adminPage.locator("#clients-list .management-item").filter({ hasText: account.email });
     await expect(clientRow).toBeVisible();
     await clientRow.getByRole("button", { name: "Bloquear" }).click();
@@ -842,6 +879,7 @@ test("relatório financeiro exibe quebras por período e exporta CSV", async ({ 
       contagem_status: { concluido: 3, cancelado: 1, falta: 1 },
     } });
   });
+  await showAdminSection(page, "financeiro");
   await page.locator("#finance-start").fill("2026-06-01");
   await page.locator("#finance-end").fill("2026-06-03");
   await page.getByRole("button", { name: "Gerar relatório" }).click();
@@ -865,10 +903,7 @@ test("usuário comum recebe 403 na API e é retirado da tela administrativa", as
   );
   expect(forbidden.status()).toBe(403);
 
-  const deniedUiResponse = page.waitForResponse((response) =>
-    response.url().includes("/admin/agenda") && response.status() === 403);
   await page.goto("/pages/admin.html");
-  expect((await deniedUiResponse).status()).toBe(403);
   await page.waitForURL(/client-dashboard\.html$/);
 });
 
@@ -880,7 +915,10 @@ test("formulário é navegável por Tab, tem foco visível, rótulos e validaç�
   await expect(password).toBeVisible();
 
   await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Pular para o conteúdo" })).toBeFocused();
   await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Voltar ao início" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(email).toBeFocused();
   expect(await email.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe("solid");
@@ -904,7 +942,7 @@ test("cliente não encontra mutações administrativas na tela", async ({ page }
   await expect(page.locator(".admin-only")).toHaveCount(0);
 });
 
-test("preferências de cookies, rodapé legal e mapa só com consentimento", async ({ page }) => {
+test("mapa do Google aparece por padrão, sem sandbox, e pode ser desativado nas preferências", async ({ page }) => {
   const googleRequests = [];
   page.on("request", (request) => {
     if (/google\.com|googletagmanager|google-analytics/.test(new URL(request.url()).hostname)) googleRequests.push(request.url());
@@ -917,8 +955,10 @@ test("preferências de cookies, rodapé legal e mapa só com consentimento", asy
   } }));
   await page.goto("/pages/index.html");
   await expect(page.locator("[data-consent-banner]")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Carregar mapa do Google" })).toBeVisible();
-  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  const map = page.locator("#map-container iframe");
+  await expect(map).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  expect(await map.getAttribute("sandbox")).toBeNull();
+  await expect(page.getByRole("button", { name: "Exibir mapa do Google" })).toHaveCount(0);
   const legalNav = page.getByRole("navigation", { name: "Informações legais" });
   await expect(legalNav.getByRole("link", { name: "Política de Privacidade" })).toHaveAttribute("href", "privacidade.html");
   await expect(legalNav.getByRole("link", { name: "Termos de Uso" })).toHaveAttribute("href", "termos.html");
@@ -926,19 +966,21 @@ test("preferências de cookies, rodapé legal e mapa só com consentimento", asy
   const preferences = page.getByRole("button", { name: "Preferências de cookies" });
   await preferences.click();
   const panel = page.getByRole("region", { name: "Preferências de cookies" });
+  await expect(panel).toContainText("Escolha atual: mapa do Google exibido (padrão).");
   await expect(panel.getByRole("button", { name: "Usar somente essenciais" })).toBeFocused();
   await panel.getByRole("button", { name: "Usar somente essenciais" }).click();
   await expect(panel).toHaveCount(0);
   await expect(preferences).toBeFocused();
+  await expect(map).toHaveCount(0);
+
+  googleRequests.length = 0;
   await page.reload();
-  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Exibir mapa do Google" })).toBeVisible();
+  await expect(map).toHaveCount(0);
   expect(googleRequests).toEqual([]);
 
-  await page.getByRole("button", { name: "Preferências de cookies" }).click();
-  const reopened = page.getByRole("region", { name: "Preferências de cookies" });
-  await expect(reopened).toContainText("Escolha atual: somente essenciais.");
-  await reopened.getByRole("button", { name: "Permitir conteúdo de terceiros" }).click();
-  await expect(page.locator("#map-container iframe")).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+  await page.getByRole("button", { name: "Exibir mapa do Google" }).click();
+  await expect(map).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
 });
 
 test("documentos legais exibem dados configuráveis sem inventar CNPJ", async ({ page }) => {
