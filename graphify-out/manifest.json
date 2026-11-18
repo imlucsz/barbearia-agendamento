@@ -996,9 +996,9 @@
     "semantic_hash": ""
   },
   "frontend/e2e/essential-flows.spec.mjs": {
-    "mtime": 1795005889.5562582,
-    "seen": 1795005921.5943148,
-    "ast_hash": "95f3cadb0bc7c67ec04131e7e7256bcc",
+    "mtime": 1795006613.69068,
+    "seen": 1795006706.3834033,
+    "ast_hash": "8f03ef86be0361c401dc53948eeb3e70",
     "semantic_hash": ""
   },
   "frontend/e2e/estrelinha-cinematic.config.mjs": {
@@ -1572,9 +1572,9 @@
     "semantic_hash": ""
   },
   "docs/REQUISITOS_STATUS.md": {
-    "mtime": 1795005889.5582583,
-    "seen": 1795005921.594427,
-    "ast_hash": "5930f202dd3a20c839ff9a7f96a7e8d8",
+    "mtime": 1795006701.1191218,
+    "seen": 1795006706.383515,
+    "ast_hash": "90796a2d8a49b527ffc2df4e66c3c36c",
     "semantic_hash": ""
   },
   "docs/REUTILIZACAO_E_ATUALIZACAO.md": {

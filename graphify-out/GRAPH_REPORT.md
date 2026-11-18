@@ -1,17 +1,17 @@
 # Graph Report - barbearia-agendamento  (2026-11-18)
 
 ## Corpus Check
-- 364 files · ~537,467 words
+- 364 files · ~537,685 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 38 file(s) not represented in the graph (top: .css 22, (none) 9, .ttf 4)
 
 ## Summary
-- 6318 nodes · 13168 edges · 337 communities (195 shown, 142 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1020 edges (avg confidence: 0.9)
+- 6321 nodes · 13173 edges · 340 communities (192 shown, 148 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 1022 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1e74d64c`
+- Built from commit: `2bef8d62`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -23,7 +23,7 @@
 - LoginRateLimitTests
 - RoleEnum
 - initialize
-- installation-brand.mjs
+- home-experience.mjs
 - asgi_request
 - three.module.js
 - Vector3
@@ -45,7 +45,7 @@
 - Status de auditoria dos requisitos
 - Vector2
 - BookingTemporalTests
-- load_settings
+- LineBasicMaterial
 - main.py
 - Vector4
 - ServiceRecordTests
@@ -54,12 +54,12 @@
 - Stage2Reproductions
 - AuthorizationTests
 - s
-- BarberServiceAssignmentTests
+- KeyframeTrack
 - AuthenticationSessionTests
 - booking-calendar.mjs
 - especies.js
 - LgpdPortabilityTests
-- Service
+- BookingCalendarTests
 - Ritual: diagnóstico Chrome / Edge — 2026-11-02
 - ref_node_assert
 - Histórico das respostas — fechamento beta até v1.0.0-rc.1
@@ -96,7 +96,7 @@
 - 07 — Processo comercial, prospecção e proposta
 - Composição e arquivos por commit
 - auth.js
-- PasswordCapacityTests
+- WebGLBindingStates
 - Object3D
 - initial_admin.py
 - earcutLinked
@@ -105,7 +105,7 @@
 - 06 — Crescer com várias instalações, sem multi-tenancy prematura
 - HOME Motion Integration — Contract Map
 - Plano de backup e recuperação de desastres
-- test_route_authorization_matrix.py
+- security.py
 - Etapa 2: sessões e limitação de autenticação
 - jf
 - frontend.py
@@ -127,7 +127,7 @@
 - Token-Efficient Workflow
 - RequestContextTests
 - warn
-- .constructor
+- MeshBasicMaterial
 - PropertyBinding
 - Reutilização e atualização por instalação
 - F1 — implementação e validação local de origem única
@@ -147,7 +147,7 @@
 - updates
 - SecurityControlTests
 - AccountErasureConfirmationLimitTests
-- login.js
+- Float16BufferAttribute
 - PasswordResetLimitsMigrationTests
 - test_same_origin_deployment.py
 - 20261028_01_initial_schema.py
@@ -156,19 +156,19 @@
 - Rastreabilidade entre requisitos e implementação
 - Home editorial com ritual visual
 - Identidade JWT e credencial concorrente
-- createVideoSeeker
+- schemas/horario.py
 - Ampliação proposta — qualidade dos dados e UX de autenticação
 - Parte 2 — identidade editorial nas telas internas
 - BatchedMesh
 - Security review
 - Agendamento inteligente — Parte 1
 - Requisitos do sistema (fonte de verdade para o Codex)
-- Int16BufferAttribute
-- .constructor
+- BufferAttribute
+- essential-flows.spec.mjs
 - TextureSource
 - Modelo de ameaças — Barbearia Agendamento
 - Continuidade editorial — telas do produto
-- product-navigation.mjs
+- .setGeometryAt
 - Privacidade e atendimento de solicitações LGPD
 - Parte 1 — disponibilidade e entradas
 - especies.d.ts
@@ -177,7 +177,7 @@
 - Loader
 - create_isolated_postgres_test_schema
 - 2026-11-07-part2-hybrid.md
-- AuditLog
+- users.py
 - Correção pontual de clientes e agenda administrativa
 - SEC-01 e UX-01
 - ObjectLoader
@@ -213,7 +213,7 @@
 - SkinnedMesh
 - Timer
 - .setAttribute
-- sanitized_validation_error
+- .onBeforeRender
 - Box2
 - Recuperação de senha e seleção administrativa — alteração local
 - Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04
@@ -228,14 +228,14 @@
 - Proposta de implementação por área
 - test_email_integrity_errors.py
 - Lote 1 autorizado e implementado localmente — 2026-11-04
-- .reject_control_characters
+- SchemaModel
 - pr36/README.md
 - 2026-11-08-pr35-integration.md
 - WebXRController
 - Sphere
-- BufferAttribute
+- InterleavedBufferAttribute
 - Frustum
-- WebGLShaderCache
+- denormalize
 - WebGLUniforms
 - WebGLBindingStates
 - .constructor
@@ -278,27 +278,27 @@
 - SpotLight
 - VideoTexture
 - WebGLRenderList
-- ExtrudeGeometry
-- DataArrayTexture
-- ExternalTexture
+- CubeTexture
+- .dispose
+- ImageLoader
 - PreviewServerTests
 - probeAsync
 - EmailIdentityMigrationTests
 - ObservabilityTests
-- AuthenticationRegressionTests
+- LOD
 - CompressedArrayTexture
-- Int32BufferAttribute
+- FinancialReportTests
 - LineCurve
 - LineCurve3
-- LOD
-- Int8BufferAttribute
+- UniformsGroup
+- SchemaValidationTests
 - .constructor
 - WebGLEnvironments
 - createHeroIntro
-- Uint16BufferAttribute
-- Camera
-- Uint32BufferAttribute
-- Uint8BufferAttribute
+- AnimationObjectGroup
+- Composite
+- InstancedInterleavedBuffer
+- MaterialLoader
 - WebGLClipping
 - Objetivo e limites
 - F2LoginResilienceTests
@@ -308,12 +308,11 @@
 - flatten
 - RenderStartTests
 - Correção exclusiva de F2
-- Uint8ClampedBufferAttribute
+- person_name.py
 - SeedEndpointTests
 - Clock
 - CatmullRomCurve3
-- WebGLGeometries
-- PlaneGeometry
+- F2TransactionTests
 - Sprite
 - Etapa 2: reservas, locks e troca de versão
 - cloneUniforms
@@ -322,10 +321,11 @@
 - ScheduleBlockLifecycleTests
 - InstallationScaffoldTests
 - AudioAnalyser
-- .test_busy_confirmation_does_not_take_login_capacity
 - Conformidade legal, privacidade e acessibilidade — auditoria 2026-11-18
 - checkGeometryIntersection
 - euclideanModulo
+- .compileAsync
+- .lerp
 - Uniform
 - CubicPoly
 - getKeyframeOrder
@@ -351,53 +351,53 @@
   docs/validation-stage2/postgresql/F2_FIX.md → backend/app/routers/auth.py
 - `3. Regras que afetam a venda e o suporte` --references--> `get_available_slots()`  [INFERRED]
   docs/business/notebooklm/01_PRODUTO_E_ARQUITETURA.md → backend/app/routers/appointments.py
-- `Revogação imediata do access token por sessão — 2026-11-16` --references--> `get_current_user()`  [INFERRED]
-  docs/REQUISITOS_STATUS.md → backend/app/dependencies.py
+- `Histórico: alternativa pragmática anterior à classificação explícita` --references--> `claim_login_reservation()`  [INFERRED]
+  docs/REQUISITOS_STATUS.md → backend/app/core/login_rate_limit.py
 
 ## Import Cycles
 - None detected.
 
-## Communities (337 total, 142 thin omitted)
+## Communities (340 total, 148 thin omitted)
 
 ### Community 0 - "three.core.js"
 Cohesion: 0.01
 Nodes (233): RFC-3987, _addedEvent, _alignedPosition, _axis, _baseVector, _batchIntersects, _boneMatrix, _box (+225 more)
 
 ### Community 1 - "test_schema_validation.py"
-Cohesion: 0.18
-Nodes (7): AvaliacaoCreate, ServiceBase, ServiceCreate, ServiceResponse, ServiceUpdate, BookingInputSafetyTests, SchemaValidationTests
+Cohesion: 0.27
+Nodes (7): AvaliacaoCreate, InformacaoInstitucionalUpdate, ServiceBase, ServiceCreate, ServiceResponse, ServiceUpdate, BookingInputSafetyTests
 
 ### Community 2 - "TwoInstallationIsolationTests"
 Cohesion: 0.36
 Nodes (3): request(), TwoInstallationIsolationTests, unused_port()
 
 ### Community 3 - "sqlalchemy"
-Cohesion: 0.07
-Nodes (17): _run_migrations(), run_migrations_online(), downgrade(), _target_unique_constraints(), upgrade(), upgrade(), upgrade(), upgrade() (+9 more)
+Cohesion: 0.09
+Nodes (15): downgrade(), _target_unique_constraints(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade(), upgrade() (+7 more)
 
 ### Community 4 - "LoginRateLimitTests"
-Cohesion: 0.06
-Nodes (13): _account_streak_waits(), finish(), _ip_authenticated_account(), _is_success(), Limited, reserve(), consumes_failure_budget(), LoginOutcomeTests (+5 more)
+Cohesion: 0.07
+Nodes (12): _account_streak_waits(), finish(), _is_success(), Limited, reserve(), consumes_failure_budget(), LoginOutcomeTests, reject_then_cancel() (+4 more)
 
 ### Community 5 - "RoleEnum"
-Cohesion: 0.05
-Nodes (50): record(), _safe_details(), email_key(), verify_password_confirmation(), get_db(), ensure_owner_id(), ensure_resource_owner(), get_current_user() (+42 more)
+Cohesion: 0.04
+Nodes (65): availability_days(), ensure_client_booking_capacity(), is_on_slot_grid(), lock_barber_for_booking(), normalize_datetime(), now_local(), schedule_bounds(), scheduling_timezone() (+57 more)
 
 ### Community 6 - "initialize"
 Cohesion: 0.05
 Nodes (39): createDust(), draw(), ScrollTrigger(), mirror(), pole(), scissors(), initialize(), buildIntro() (+31 more)
 
-### Community 7 - "installation-brand.mjs"
-Cohesion: 0.18
-Nodes (8): start(), pole(), scissors(), createHeroIntro(), scissorsAngle(), settle(), start(), createRuntime()
+### Community 7 - "home-experience.mjs"
+Cohesion: 0.09
+Nodes (23): start(), pole(), scissors(), createHeroIntro(), scissorsAngle(), settle(), start(), createVideoRitual() (+15 more)
 
 ### Community 8 - "asgi_request"
 Cohesion: 0.06
-Nodes (6): asgi_request(), AuditTests, recover(), register(), ReadinessTests, SameOriginFrontendTests
+Nodes (8): asgi_request(), AuditTests, AuthenticationRegressionTests, recover(), register(), unique_error(), ReadinessTests, SameOriginFrontendTests
 
 ### Community 9 - "three.module.js"
 Cohesion: 0.01
-Nodes (43): ColorManagement, Compatibility, DefaultLoadingManager, InterpolationSamplingType, MathUtils, TimestampQuery, arrayCacheF32, arrayCacheI32 (+35 more)
+Nodes (43): getConsoleFunction(), InterpolationSamplingMode, MathUtils, setConsoleFunction(), TimestampQuery, UniformsUtils, arrayCacheF32, arrayCacheI32 (+35 more)
 
 ### Community 11 - "gsap.min.js"
 Cohesion: 0.05
@@ -424,20 +424,20 @@ Cohesion: 0.05
 Nodes (36): databases, databaseName, name, plan, postgresMajorVersion, user, fromDatabase, fromService (+28 more)
 
 ### Community 17 - "LoginCapacityLifecycleTests"
-Cohesion: 0.18
-Nodes (4): LoginCapacityLifecycleTests, route(), call_next(), work()
+Cohesion: 0.13
+Nodes (5): _load_password_verification_limit(), LoginCapacityLifecycleTests, PasswordCapacityTests, verify(), work()
 
 ### Community 18 - "agenda_admin.js"
 Cohesion: 0.09
 Nodes (38): agendaDayLabel, agendaList, carregarAgendaDoDia(), clearSession(), dateRoll, DIAS_SEMANA, focusSelectedDate(), formatDateForAPI() (+30 more)
 
 ### Community 19 - "send_password_reset_email"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (5): EmailDeliveryError, send_password_reset_email(), EsqueciSenhaRequest, BrevoDeliveryTests, EmailIdentityDeliveryTests
 
 ### Community 20 - "@playwright/test"
-Cohesion: 0.04
-Nodes (19): user, runAuthSessionChecks(), verifyBooking(), admin, barber, client, mobileClient, services (+11 more)
+Cohesion: 0.05
+Nodes (15): user, runAuthSessionChecks(), verifyBooking(), services, service, cases, agendaDate, bookingDate (+7 more)
 
 ### Community 22 - "Sistema de Agendamento Online para Barbearia"
 Cohesion: 0.06
@@ -453,19 +453,19 @@ Nodes (46): A(), B(), C(), Db(), Dc(), Mq(), Nq(), Tq() (+38 more)
 
 ### Community 25 - "support.py"
 Cohesion: 0.05
-Nodes (27): validate_secret_key(), _validate_sender(), _assert_test_database(), git(), orchestrate(), preserved_files(), run_worker(), addError() (+19 more)
+Nodes (25): main(), git(), orchestrate(), preserved_files(), run_worker(), addError(), addFailure(), addSkip() (+17 more)
 
 ### Community 26 - "Status de auditoria dos requisitos"
 Cohesion: 0.06
-Nodes (35): Agendamento inteligente — Parte 1 (2026-11-07), Atualização técnica Render — 2026-10-30, Confirmação de senha fora do login — limite e vaga própria, Conformidade LGPD, jurídica e acessibilidade (2026-11-18), Correção da agenda administrativa — 2026-11-04, Correção F2 — finalização após commit do login, Correções da revisão final — 2026-10-31, Correções direcionadas de CI — 2026-10-30 (+27 more)
+Nodes (33): Agendamento inteligente — Parte 1 (2026-11-07), Atualização técnica Render — 2026-10-30, Confirmação de senha fora do login — limite e vaga própria, Conformidade LGPD, jurídica e acessibilidade (2026-11-18), Correção da agenda administrativa — 2026-11-04, Correção F2 — finalização após commit do login, Correções da revisão final — 2026-10-31, Critério mínimo de avanço (+25 more)
 
-### Community 29 - "load_settings"
-Cohesion: 0.16
-Nodes (5): load_settings(), brevo_environment(), BrevoConfigurationTests, ApplicationSettingsTests, valid_production_environment()
+### Community 29 - "LineBasicMaterial"
+Cohesion: 0.09
+Nodes (8): AxesHelper, Box3Helper, BoxHelper, GridHelper, LineBasicMaterial, LineSegments, PolarGridHelper, SpotLightHelper
 
 ### Community 30 - "main.py"
-Cohesion: 0.05
-Nodes (29): _get(), get_app_environment(), parse_allowed_hosts(), parse_cors_origins(), _validate_reset_url(), normalize_email(), _label(), _method() (+21 more)
+Cohesion: 0.04
+Nodes (34): _run_migrations(), run_migrations_online(), _get(), get_app_environment(), max_active_appointments_per_client(), _normalize_cors_hostname(), parse_allowed_hosts(), parse_cors_origins() (+26 more)
 
 ### Community 34 - "README.md"
 Cohesion: 0.13
@@ -479,6 +479,10 @@ Nodes (3): Stage2Reproductions, gate(), refresh_worker()
 Cohesion: 0.14
 Nodes (26): _a(), Ao(), _assertThisInitialized(), cb(), cc(), ga(), gb(), ha() (+18 more)
 
+### Community 38 - "KeyframeTrack"
+Cohesion: 0.12
+Nodes (6): BooleanKeyframeTrack, ColorKeyframeTrack, KeyframeTrack, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack
+
 ### Community 40 - "booking-calendar.mjs"
 Cohesion: 0.25
 Nodes (16): dateLabel(), element(), labels, latestRequest(), mountBookingCalendar(), loadContext(), render(), selectDay() (+8 more)
@@ -487,17 +491,13 @@ Nodes (16): dateLabel(), element(), labels, latestRequest(), mountBookingCalenda
 Cohesion: 0.11
 Nodes (16): BOCA_ABERTA, BOCA_PEQUENA, CORES, ESCALA, LENTE, normalizar(), OLHO_BRILHO, OLHO_FELIZ (+8 more)
 
-### Community 43 - "Service"
-Cohesion: 0.07
-Nodes (47): availability_days(), ensure_client_booking_capacity(), is_on_slot_grid(), lock_barber_for_booking(), normalize_datetime(), now_local(), schedule_bounds(), scheduling_timezone() (+39 more)
-
 ### Community 44 - "Ritual: diagnóstico Chrome / Edge — 2026-11-02"
 Cohesion: 0.17
 Nodes (11): Asset real (ffprobe, sem recodificação), Atribuição de currentTime não comprova apresentação, Coleta completa somente se ainda falhar em continuous-scrub, Conclusão e limite, Fluxo exato e arquivos, Hipóteses, Menor experimento manual (primeiro, sem instrumentação), Proposta condicionada, NÃO implementada (+3 more)
 
 ### Community 45 - "ref_node_assert"
-Cohesion: 0.08
-Nodes (16): frontend, source, backendRoot, getBookingDate(), projectRoot, startTestEnvironment(), buildStaticSite(), collectHtml() (+8 more)
+Cohesion: 0.07
+Nodes (19): bookingNavigation(), mountProductNavigation(), steps, frontend, source, backendRoot, getBookingDate(), projectRoot (+11 more)
 
 ### Community 46 - "Histórico das respostas — fechamento beta até v1.0.0-rc.1"
 Cohesion: 0.11
@@ -528,8 +528,8 @@ Cohesion: 0.12
 Nodes (18): animate(), AVENTAL, barberPole, camera, canvas, fill, interagir(), ITENS (+10 more)
 
 ### Community 53 - "KeyframeTrack"
-Cohesion: 0.06
-Nodes (14): BezierInterpolant, BooleanKeyframeTrack, ColorKeyframeTrack, cubicBezierSlope(), CubicInterpolant, DiscreteInterpolant, Interpolant, KeyframeTrack (+6 more)
+Cohesion: 0.10
+Nodes (8): BezierInterpolant, cubicBezierSlope(), CubicInterpolant, DiscreteInterpolant, Interpolant, LinearInterpolant, QuaternionLinearInterpolant, solveBezierParameter()
 
 ### Community 54 - "home.js"
 Cohesion: 0.11
@@ -540,20 +540,16 @@ Cohesion: 0.21
 Nodes (3): asgi_post(), PasswordResetTests, request()
 
 ### Community 56 - "backup.py"
-Cohesion: 0.13
-Nodes (21): JwtConfigurationTests, run_app_import(), checksum(), main(), probe(), backup_dir(), connect(), create_backup() (+13 more)
+Cohesion: 0.07
+Nodes (26): load_settings(), brevo_environment(), BrevoConfigurationTests, ApplicationSettingsTests, valid_production_environment(), JwtConfigurationTests, run_app_import(), checksum() (+18 more)
 
 ### Community 57 - "SQLiteSchemaMigrationTests"
 Cohesion: 0.24
 Nodes (4): assert_matches_models(), migration_config(), schema_snapshot(), SQLiteSchemaMigrationTests
 
 ### Community 58 - "schemas/institucional.py"
-Cohesion: 0.25
-Nodes (5): InformacaoInstitucionalBase, InformacaoInstitucionalCreate, InformacaoInstitucionalResponse, InformacaoInstitucionalUpdate, _validate_url()
-
-### Community 59 - "schemas/user.py"
-Cohesion: 0.16
-Nodes (9): normalize_person_name(), PasswordConfirmation, RedefinirSenhaRequest, UserBase, UserCreate, UserLogin, UserResponse, UserUpdate (+1 more)
+Cohesion: 0.22
+Nodes (4): InformacaoInstitucionalBase, InformacaoInstitucionalCreate, InformacaoInstitucionalResponse, _validate_url()
 
 ### Community 60 - "CustomEase.min.js"
 Cohesion: 0.21
@@ -565,11 +561,11 @@ Nodes (15): 1. Establishing the Creative Foundation, 2.1 The Entry Sequence (Pre
 
 ### Community 63 - "BufferGeometry"
 Cohesion: 0.09
-Nodes (5): BufferGeometry, ShapeGeometry, testPoint(), TorusKnotGeometry, WireframeGeometry
+Nodes (5): BufferGeometry, checkIntersection(), HemisphereLightHelper, PlaneHelper, TorusKnotGeometry
 
 ### Community 65 - "Color"
 Cohesion: 0.07
-Nodes (4): Color, handleAlpha(), hue2rgb(), LinearToSRGB()
+Nodes (6): Color, handleAlpha(), createColorManagement(), hue2rgb(), LinearToSRGB(), SRGBToLinear()
 
 ### Community 66 - "Stage2ConcurrencyTests"
 Cohesion: 0.23
@@ -605,7 +601,7 @@ Nodes (28): Arquivos, Build, segurança e implantação, HOME editorial — inte
 
 ### Community 75 - "error"
 Cohesion: 0.08
-Nodes (26): enhanceLogMessage(), error(), WebGLInfo(), update(), WebGLState(), ColorBuffer(), compressedTexImage2D(), compressedTexImage3D() (+18 more)
+Nodes (26): handleError(), enhanceLogMessage(), error(), WebGLInfo(), update(), WebGLState(), compressedTexImage2D(), compressedTexImage3D() (+18 more)
 
 ### Community 76 - "Material"
 Cohesion: 0.06
@@ -620,16 +616,16 @@ Cohesion: 0.17
 Nodes (12): 13c072a — feat(ui): adicionar visibilidade acessível de senhas, 1fdf985 — test(auth): caracterizar identidade de e-mails sem depender de cooldown, 20103cf — fix(admin): corrigir seleção e elegibilidade de barbeiros, 8b26f59 — feat(validation): normalizar nomes Unicode em novas entradas, Composição e arquivos por commit, Exclusão da recuperação e adaptações de testes, f1ddd1f — test: isolar testes PostgreSQL e configurações de e-mail, Instabilidade E2E preservada (+4 more)
 
 ### Community 79 - "auth.js"
-Cohesion: 0.32
-Nodes (10): setToken(), forgotPassword(), login(), moneySafeDestinations, register(), resetPassword(), safeDestination(), setBusy() (+2 more)
+Cohesion: 0.13
+Nodes (19): apiPost(), setToken(), forgotPassword(), login(), moneySafeDestinations, register(), resetPassword(), safeDestination() (+11 more)
 
-### Community 80 - "PasswordCapacityTests"
-Cohesion: 0.29
-Nodes (3): _load_password_verification_limit(), PasswordCapacityTests, verify()
+### Community 80 - "WebGLBindingStates"
+Cohesion: 0.19
+Nodes (21): WebGLBindingStates(), bindVertexArrayObject(), createBindingState(), createVertexArrayObject(), deleteVertexArrayObject(), disableUnusedAttributes(), dispose(), enableAttribute() (+13 more)
 
 ### Community 82 - "initial_admin.py"
-Cohesion: 0.20
-Nodes (4): create_initial_admin(), validate_installation_for_admin_bootstrap(), InitialAdminTests, attempt()
+Cohesion: 0.16
+Nodes (5): create_initial_admin(), main(), validate_installation_for_admin_bootstrap(), InitialAdminTests, attempt()
 
 ### Community 83 - "earcutLinked"
 Cohesion: 0.08
@@ -647,9 +643,9 @@ Nodes (11): Arquivos e reprodução, DOM/API contracts to preserve, Existing ver
 Cohesion: 0.18
 Nodes (10): Execução e verificação, Exemplos de agendamento, Objetivos e responsáveis, Plano de backup e recuperação de desastres, Preparação do backup, Primeira instalação: proposta mínima e fronteira externa, Proteção de dados pessoais, Restauração após incidente (+2 more)
 
-### Community 89 - "test_route_authorization_matrix.py"
-Cohesion: 0.60
-Nodes (3): _all_api_routes(), _dependency_calls(), RouteAuthorizationMatrixTests
+### Community 89 - "security.py"
+Cohesion: 0.07
+Nodes (21): validate_secret_key(), _validate_sender(), utc_now(), create_access_token(), decode_access_token(), _password_unavailable(), _validate_access_subject(), _validate_session_id() (+13 more)
 
 ### Community 90 - "Etapa 2: sessões e limitação de autenticação"
 Cohesion: 0.18
@@ -692,12 +688,12 @@ Cohesion: 0.10
 Nodes (18): Abrir, Como ler as métricas, Experimentar, Gesto e materiais, Precisão que transforma — laboratório visual, Rodada atual: Ritual em vídeo, Timeline desktop, Validação (+10 more)
 
 ### Community 101 - "User"
-Cohesion: 0.05
-Nodes (13): get_password_hash(), User, read_current_user(), load_app_for_environment(), reset_database(), AppointmentReviewTests, EmailIdentityContractTests, FinancialReportTests (+5 more)
+Cohesion: 0.06
+Nodes (23): get_password_hash(), AppointmentStatusEnum, BarbearioServico, JornadaTrabalho, RoleEnum, Service, User, access_token_for_user() (+15 more)
 
 ### Community 102 - "WebGLShadowMap"
-Cohesion: 0.06
-Nodes (14): BoxGeometry, CubeDepthTexture, Mesh, RawShaderMaterial, WebGLRenderTarget, _createPlanes(), _createRenderTarget(), WebGLCubeRenderTarget (+6 more)
+Cohesion: 0.08
+Nodes (12): BoxGeometry, CubeDepthTexture, RawShaderMaterial, WebGLRenderTarget, _createRenderTarget(), WebGLCubeRenderTarget, WebGLOutput(), WebGLShadowMap() (+4 more)
 
 ### Community 104 - "05 — Infraestrutura, preços e redução de custos"
 Cohesion: 0.22
@@ -712,20 +708,16 @@ Cohesion: 0.22
 Nodes (8): 11 — Roadmap comercial e plano de 90 dias, 1. Prioridade não é lista de tudo que um concorrente tem, 2. Dias 1–30: provar necessidade e entrega segura, 3. Dias 31–60: aprender com até três pilotos, 4. Dias 61–90: repetir antes de escalar, 5. Rotina semanal possível, 6. Experimentos e critérios de parada, DADOS QUE PRECISAMOS MEDIR
 
 ### Community 107 - "Line"
-Cohesion: 0.10
-Nodes (6): ArrowHelper, checkIntersection(), ConeGeometry, CylinderGeometry, Line, PlaneHelper
+Cohesion: 0.11
+Nodes (5): ArrowHelper, ConeGeometry, CylinderGeometry, DirectionalLightHelper, Line
 
 ### Community 108 - "Token-Efficient Workflow"
 Cohesion: 0.25
 Nodes (7): Avoid routine context noise, Classify the task, Important limits, Keep changes and output focused, Provenance, Token-Efficient Workflow, Work from narrow evidence
 
-### Community 111 - ".constructor"
-Cohesion: 0.14
-Nodes (5): CubeCamera, HemisphereLightHelper, MeshBasicMaterial, PointLightHelper, SphereGeometry
-
-### Community 112 - "PropertyBinding"
-Cohesion: 0.06
-Nodes (3): AnimationObjectGroup, Composite, PropertyBinding
+### Community 110 - "warn"
+Cohesion: 0.10
+Nodes (4): Audio, setQuaternionFromProperEuler(), warn(), allocateTextureUnit()
 
 ### Community 113 - "Reutilização e atualização por instalação"
 Cohesion: 0.25
@@ -736,7 +728,7 @@ Cohesion: 0.25
 Nodes (7): Alterações, Causa e solução, Evidência Chromium, F1 — implementação e validação local de origem única, Render, passos externos e limites, Revisão final para commit local, Testes reais e resultados
 
 ### Community 115 - "Euler"
-Cohesion: 0.11
+Cohesion: 0.09
 Nodes (4): Euler, MeshLambertMaterial, MeshPhongMaterial, Scene
 
 ### Community 116 - "Instruções do projeto"
@@ -748,8 +740,8 @@ Cohesion: 0.29
 Nodes (6): 11. Uso de agentes, Como criar, Coordenação e correções, Modelo e esforço, Preservação e revisão, Quando delegar
 
 ### Community 118 - "auth.py"
-Cohesion: 0.03
-Nodes (73): _normalize_cors_hostname(), settings(), Settings, _validate_database_url(), validate_scheduling_timezone(), _validate_smtp_host(), _validate_timezone(), utc_now() (+65 more)
+Cohesion: 0.04
+Nodes (64): settings(), utc_now_naive(), email_key(), normalize_email(), account_key(), claim_login_reservation(), _ip_authenticated_account(), limit_login() (+56 more)
 
 ### Community 122 - "Parte 2 — três direções para aprovação visual"
 Cohesion: 0.29
@@ -779,10 +771,6 @@ Nodes (5): frame(), record(), report(), set(), stop()
 Cohesion: 0.29
 Nodes (6): interval, updates, directory, package-ecosystem, schedule, version
 
-### Community 131 - "login.js"
-Cohesion: 0.18
-Nodes (9): apiPost(), abrirCadastro, fecharCadastro, limparErro(), loginForm, modal, mostrarErro(), registerForm (+1 more)
-
 ### Community 132 - "PasswordResetLimitsMigrationTests"
 Cohesion: 0.36
 Nodes (3): PasswordResetLimitsMigrationTests, after_select(), insert_limit()
@@ -811,9 +799,9 @@ Nodes (5): Encerramento dos blocos, Evidência, Home editorial com ritual visual
 Cohesion: 0.33
 Nodes (5): Identidade JWT e credencial concorrente, Implementação, Objetivo e limites, Progresso, Riscos e validação
 
-### Community 140 - "createVideoSeeker"
-Cohesion: 0.18
-Nodes (15): createVideoRitual(), nativeScrollTo(), showFallback(), handoffs, NAMES, RITUAL_CUTS, RITUAL_STILLS, createVideoSeeker() (+7 more)
+### Community 140 - "schemas/horario.py"
+Cohesion: 0.21
+Nodes (7): BloqueioHorarioBase, BloqueioHorarioCreate, BloqueioHorarioResponse, JornadaTrabalhoBase, JornadaTrabalhoCreate, JornadaTrabalhoResponse, JornadaTrabalhoUpdate
 
 ### Community 141 - "Ampliação proposta — qualidade dos dados e UX de autenticação"
 Cohesion: 0.17
@@ -835,13 +823,17 @@ Nodes (5): Agendamento inteligente — Parte 1, Comportamento, Entradas e XSS, E
 Cohesion: 0.40
 Nodes (4): Regras de negócio (RN), Requisitos do sistema (fonte de verdade para o Codex), Requisitos funcionais (RF), Requisitos não funcionais (RNF)
 
-### Community 148 - ".constructor"
-Cohesion: 0.19
-Nodes (5): ArrayCamera, WebGLAnimation(), onInputSourcesChange(), onSessionEnd(), onSessionEvent()
+### Community 147 - "BufferAttribute"
+Cohesion: 0.07
+Nodes (8): BufferAttribute, Int16BufferAttribute, Int32BufferAttribute, Int8BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Uint8BufferAttribute, Uint8ClampedBufferAttribute
+
+### Community 148 - "essential-flows.spec.mjs"
+Cohesion: 0.15
+Nodes (9): Correções direcionadas de CI — 2026-10-30, Playwright alinhado à área de trabalho da equipe (2026-11-18), admin, barber, chooseSlot(), client, mobileClient, openStaffEditor() (+1 more)
 
 ### Community 149 - "TextureSource"
-Cohesion: 0.15
-Nodes (4): DepthTexture, serializeImage(), Source, TextureSource
+Cohesion: 0.18
+Nodes (3): DepthTexture, Source, TextureSource
 
 ### Community 150 - "Modelo de ameaças — Barbearia Agendamento"
 Cohesion: 0.20
@@ -851,9 +843,9 @@ Nodes (9): Atacantes considerados, Ativos e sensibilidade, Controles observados 
 Cohesion: 0.40
 Nodes (4): Continuidade editorial — telas do produto, Critérios, Escopo, Execução
 
-### Community 152 - "product-navigation.mjs"
-Cohesion: 0.60
-Nodes (3): bookingNavigation(), mountProductNavigation(), steps
+### Community 152 - ".setGeometryAt"
+Cohesion: 0.19
+Nodes (3): ascIdSort(), copyAttributeData(), EdgesGeometry
 
 ### Community 153 - "Privacidade e atendimento de solicitações LGPD"
 Cohesion: 0.67
@@ -876,20 +868,16 @@ Cohesion: 0.12
 Nodes (26): applyInstallationBrand(), DEFAULT_BRAND_MARK, DEFAULT_BRAND_NAME, DEFAULT_BRAND_TAGLINE, DEFAULT_INSTALLATION_COPY, DEFAULT_THEME_COLOR, normalizeBrandConfiguration(), normalizeInstallationCopy() (+18 more)
 
 ### Community 160 - "Loader"
-Cohesion: 0.05
-Nodes (13): AudioLoader, loadTexture(), CubeTexture, CubeTextureLoader, loadTexture(), DataTextureLoader, ImageBitmapLoader, ImageLoader (+5 more)
+Cohesion: 0.08
+Nodes (6): AnimationLoader, AudioLoader, BufferGeometryLoader, CompressedTextureLoader, ImageBitmapLoader, Loader
 
 ### Community 161 - "create_isolated_postgres_test_schema"
 Cohesion: 0.18
 Nodes (7): _cleanup_postgres_test_schemas(), create_isolated_postgres_test_schema(), _create_postgres_schema(), drop_isolated_postgres_test_schema(), _postgres_url_for_schema(), PostgreSQLSchemaMigrationTests, Migrações antes do startup no Render Free — 2026-10-31
 
-### Community 164 - "AuditLog"
-Cohesion: 0.17
-Nodes (7): main(), purge_audit(), AuditLog, Requisitos não funcionais, main(), expired_access(), revoke_fixture_sessions()
-
-### Community 168 - "ObjectLoader"
-Cohesion: 0.11
-Nodes (11): Fog, FogExp2, LineLoop, ObjectLoader, getGeometry(), getMaterial(), getTexture(), parseConstant() (+3 more)
+### Community 164 - "users.py"
+Cohesion: 0.09
+Nodes (25): main(), purge_audit(), AuditLog, Avaliacao, ConsentimentoLGPD, InformacaoInstitucional, PasswordResetToken, _collect_personal_data() (+17 more)
 
 ### Community 198 - "Evidências RF23 / RNF-14 — 2026-11-01"
 Cohesion: 0.50
@@ -904,16 +892,12 @@ Cohesion: 0.50
 Nodes (4): Checks e hooks, Codex helpers, Instruções versus proteção técnica, Workflow local do Codex
 
 ### Community 201 - "Schemas Pydantic"
-Cohesion: 0.11
-Nodes (25): AdminAppointmentCreate, AppointmentBase, AppointmentCreate, AppointmentResponse, AppointmentUpdate, AvaliacaoBase, AvaliacaoResponse, AvaliacaoResumo (+17 more)
+Cohesion: 0.20
+Nodes (15): AdminAppointmentCreate, AppointmentBase, AppointmentCreate, AppointmentResponse, AvaliacaoBase, AvaliacaoResponse, BarbearioServicoBase, BarbearioServicoCreate (+7 more)
 
 ### Community 202 - "AnimationClip"
 Cohesion: 0.09
 Nodes (7): AnimationClip, AnimationUtils, getTrackTypeForValueTypeName(), NumberKeyframeTrack, parseKeyframeTrack(), scaleTangentTimes(), subclip()
-
-### Community 204 - "InterleavedBuffer"
-Cohesion: 0.09
-Nodes (3): generateUUID(), InstancedInterleavedBuffer, InterleavedBuffer
 
 ### Community 206 - "Texture"
 Cohesion: 0.09
@@ -935,13 +919,17 @@ Nodes (9): Aceite, Decisões propostas e alternativas, Evidências da fase de di
 Cohesion: 0.08
 Nodes (21): filterEmptyLine(), generateCubeUVSize(), generateDefines(), generateEnvMapBlendingDefine(), generateEnvMapModeDefine(), generateEnvMapTypeDefine(), generatePrecision(), generateShadowMapTypeDefine() (+13 more)
 
+### Community 213 - "SkinnedMesh"
+Cohesion: 0.12
+Nodes (3): Mesh, SkinnedMesh, _createPlanes()
+
 ### Community 214 - "Timer"
 Cohesion: 0.10
 Nodes (3): AudioContext, AudioListener, Timer
 
 ### Community 215 - ".setAttribute"
-Cohesion: 0.04
-Nodes (20): arrayNeedsUint32(), AxesHelper, Box3Helper, buildPlane(), BoxHelper, convertBufferAttribute(), CapsuleGeometry, CircleGeometry (+12 more)
+Cohesion: 0.06
+Nodes (15): arrayNeedsUint32(), buildPlane(), convertBufferAttribute(), CapsuleGeometry, CircleGeometry, generateCap(), generateTorso(), Float32BufferAttribute (+7 more)
 
 ### Community 217 - "Box2"
 Cohesion: 0.05
@@ -956,8 +944,8 @@ Cohesion: 0.25
 Nodes (8): Contratos revisados, Higiene, dependências e credenciais, Matriz de arquivos e origem, Organização local posteriormente autorizada — 2026-11-04, Problemas e riscos residuais, Resultados executados nesta revisão, Revisão integrada dos Lotes 1, 2 e 3 — 2026-11-04, Sequência exata recomendada de commits (somente proposta)
 
 ### Community 221 - ".constructor"
-Cohesion: 0.10
-Nodes (23): log(), getDFGLUT(), deallocateMaterial(), findLightProbeGrid(), getProgram(), getUniformList(), markUniformsLightsNeedsUpdate(), materialNeedsLights() (+15 more)
+Cohesion: 0.14
+Nodes (18): createCanvasElement(), getDFGLUT(), deallocateMaterial(), findLightProbeGrid(), getProgram(), getUniformList(), markUniformsLightsNeedsUpdate(), materialNeedsLights() (+10 more)
 
 ### Community 222 - "Path"
 Cohesion: 0.14
@@ -968,8 +956,8 @@ Cohesion: 0.33
 Nodes (5): Implantação e recuperação, PR35 — integração com a segurança atual, Reprodução e isolamento, Resolução, Resultados executados
 
 ### Community 228 - "WebGLPrograms"
-Cohesion: 0.10
-Nodes (9): Layers, isPackedRGFormat(), WebGLPrograms(), acquireProgram(), getChannel(), getParameters(), getProgramCacheKey(), getProgramCacheKeyBooleans() (+1 more)
+Cohesion: 0.07
+Nodes (11): Layers, isPackedRGFormat(), WebGLPrograms(), acquireProgram(), getChannel(), getParameters(), getProgramCacheKey(), getProgramCacheKeyBooleans() (+3 more)
 
 ### Community 229 - "Lote 3 autorizado — visibilidade de senhas e acessibilidade — 2026-11-04"
 Cohesion: 0.40
@@ -984,28 +972,28 @@ Cohesion: 0.40
 Nodes (5): E-mails, Medidor de força, Mostrar/ocultar senha, Nomes e textos, Proposta de implementação por área
 
 ### Community 232 - "test_email_integrity_errors.py"
-Cohesion: 0.22
-Nodes (3): is_email_conflict(), EmailIntegrityTests, unique_error()
+Cohesion: 0.18
+Nodes (3): is_email_conflict(), EmailIdentityPostgresTests, EmailIntegrityTests
 
 ### Community 233 - "Lote 1 autorizado e implementado localmente — 2026-11-04"
 Cohesion: 0.50
 Nodes (4): Evidência de implementação e validação, Lote 1 autorizado e implementado localmente — 2026-11-04, Política implementada, Riscos e limites do lote
 
-### Community 240 - "BufferAttribute"
-Cohesion: 0.05
-Nodes (5): BufferAttribute, DataUtils, denormalize(), Float16BufferAttribute, InterleavedBufferAttribute
+### Community 235 - "SchemaModel"
+Cohesion: 0.25
+Nodes (5): AppointmentUpdate, AvaliacaoResumo, SchemaModel, walk(), BloqueioHorarioUpdate
 
 ### Community 243 - "WebGLUniforms"
 Cohesion: 0.10
 Nodes (12): addUniform(), fetchAttributeLocations(), getPureArraySetter(), getShaderErrors(), getSingularSetter(), handleSource(), parseUniform(), PureArrayUniform (+4 more)
 
 ### Community 244 - "WebGLBindingStates"
-Cohesion: 0.09
-Nodes (42): getUnlitUniformColorSpace(), WebGLBackground(), addToRenderList(), getBackground(), render(), setClear(), WebGLBindingStates(), bindVertexArrayObject() (+34 more)
+Cohesion: 0.19
+Nodes (21): getUnlitUniformColorSpace(), WebGLBackground(), addToRenderList(), getBackground(), render(), setClear(), WebGLMaterials(), refreshFogUniforms() (+13 more)
 
 ### Community 245 - ".constructor"
-Cohesion: 0.25
-Nodes (11): applyRadius(), azimuth(), correctSeam(), correctUV(), correctUVs(), generateUVs(), getVertexByIndex(), inclination() (+3 more)
+Cohesion: 0.15
+Nodes (13): ExtrudeGeometry, applyRadius(), azimuth(), correctSeam(), correctUV(), correctUVs(), generateUVs(), getVertexByIndex() (+5 more)
 
 ### Community 247 - "arraysEqual"
 Cohesion: 0.21
@@ -1015,9 +1003,13 @@ Nodes (19): allocTexUnits(), arraysEqual(), copyArray(), setValueM2(), setValueM
 Cohesion: 0.12
 Nodes (7): CubicBezier(), CubicBezierCurve, CubicBezierCurve3, CubicBezierP0(), CubicBezierP1(), CubicBezierP2(), CubicBezierP3()
 
+### Community 253 - "WebXRManager"
+Cohesion: 0.06
+Nodes (9): ArrayCamera, ExternalTexture, WebGLAnimation(), WebXRDepthSensing, WebXRManager, onAnimationFrame(), onInputSourcesChange(), onSessionEnd() (+1 more)
+
 ### Community 254 - ".parse"
-Cohesion: 0.28
-Nodes (5): getArrayBuffer(), getInterleavedBuffer(), getTypedArray(), InstancedBufferGeometry, deserializeImage()
+Cohesion: 0.14
+Nodes (6): getArrayBuffer(), getInterleavedBuffer(), getTypedArray(), InstancedBufferGeometry, deserializeImage(), ShapeGeometry
 
 ### Community 255 - "QuadraticBezierCurve"
 Cohesion: 0.12
@@ -1028,32 +1020,28 @@ Cohesion: 0.12
 Nodes (8): shadowCastingAndTexturingLightsFirst(), ShadowUniformsCache(), UniformsCache(), WebGLLights(), setup(), WebGLRenderState(), WebGLRenderStates(), get()
 
 ### Community 257 - "Light"
-Cohesion: 0.11
-Nodes (5): AmbientLight, HemisphereLight, Light, LightProbe, RectAreaLight
+Cohesion: 0.06
+Nodes (12): AmbientLight, DirectionalLight, Fog, FogExp2, HemisphereLight, Light, LightProbe, LineLoop (+4 more)
 
 ### Community 258 - "RenderTarget"
-Cohesion: 0.20
-Nodes (4): Data3DTexture, RenderTarget, RenderTarget3D, WebGL3DRenderTarget
+Cohesion: 0.10
+Nodes (8): Data3DTexture, DataArrayTexture, RenderTarget, RenderTarget3D, WebGL3DRenderTarget, WebGLArrayRenderTarget, WebGLMorphtargets(), update()
 
 ### Community 259 - "PolyhedronGeometry"
 Cohesion: 0.13
 Nodes (5): DodecahedronGeometry, IcosahedronGeometry, OctahedronGeometry, PolyhedronGeometry, TetrahedronGeometry
 
-### Community 264 - "DataTexture"
-Cohesion: 0.19
-Nodes (3): ascIdSort(), copyArrayContents(), DataTexture
-
 ### Community 265 - "OrthographicCamera"
-Cohesion: 0.18
-Nodes (3): DirectionalLight, DirectionalLightShadow, OrthographicCamera
+Cohesion: 0.14
+Nodes (3): Camera, DirectionalLightShadow, OrthographicCamera
 
 ### Community 266 - ".getAttribute"
-Cohesion: 0.09
-Nodes (8): CameraHelper, addLine(), addPoint(), copyAttributeData(), EdgesGeometry, getBoneList(), setPoint(), SkeletonHelper
+Cohesion: 0.16
+Nodes (6): CameraHelper, addLine(), addPoint(), getBoneList(), setPoint(), SkeletonHelper
 
 ### Community 268 - "initGLContext"
-Cohesion: 0.06
-Nodes (13): WebGLAttributes(), createBuffer(), update(), updateBuffer(), WebGLBufferRenderer(), WebGLCapabilities(), WebGLIndexedBufferRenderer(), WebGLObjects() (+5 more)
+Cohesion: 0.05
+Nodes (18): WebGLAttributes(), createBuffer(), update(), updateBuffer(), WebGLBufferRenderer(), WebGLCapabilities(), WebGLGeometries(), get() (+10 more)
 
 ### Community 271 - "LightShadow"
 Cohesion: 0.10
@@ -1072,24 +1060,28 @@ Cohesion: 0.14
 Nodes (3): LoadingManager, deserializeImage(), loadImage()
 
 ### Community 279 - "createElementNS"
-Cohesion: 0.33
-Nodes (5): createCanvasElement(), createColorManagement(), createElementNS(), ImageUtils, SRGBToLinear()
+Cohesion: 0.50
+Nodes (3): createElementNS(), ImageUtils, serializeImage()
 
 ### Community 281 - "FileLoader"
-Cohesion: 0.08
-Nodes (9): AnimationLoader, handleError(), BufferGeometryLoader, CompressedTextureLoader, FileLoader, readData(), HttpError, LoaderUtils (+1 more)
+Cohesion: 0.16
+Nodes (4): FileLoader, readData(), HttpError, LoaderUtils
 
 ### Community 284 - "WebGLRenderList"
 Cohesion: 0.24
 Nodes (7): WebGLRenderList(), getNextRenderItem(), materialVariant(), push(), unshift(), WebGLRenderLists(), get()
 
-### Community 286 - "DataArrayTexture"
+### Community 285 - "CubeTexture"
 Cohesion: 0.20
-Nodes (4): DataArrayTexture, WebGLArrayRenderTarget, WebGLMorphtargets(), update()
+Nodes (4): loadTexture(), CubeTexture, CubeTextureLoader, loadTexture()
 
-### Community 287 - "ExternalTexture"
-Cohesion: 0.20
-Nodes (3): ExternalTexture, WebXRDepthSensing, onAnimationFrame()
+### Community 286 - ".dispose"
+Cohesion: 0.22
+Nodes (6): log(), onContextCreationError(), onContextLost(), onContextRestore(), onXRSessionEnd(), onXRSessionStart()
+
+### Community 287 - "ImageLoader"
+Cohesion: 0.28
+Nodes (5): ImageLoader, onImageError(), onImageLoad(), removeEventListeners(), TextureLoader
 
 ### Community 289 - "probeAsync"
 Cohesion: 0.50
@@ -1123,10 +1115,6 @@ Nodes (7): flatten(), setValueM2Array(), setValueM3Array(), setValueM4Array(), s
 Cohesion: 0.33
 Nodes (6): Causa e correção, Comandos e checks históricos, Correção exclusiva de F2, Empacotamento para o commit local, Evidência antes/depois, Limites e entrega
 
-### Community 319 - "WebGLGeometries"
-Cohesion: 0.47
-Nodes (5): WebGLGeometries(), get(), getWireframeAttribute(), onGeometryDispose(), updateWireframeAttribute()
-
 ### Community 322 - "Etapa 2: reservas, locks e troca de versão"
 Cohesion: 0.40
 Nodes (5): Etapa 2: reservas, locks e troca de versão, Evidência de sobreposição permitida, Ordem de locks após classificação, Procedimento proposto, dependente de autorização operacional, Resultados de login: revisão aditiva 20261107_02
@@ -1142,13 +1130,13 @@ Nodes (3): Achados e correções, Conformidade legal, privacidade e acessibilida
 ## Knowledge Gaps
 - **6 isolated node(s):** `RFC-3987`, `CORES`, `ESCALA`, `PETS`, `ACESSORIOS` (+1 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2651 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **142 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **148 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `WebGLState()` connect `error` to `video-checks.mjs`, `three.module.js`, `initGLContext`, `Vector4`?**
-  _High betweenness centrality (0.359) - this node is a cross-community bridge._
+  _High betweenness centrality (0.375) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `asgi_request()` (e.g. with `receive()` and `send()`) actually correct?**
   _`asgi_request()` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `RFC-3987`, `CORES`, `ESCALA` to the rest of the system?**
@@ -1156,8 +1144,8 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `three.core.js` be split into smaller, more focused modules?**
   _Cohesion score 0.007380073800738007 - nodes in this community are weakly interconnected._
 - **Why does `viewport()` connect `video-checks.mjs` to `error`?**
-  _High betweenness centrality (0.357) - this node is a cross-community bridge._
+  _High betweenness centrality (0.373) - this node is a cross-community bridge._
 - **Are the 102 inferred relationships involving `User` (e.g. with `availability_days()` and `ensure_client_booking_capacity()`) actually correct?**
   _`User` has 102 INFERRED edges - model-reasoned connections that need verification._
 - **Should `sqlalchemy` be split into smaller, more focused modules?**
-  _Cohesion score 0.06852497096399536 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08571428571428572 - nodes in this community are weakly interconnected._

@@ -482,3 +482,7 @@ desativável em "Preferências de cookies") e não usa mais `sandbox`, que fazia
 Chrome bloquear o Google Maps aberto a partir do mapa (`ERR_BLOCKED_BY_RESPONSE`).
 Política de Privacidade, Política de Cookies e
 [Conformidade legal](CONFORMIDADE_LEGAL.md) atualizadas.
+
+## Playwright alinhado à área de trabalho da equipe (2026-11-18)
+
+Seis testes de `essential-flows.spec.mjs` falhavam na `main` porque ainda esperavam o painel antigo. Eles agora abrem a seção por hash (`showAdminSection`) e o editor recolhido (`openStaffEditor`), concluem o atendimento pelo diálogo com valor cobrado e seguem a ordem real de Tab no login. O payload de login passou a ser lido via `route.fetch`, sem depender do corpo de uma resposta já navegada. Os textos de bloqueio ficaram únicos por projeto. Sem mudança de aplicação.
