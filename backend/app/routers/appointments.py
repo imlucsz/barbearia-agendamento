@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Annotated, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -31,6 +32,7 @@ from app.schemas.appointment import (
     AppointmentUpdate,
     AvaliacaoCreate,
     AvaliacaoResponse,
+    AvaliacaoResumo,
 )
 from app.core.audit import record as record_audit
 
@@ -141,6 +143,12 @@ def get_booking_calendar(
         "start_date": now.date().isoformat(), "end_date": last_day.isoformat(),
         "days": availability_days(db, service_id, barbeiro_id, now.date(), last_day, now, appointment),
     }
+
+
+@router.get("/avaliacoes/resumo", response_model=AvaliacaoResumo)
+def get_avaliacoes_resumo(db: Session = Depends(get_db)):
+    total, media = db.query(func.count(Avaliacao.id), func.avg(Avaliacao.nota)).one()
+    return AvaliacaoResumo(total=int(total or 0), media=round(float(media), 2) if total else None)
 
 
 @router.get("/avaliacoes", response_model=List[AvaliacaoResponse])

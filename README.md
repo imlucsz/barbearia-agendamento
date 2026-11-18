@@ -29,7 +29,7 @@ O fluxo de reserva segue **serviço → profissional → data e horário → con
 - **Backend:** Python, FastAPI, Pydantic e SQLAlchemy.
 - **Banco de dados:** SQLite em desenvolvimento/testes; PostgreSQL em produção, com evolução do schema por Alembic.
 - **Autenticação:** JWT Bearer (PyJWT); senhas novas com Argon2id e verificação compatível com hashes bcrypt existentes.
-- **Apresentação:** GSAP local na HOME, vídeo WebM local no Ritual e Three.js na Estrelinha opcional. O import map da Estrelinha ainda usa CDN; a apresentação principal e os dados do negócio têm módulos independentes.
+- **Apresentação:** GSAP local na HOME, vídeo WebM local no Ritual e Three.js na Estrelinha opcional. O import map da Estrelinha aponta para Three.js local em `frontend/assets/js/vendor/three/`; a apresentação principal e os dados do negócio têm módulos independentes.
 
 O navegador consome a API HTTP; não há acesso direto do frontend ao banco. `home.js` mantém catálogo, autenticação, contatos e avaliações; `home-experience.mjs` controla apresentação. Personalização por instalação usa `installation-config.mjs`, tokens CSS e configuração do backend.
 
@@ -45,7 +45,7 @@ O [Motion Lab](frontend/e2e/motion-lab/README.md) permanece como laboratório se
 
 ## Implantação por instalação
 
-Para preparar uma barbearia com domínio, banco e configuração próprios, consulte [Implantação e reutilização](docs/IMPLANTACAO_E_REUTILIZACAO.md). O procedimento não copia dados de clientes nem configura multi-tenancy. O [inventário LGPD](docs/LGPD.md) descreve exportação, exclusão e retenção implementadas; revise as bases legais com assessoria jurídica.
+Para preparar uma barbearia com domínio, banco e configuração próprios, consulte [Implantação e reutilização](docs/IMPLANTACAO_E_REUTILIZACAO.md). O procedimento não copia dados de clientes nem configura multi-tenancy. O [inventário LGPD](docs/LGPD.md) descreve exportação, exclusão e retenção implementadas; revise as bases legais com assessoria jurídica. Política de Privacidade, Termos de Uso, Política de Cookies e dados legais da empresa (bloco `legal` de `installation-config.mjs`) estão descritos em [Conformidade legal](docs/CONFORMIDADE_LEGAL.md).
 
 Para criar um checkout limpo por barbearia, mapear personalizações e aplicar atualizações do núcleo, siga o [guia de reutilização e atualização](docs/REUTILIZACAO_E_ATUALIZACAO.md) e use os scripts em `tools/new-installation/`.
 
@@ -483,7 +483,7 @@ Para validar manualmente a API, use `http://127.0.0.1:8000/docs` e os dados loca
 
 ### Executar verificações frontend
 
-Na raiz, instale as dependências fixadas no lockfile. Os testes da Estrelinha usam Three.js local do laboratório como fixture de rede; isso não muda a versão do import map de produção.
+Na raiz, instale as dependências fixadas no lockfile. Three.js `0.186.0` é servido de `frontend/assets/js/vendor/three/`; para atualizá-lo, substitua `three.module.js`, `three.core.js` e `LICENSE` pela mesma versão do pacote oficial.
 
 ```powershell
 npm ci --ignore-scripts

@@ -28,7 +28,7 @@ async function checkPage(page, path) {
 }
 
 test("public, client and admin screens fit viewport and support labeled keyboard focus", async ({ page }) => {
-  for (const path of ["/pages/index.html", "/pages/catalog.html", "/pages/login.html", "/pages/cadastro.html"]) {
+  for (const path of ["/pages/index.html", "/pages/catalog.html", "/pages/login.html", "/pages/cadastro.html", "/pages/privacidade.html", "/pages/termos.html", "/pages/cookies.html"]) {
     await checkPage(page, path);
   }
 

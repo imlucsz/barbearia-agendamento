@@ -694,3 +694,30 @@ footer {
     transition-duration: .01ms !important;
   }
 }
+
+/* Conformidade: rodapé legal, aviso de cookies, mapa sob consentimento e documentos legais */
+.form-hint { margin: .5rem 0 0; color: var(--color-muted); font-size: .82rem; line-height: 1.5; }
+.form-hint a, .legal-footer a, .consent-banner a, .legal-document a { color: var(--color-primary-strong); text-decoration: underline; text-underline-offset: 2px; }
+.legal-footer { display: grid; gap: .4rem; justify-items: center; padding: .9rem 1rem 0; color: var(--color-muted); font-size: .78rem; text-align: center; }
+.legal-footer nav { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem 1.1rem; }
+.legal-footer__button { padding: 0; color: var(--color-primary-strong); font: inherit; text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; cursor: pointer; }
+.legal-footer__identification { margin: 0; font-family: Consolas, "Courier New", monospace; }
+.legal-footer :focus-visible, .consent-banner :focus-visible, .map-consent :focus-visible { outline: 3px solid var(--color-primary-strong); outline-offset: 3px; }
+.consent-banner { display: grid; gap: .6rem; width: min(100% - 2rem, 720px); margin: 1.5rem auto; padding: 1rem 1.15rem; color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); font-size: .88rem; line-height: 1.5; }
+.consent-banner__title { margin: 0; font-size: 1rem; }
+.consent-banner p { margin: 0; }
+.consent-banner__status { color: var(--color-muted); font-size: .82rem; }
+.consent-banner__actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.consent-banner__actions .btn { flex: 1 1 220px; }
+.map-consent { display: grid; gap: .8rem; align-content: center; justify-items: start; min-height: 100%; padding: 1.25rem; color: var(--color-text); }
+.map-consent p { margin: 0; color: var(--color-muted); font-size: .9rem; line-height: 1.5; }
+.legal-document { max-width: 860px; line-height: 1.65; }
+.legal-document h2 { margin: 2rem 0 .6rem; font-size: 1.2rem; }
+.legal-document h3 { margin: 1.25rem 0 .4rem; font-size: 1rem; }
+.legal-document ul { padding-left: 1.2rem; }
+.legal-document table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.legal-document th, .legal-document td { padding: .5rem; text-align: left; vertical-align: top; border: 1px solid var(--color-border); }
+.legal-document code, .legal-document .legal-meta { font-family: Consolas, "Courier New", monospace; }
+.legal-document .legal-meta { color: var(--color-muted); font-size: .82rem; }
+.legal-table-wrap { overflow-x: auto; }
+.legal-table-wrap:focus-visible { outline: 3px solid var(--color-primary-strong); outline-offset: 3px; }

@@ -1,5 +1,6 @@
 import { api, getCurrentUser, getToken, logout } from "./api.js";
 import { whatsappUrl, mapsUrls } from "./contact-links.mjs";
+import { CONSENT_EVENT, hasThirdPartyConsent, setThirdPartyConsent } from "./cookie-consent.mjs";
 
 const money = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 let allServices = [];
@@ -48,8 +49,9 @@ function setupNavigation() {
     toggle.setAttribute("aria-expanded", "false");
     toggle.setAttribute("aria-label", "Abrir menu");
   }));
-  nav.addEventListener("keydown", event => {
-    if (event.key !== "Escape") return;
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape" || !nav.classList.contains("main-nav--open")) return;
+    if (!nav.contains(document.activeElement) && document.activeElement !== toggle) return;
     nav.classList.remove("main-nav--open");
     toggle.setAttribute("aria-expanded", "false");
     toggle.setAttribute("aria-label", "Abrir menu");
@@ -275,13 +277,7 @@ function renderMap(value, address) {
       link.removeAttribute("href");
     }
     if (urls.embed) {
-      const iframe = document.createElement("iframe");
-      iframe.src = urls.embed;
-      iframe.title = "Mapa da barbearia";
-      iframe.loading = "lazy";
-      iframe.referrerPolicy = "no-referrer-when-downgrade";
-      iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
-      container.append(iframe);
+      renderMapEmbed(container, urls.embed);
     } else {
       const hint = document.createElement("p");
       hint.className = "text-muted";
@@ -297,23 +293,74 @@ function renderMap(value, address) {
   }
 }
 
+let mapConsentListener = null;
+
+function renderMapEmbed(container, embedUrl) {
+  if (mapConsentListener) window.removeEventListener(CONSENT_EVENT, mapConsentListener);
+  mapConsentListener = () => renderMapEmbed(container, embedUrl);
+  window.addEventListener(CONSENT_EVENT, mapConsentListener);
+  container.replaceChildren();
+  if (!hasThirdPartyConsent()) {
+    const notice = document.createElement("div");
+    notice.className = "map-consent";
+    const message = document.createElement("p");
+    message.textContent = "O mapa é fornecido pelo Google, que pode coletar seu endereço IP e usar cookies próprios. Ele só é carregado com a sua permissão.";
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-outline";
+    button.textContent = "Carregar mapa do Google";
+    button.addEventListener("click", () => {
+      setThirdPartyConsent(true);
+      container.querySelector("iframe")?.focus();
+    });
+    notice.append(message, button);
+    container.append(notice);
+    return;
+  }
+  const iframe = document.createElement("iframe");
+  iframe.src = embedUrl;
+  iframe.title = "Mapa da barbearia (Google Maps)";
+  iframe.loading = "lazy";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-popups");
+  container.append(iframe);
+}
+
+async function loadReviewSummary() {
+  try {
+    return await api.get("/appointments/avaliacoes/resumo", { auth: false });
+  } catch (error) {
+    console.error("Falha ao carregar o resumo das avaliações:", error);
+    return null;
+  }
+}
+
 async function loadReviews() {
   const container = document.getElementById("reviews-list");
   try {
-    const reviews = await api.get("/appointments/avaliacoes", { auth: false });
+    const [reviews, summary] = await Promise.all([
+      api.get("/appointments/avaliacoes", { auth: false }),
+      loadReviewSummary(),
+    ]);
     const visible = reviews.filter((review) => !review.oculta);
     container.replaceChildren();
+    const averageNode = document.getElementById("review-average");
+    if (!summary?.total && visible.length === 0) {
+      averageNode.textContent = "Ainda sem avaliações";
+    } else if (summary?.total) {
+      averageNode.textContent = `${Number(summary.media).toFixed(1)} / 5 · ${summary.total} ${summary.total === 1 ? "avaliação" : "avaliações"}`;
+      averageNode.title = "Média de todas as notas de atendimentos concluídos, inclusive avaliações cujo comentário foi ocultado pela moderação.";
+    } else {
+      averageNode.textContent = "Média indisponível no momento";
+    }
     if (visible.length === 0) {
-      document.getElementById("review-average").textContent = "Ainda sem avaliações";
       const message = document.createElement("p");
       message.className = "text-muted";
-      message.textContent = "As primeiras avaliações aparecerão aqui.";
+      message.textContent = summary?.total ? "Nenhum comentário público no momento." : "As primeiras avaliações aparecerão aqui.";
       container.append(message);
       return;
     }
 
-    const average = visible.reduce((sum, review) => sum + Number(review.nota), 0) / visible.length;
-    document.getElementById("review-average").textContent = `${average.toFixed(1)} / 5 · ${visible.length} ${visible.length === 1 ? "avaliação" : "avaliações"}`;
     visible.slice(0, 6).forEach((review) => {
       const card = document.createElement("article");
       card.className = "review-card";
@@ -325,8 +372,8 @@ async function loadReviews() {
       quote.textContent = review.comentario || "Atendimento avaliado pelo cliente.";
       const date = document.createElement("small");
       date.textContent = review.criada_em
-        ? new Date(review.criada_em).toLocaleDateString("pt-BR")
-        : "Cliente da casa";
+        ? `Cliente com atendimento concluído · ${new Date(review.criada_em).toLocaleDateString("pt-BR")}`
+        : "Cliente com atendimento concluído";
       card.append(stars, quote, date);
       container.append(card);
     });

@@ -40,6 +40,22 @@ class PublicReviewTests(unittest.TestCase):
         self.assertEqual([row["comentario"] for row in rows], ["Visible"])
         self.assertTrue(all(not row["oculta"] for row in rows))
 
+    def test_public_summary_includes_hidden_reviews_in_average(self):
+        status, summary = asgi_request(self.app, "GET", "/appointments/avaliacoes/resumo")
+        self.assertEqual(status, 200)
+        self.assertEqual(summary, {"total": 2, "media": 3.0})
+
+    def test_public_summary_without_reviews(self):
+        db = main.SessionLocal()
+        try:
+            db.query(Avaliacao).delete()
+            db.commit()
+        finally:
+            db.close()
+        status, summary = asgi_request(self.app, "GET", "/appointments/avaliacoes/resumo")
+        self.assertEqual(status, 200)
+        self.assertEqual(summary, {"total": 0, "media": None})
+
     def test_public_endpoint_returns_empty_list_without_reviews(self):
         db = main.SessionLocal()
         try:

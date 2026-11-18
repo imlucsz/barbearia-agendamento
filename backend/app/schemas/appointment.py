@@ -62,6 +62,11 @@ class AvaliacaoCreate(AvaliacaoBase):
     pass
 
 
+class AvaliacaoResumo(SchemaModel):
+    total: StrictInt = Field(ge=0)
+    media: Optional[float] = Field(default=None, ge=1, le=5)
+
+
 class AvaliacaoResponse(AvaliacaoBase):
     id: StrictInt = Field(gt=0)
     appointment_id: Optional[StrictInt] = Field(default=None, gt=0)

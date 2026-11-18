@@ -114,7 +114,7 @@ test.afterEach(async ({ page }, testInfo) => {
 test("cadastro, login, refresh silencioso após sessão expirada e logout", async ({ page, context }) => {
   const email = `cadastro-${Date.now()}@example.com`;
   await page.goto("/pages/cadastro.html");
-  await page.getByLabel("Nome completo").fill("Cliente Cadastro E2E");
+  await page.getByLabel("Nome", { exact: true }).fill("Cliente Cadastro E2E");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel(/Senha/).fill("E2E-Registration-Only-2026!");
   await page.getByRole("checkbox").check();
@@ -198,14 +198,15 @@ test("identidade configurada aparece nas páginas sem interpretar conteúdo como
   await expect(page).toHaveTitle("Barbearia Agendamento | Seu estilo, no seu horário");
 });
 
-test("nota média pública considera somente avaliações visíveis", async ({ page }) => {
+test("nota média pública inclui avaliações ocultas e lista somente comentários visíveis", async ({ page }) => {
+  await page.route("**/appointments/avaliacoes/resumo", (route) => route.fulfill({ json: { total: 3, media: 3 } }));
   await page.route("**/appointments/avaliacoes", (route) => route.fulfill({ json: [
     { nota: 5, comentario: "Avaliação pública", oculta: false, criada_em: "2026-10-01T12:00:00" },
     { nota: 3, comentario: "Outra pública", oculta: false, criada_em: "2026-10-02T12:00:00" },
     { nota: 1, comentario: "Avaliação oculta", oculta: true, criada_em: "2026-10-03T12:00:00" },
   ] }));
   await page.goto("/pages/index.html");
-  await expect(page.locator("#review-average")).toContainText("4.0 / 5 · 2 avaliações");
+  await expect(page.locator("#review-average")).toContainText("3.0 / 5 · 3 avaliações");
   await expect(page.locator("#reviews-list")).toContainText("Avaliação pública");
   await expect(page.locator("#reviews-list")).toContainText("Outra pública");
   await expect(page.locator("#reviews-list")).not.toContainText("Avaliação oculta");
@@ -214,7 +215,7 @@ test("nota média pública considera somente avaliações visíveis", async ({ p
 test("Estrelinha pode ser desligada por instalação sem quebrar a home", async ({ page }) => {
   let requestedMascotModule = false;
   page.on("request", (request) => {
-    if (request.url().includes("cdn.jsdelivr.net/npm/three")) requestedMascotModule = true;
+    if (request.url().includes("/assets/js/vendor/three/")) requestedMascotModule = true;
   });
   await page.route("**/assets/js/installation-config.mjs", (route) => route.fulfill({
     status: 200,
@@ -236,6 +237,7 @@ test("Estrelinha pode ser desligada por instalação sem quebrar a home", async 
 });
 
 test("nota média pública mostra estado vazio sem avaliações", async ({ page }) => {
+  await page.route("**/appointments/avaliacoes/resumo", (route) => route.fulfill({ json: { total: 0, media: null } }));
   await page.route("**/appointments/avaliacoes", (route) => route.fulfill({ json: [] }));
   await page.goto("/pages/index.html");
   await expect(page.locator("#review-average")).toHaveText("Ainda sem avaliações");
@@ -900,4 +902,64 @@ test("cliente não encontra mutações administrativas na tela", async ({ page }
   await page.goto("/pages/admin.html");
   await page.waitForURL(/client-dashboard\.html$/);
   await expect(page.locator(".admin-only")).toHaveCount(0);
+});
+
+test("preferências de cookies, rodapé legal e mapa só com consentimento", async ({ page }) => {
+  const googleRequests = [];
+  page.on("request", (request) => {
+    if (/google\.com|googletagmanager|google-analytics/.test(new URL(request.url()).hostname)) googleRequests.push(request.url());
+  });
+  await page.route("https://www.google.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<p>mapa</p>" }));
+  await page.route("**/informacoes/", (route) => route.fulfill({ json: {
+    nome: "Barbearia", endereco: "Rua Exemplo, 10", telefone: "", email: "contato@example.com", site: "",
+    horario_funcionamento: "09:00 às 18:00", dias_atendimento: "Segunda a Sábado",
+    endereco_maps: "https://www.google.com/maps/embed?pb=e2e",
+  } }));
+  await page.goto("/pages/index.html");
+  await expect(page.locator("[data-consent-banner]")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Carregar mapa do Google" })).toBeVisible();
+  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  const legalNav = page.getByRole("navigation", { name: "Informações legais" });
+  await expect(legalNav.getByRole("link", { name: "Política de Privacidade" })).toHaveAttribute("href", "privacidade.html");
+  await expect(legalNav.getByRole("link", { name: "Termos de Uso" })).toHaveAttribute("href", "termos.html");
+
+  const preferences = page.getByRole("button", { name: "Preferências de cookies" });
+  await preferences.click();
+  const panel = page.getByRole("region", { name: "Preferências de cookies" });
+  await expect(panel.getByRole("button", { name: "Usar somente essenciais" })).toBeFocused();
+  await panel.getByRole("button", { name: "Usar somente essenciais" }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(preferences).toBeFocused();
+  await page.reload();
+  await expect(page.locator("#map-container iframe")).toHaveCount(0);
+  expect(googleRequests).toEqual([]);
+
+  await page.getByRole("button", { name: "Preferências de cookies" }).click();
+  const reopened = page.getByRole("region", { name: "Preferências de cookies" });
+  await expect(reopened).toContainText("Escolha atual: somente essenciais.");
+  await reopened.getByRole("button", { name: "Permitir conteúdo de terceiros" }).click();
+  await expect(page.locator("#map-container iframe")).toHaveAttribute("referrerpolicy", "strict-origin-when-cross-origin");
+});
+
+test("documentos legais exibem dados configuráveis sem inventar CNPJ", async ({ page }) => {
+  for (const path of ["/pages/privacidade.html", "/pages/termos.html", "/pages/cookies.html"]) {
+    await page.goto(path);
+    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Informações legais" })).toBeVisible();
+  }
+  await page.goto("/pages/privacidade.html");
+  await expect(page.locator('[data-legal="cnpj"]').first()).toHaveText("Não informado");
+  await expect(page.locator("body")).not.toContainText(/googletagmanager|gtag/);
+});
+
+test("menu móvel fecha com Escape mesmo com foco no botão", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/pages/index.html");
+  const toggle = page.locator("#nav-toggle");
+  await toggle.focus();
+  await page.keyboard.press("Enter");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await page.keyboard.press("Escape");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toBeFocused();
 });

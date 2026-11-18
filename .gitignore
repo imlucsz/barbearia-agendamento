@@ -18,3 +18,6 @@ tools/backup/archive/
 node_modules/
 frontend/dist/
 debug.log
+
+# Cache local do graphify
+graphify-out/cache/
