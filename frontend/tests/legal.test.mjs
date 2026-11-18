@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { formatDocumentDate, isValidCnpj, legalIdentificationLine, normalizeLegalConfiguration } from "../assets/js/legal.mjs";
-import { CONSENT_MAX_AGE_DAYS, CONSENT_STORAGE_KEY, readConsent, saveConsent } from "../assets/js/cookie-consent.mjs";
+import { CONSENT_MAX_AGE_DAYS, CONSENT_STORAGE_KEY, hasThirdPartyConsent, readConsent, saveConsent, setThirdPartyConsent } from "../assets/js/cookie-consent.mjs";
 import { INSTALLATION_CONFIG } from "../assets/js/installation-config.mjs";
 
 function memoryStorage() {
@@ -52,6 +52,20 @@ test("third-party consent is stored, validated and expires", () => {
   assert.equal(readConsent(storage, now), null);
   storage.setItem(CONSENT_STORAGE_KEY, JSON.stringify({ version: 1, terceiros: "yes", decididoEm: now.toISOString() }));
   assert.equal(readConsent(storage, now), null);
+});
+
+test("revocation wins over a stored permission when storage cannot be written", () => {
+  const stored = new Map([[CONSENT_STORAGE_KEY, JSON.stringify({ version: 1, terceiros: true, decididoEm: new Date().toISOString() })]]);
+  const storage = {
+    getItem: (key) => stored.get(key) ?? null,
+    setItem: () => { throw new Error("QuotaExceededError"); },
+    removeItem: (key) => stored.delete(key),
+  };
+  const windowRef = { localStorage: storage };
+  assert.equal(hasThirdPartyConsent(windowRef), true);
+  setThirdPartyConsent(false, windowRef);
+  assert.equal(hasThirdPartyConsent(windowRef), false);
+  assert.equal(readConsent(storage), null);
 });
 
 test("pages avoid third-party tracking and CDN scripts", async () => {

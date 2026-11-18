@@ -29,17 +29,26 @@ export function saveConsent(storage, terceiros, now = new Date()) {
   try {
     storage?.setItem(CONSENT_STORAGE_KEY, JSON.stringify(record));
   } catch {
-    // Sem armazenamento disponível, a escolha vale apenas para esta página.
+    // Sem gravação, a escolha vale só para esta página; uma permissão antiga não pode prevalecer.
+    try {
+      storage?.removeItem(CONSENT_STORAGE_KEY);
+    } catch {
+      // Armazenamento indisponível: nada a remover.
+    }
   }
   return Object.freeze({ terceiros: record.terceiros, decididoEm: record.decididoEm });
 }
 
+const pageChoices = new WeakMap();
+
 export function hasThirdPartyConsent(windowRef = globalThis.window) {
+  if (windowRef && pageChoices.has(windowRef)) return pageChoices.get(windowRef);
   return readConsent(storageOf(windowRef))?.terceiros === true;
 }
 
 export function setThirdPartyConsent(terceiros, windowRef = globalThis.window) {
   const record = saveConsent(storageOf(windowRef), terceiros);
+  if (windowRef) pageChoices.set(windowRef, record.terceiros);
   windowRef?.document?.querySelector?.("[data-consent-banner]")?.remove();
   windowRef?.dispatchEvent?.(new CustomEvent(CONSENT_EVENT, { detail: record }));
   return record;

@@ -2532,9 +2532,9 @@
     "semantic_hash": ""
   },
   "frontend/assets/js/cookie-consent.mjs": {
-    "mtime": 1795003625.5488846,
-    "seen": 1795003994.9598897,
-    "ast_hash": "9c585c94435b8e85fb97874abbd77ffe",
+    "mtime": 1795004516.980542,
+    "seen": 1795004535.6683116,
+    "ast_hash": "6b9669c45a693dc423e28af090b0d61e",
     "semantic_hash": ""
   },
   "frontend/assets/js/legal-page.mjs": {
@@ -2562,9 +2562,9 @@
     "semantic_hash": ""
   },
   "frontend/tests/legal.test.mjs": {
-    "mtime": 1795003245.8751,
-    "seen": 1795003994.9599736,
-    "ast_hash": "c970f7bd805ca2b46897c0f4399ebb4a",
+    "mtime": 1795004522.7235074,
+    "seen": 1795004535.6684175,
+    "ast_hash": "9e20b85bc63d5839306b75af996b033a",
     "semantic_hash": ""
   },
   "docs/CONFORMIDADE_LEGAL.md": {
