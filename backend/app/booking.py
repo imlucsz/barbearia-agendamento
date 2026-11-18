@@ -175,27 +175,27 @@ def validate_booking_slot(
     start = normalize_datetime(start)
     now = now_local()
     if start < now:
-        raise HTTPException(status_code=400, detail="N?o ? poss?vel agendar em um hor?rio passado")
+        raise HTTPException(status_code=400, detail="Não é possível agendar em um horário passado")
     if start > now + timedelta(days=BOOKING_WINDOW_DAYS):
-        raise HTTPException(status_code=400, detail=f"Os agendamentos podem ser feitos com at? {BOOKING_WINDOW_DAYS} dias de anteced?ncia")
+        raise HTTPException(status_code=400, detail=f"Os agendamentos podem ser feitos com até {BOOKING_WINDOW_DAYS} dias de antecedência")
     barber = db.query(User).filter(User.id == barber_id, User.role == RoleEnum.BARBEIRO, User.ativo.is_(True), User.bloqueado.is_(False)).first()
     if barber is None:
-        raise HTTPException(status_code=404, detail="Barbeiro n?o encontrado")
+        raise HTTPException(status_code=404, detail="Barbeiro não encontrado")
     association = db.query(BarbearioServico).filter(
         BarbearioServico.barbeiro_id == barber_id, BarbearioServico.service_id == service.id,
     ).first()
     if association is None:
-        raise HTTPException(status_code=400, detail="Este barbeiro n?o realiza o servi?o selecionado")
+        raise HTTPException(status_code=400, detail="Este barbeiro não realiza o serviço selecionado")
     weekday = (start.weekday() + 1) % 7
     schedules = db.query(JornadaTrabalho).filter(
         JornadaTrabalho.barbeiro_id == barber_id, JornadaTrabalho.dia_semana == weekday,
         JornadaTrabalho.ativo.is_(True),
     ).all()
     if not schedules:
-        raise HTTPException(status_code=400, detail="O barbeiro n?o atende nesta data")
+        raise HTTPException(status_code=400, detail="O barbeiro não atende nesta data")
     duration = service.duracao_minutos if duration_minutes is None else duration_minutes
     if not isinstance(duration, int) or duration <= 0:
-        raise HTTPException(status_code=500, detail="O servi?o possui dura??o inv?lida")
+        raise HTTPException(status_code=500, detail="O serviço possui duração inválida")
     end = start + timedelta(minutes=duration)
     # Multiple records describe separate shifts, never a continuous interval.
     fitting = [
@@ -238,31 +238,31 @@ def validate_appointment_status_transition(
     """Enforce the RF14 status matrix and transition-specific domain rules."""
     if actor_role == RoleEnum.CLIENTE:
         if target_status != AppointmentStatusEnum.CANCELADO:
-            raise HTTPException(status_code=403, detail="Clientes sÃ³ podem cancelar seus prÃ³prios agendamentos")
+            raise HTTPException(status_code=403, detail="Clientes só podem cancelar seus próprios agendamentos")
     elif actor_role not in (RoleEnum.ADMIN, RoleEnum.BARBEIRO):
         raise HTTPException(status_code=403, detail="Acesso negado")
 
     if target_status == AppointmentStatusEnum.AVALIADO:
-        raise HTTPException(status_code=400, detail="O status avaliado sÃ³ pode ser definido por uma avaliaÃ§Ã£o vÃ¡lida")
+        raise HTTPException(status_code=400, detail="O status avaliado só pode ser definido por uma avaliação válida")
 
     allowed_targets = ALLOWED_APPOINTMENT_STATUS_TRANSITIONS.get(appointment.status, set())
     if target_status not in allowed_targets:
-        raise HTTPException(status_code=400, detail="TransiÃ§Ã£o de status invÃ¡lida para este agendamento")
+        raise HTTPException(status_code=400, detail="Transição de status inválida para este agendamento")
 
     now = now_local()
     effective_start = normalize_datetime(target_start or appointment.data_hora)
     if target_status == AppointmentStatusEnum.CANCELADO and actor_role == RoleEnum.CLIENTE:
         if appointment.data_hora - now < timedelta(hours=24):
-            raise HTTPException(status_code=400, detail="Cancelamentos exigem 24 horas de antecedÃªncia")
+            raise HTTPException(status_code=400, detail="Cancelamentos exigem 24 horas de antecedência")
 
     if target_status in (AppointmentStatusEnum.CONCLUIDO, AppointmentStatusEnum.FALTA):
         if now < effective_start:
-            raise HTTPException(status_code=400, detail="O status sÃ³ pode ser registrado apÃ³s o inÃ­cio do atendimento")
+            raise HTTPException(status_code=400, detail="O status só pode ser registrado após o início do atendimento")
 
     if target_status == AppointmentStatusEnum.CONFIRMADO and validate_confirmation_slot:
         service = db.query(Service).filter(Service.id == appointment.service_id).first()
         if service is None:
-            raise HTTPException(status_code=404, detail="ServiÃ§o nÃ£o encontrado")
+            raise HTTPException(status_code=404, detail="Serviço não encontrado")
         lock_barber_for_booking(db, appointment.barbeiro_id)
         validate_booking_slot(
             db,
