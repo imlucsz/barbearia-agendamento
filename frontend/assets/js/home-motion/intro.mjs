@@ -11,7 +11,6 @@ export function createHeroIntro(gsap) {
   const lines = [...document.querySelectorAll('.headline-line')];
   const copy = [...document.querySelectorAll('.hero-kicker, .hero-detail')];
   const halves = [tool.querySelector('.half-front'), tool.querySelector('.half-back')];
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const key = 'barbearia.home.intro.v1';
   let seen = false, timeline, watchdog, active = false, plays = 0, destroyed = false;
   const offs = [];
@@ -42,8 +41,8 @@ export function createHeroIntro(gsap) {
     offs.splice(0).forEach(off => off());
   };
   function start() {
-    if (seen || reduced.matches || location.hash || scrollY > 12) {
-      settle(seen ? 'seen' : reduced.matches ? 'reduced' : 'restored-position'); return;
+    if (seen || location.hash || scrollY > 12) {
+      settle(seen ? 'seen' : 'restored-position'); return;
     }
     active = true; plays++; remember();
     root.dataset.intro = 'playing'; root.classList.add('intro-playing');
@@ -91,7 +90,6 @@ export function createHeroIntro(gsap) {
   listen(window, 'touchmove', () => cancel('scroll'), { passive: true });
   listen(window, 'scroll', () => { if (scrollY > 12) cancel('scroll'); }, { passive: true });
   listen(window, 'resize', () => cancel('resize'));
-  listen(reduced, 'change', () => { if (reduced.matches) cancel('reduced'); });
   listen(document, 'visibilitychange', () => { if (document.hidden) cancel('hidden'); });
   listen(window, 'pagehide', destroy);
   try { start(); } catch { settle('fallback'); }

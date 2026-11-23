@@ -105,4 +105,3 @@
 }
 @media(max-width:380px){.home-editorial .container{width:calc(100% - 32px)}.home-editorial .hero-tool{right:4%}.home-editorial .header-actions{width:100%;justify-content:flex-end;padding-bottom:8px}.home-editorial .ritual-rail{bottom:75px}.home-skip-ritual{bottom:15px;left:6%;right:auto;max-width:none}}
 @media(max-width:700px){.home-editorial .hero-art{max-width:360px;margin-inline:auto}.home-editorial .header-inner{padding-block:8px}.home-editorial .ritual-mobile .ritual-chapters{top:max(14%,136px)}}
-@media(prefers-reduced-motion:reduce){.home-editorial .intro-shell,.home-editorial .skip-intro{display:none!important}.home-editorial .btn,.home-editorial .service-book{transition:none;transform:none}}

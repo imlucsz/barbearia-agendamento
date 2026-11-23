@@ -45,7 +45,7 @@ async function start() {
     refreshTimer = setTimeout(() => { if (!destroyed) ScrollTrigger.refresh(); }, 120);
   }
   const mm = gsap.matchMedia();
-  mm.add({ desktop: '(min-width:1000px) and (min-height:650px)', reduced: '(prefers-reduced-motion:reduce)', all: '(min-width:0px)' }, context => {
+  mm.add({ desktop: '(min-width:1000px) and (min-height:650px)', all: '(min-width:0px)' }, context => {
     runtime.setReduced(context.conditions.reduced);
     root.classList.toggle('experience-ready', !context.conditions.reduced);
     controller = createVideoRitual({ gsap, ScrollTrigger, runtime, ...context.conditions, scheduleRefresh });
